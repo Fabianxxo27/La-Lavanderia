@@ -1,22 +1,20 @@
-# 1. Imagen Base
-FROM python:3.10-slim-buster
+# 1. Imagen Base: Cambiado a Python 3.9 y 'bullseye' para solucionar el error 404
+FROM python:3.9-slim-bullseye
 
 WORKDIR /app
 
-# 2. INSTALACIÓN DE DEPENDENCIAS DEL SISTEMA (CLAVE para solucionar la compilación de Pandas/NumPy)
-# Esto proporciona las herramientas C/C++ (build-essential, gfortran) y la librería matemática (libatlas-base-dev)
+# 2. INSTALACIÓN DE DEPENDENCIAS DEL SISTEMA (CLAVE para Pandas/NumPy)
+# Esto instala las herramientas de compilación y las librerías matemáticas necesarias.
 RUN apt-get update && apt-get install -y \
     build-essential \
     python3-dev \
     libatlas-base-dev \
     gfortran \
-    # Instalar Gunicorn, ya que es el servidor de producción necesario
     gunicorn \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
 # 3. Instalación de Dependencias de Python
-# Esto ejecutará pip install -r requirements.txt
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
@@ -24,6 +22,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 # 5. Comando de Inicio (CMD) para Flask con Gunicorn
-# Railway usará este comando para iniciar tu servidor web.
 ENV PORT 8080
+# Asume que tu archivo principal es 'app.py' y la instancia es 'app'
 CMD ["gunicorn", "app:app", "--bind", "0.0.0.0:$PORT"]
