@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Agregar Cliente{% endblock %}
+
+{% block content %}
+<h3>Agregar Cliente</h3>
+<form method="post" action="{{ url_for('agregar_cliente') }}">
+  <div class="mb-3">
+    <label class="form-label">Nombre</label>
+    <input class="form-control" name="nombre" required>
+  </div>
+  <div class="mb-3">
+    <label class="form-label">Username</label>
+    <input class="form-control" name="username" required>
+  </div>
+  <div class="mb-3">
+    <label class="form-label">Email</label>
+    <input class="form-control" name="email" type="email" required>
+  </div>
+  <div class="mb-3">
+    <label class="form-label">Contraseña</label>
+    <input class="form-control" name="password" type="password" required>
+  </div>
+  <button class="btn btn-success">Guardar</button>
+  <a href="{{ url_for('clientes') }}" class="btn btn-secondary">Cancelar</a>
+</form>
+{% endblock %}

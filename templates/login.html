@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Iniciar Sesión — La Lavandería</title>
+  
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  
+  <style>
+    body {
+      background-color: #f8f9fa; /* fondo claro */
+      color: #343a40;
+    }
+    .site-header { 
+      position: sticky; top: 0; z-index: 1100; 
+      backdrop-filter: blur(6px); 
+      background: #ffffffcc; 
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+    .brand { font-weight:700; letter-spacing:0.3px; color: #007BFF; }
+    .login-card {
+      max-width: 400px;
+      margin: 5rem auto;
+      padding: 2rem;
+      border-radius: 1rem;
+      background: #ffffff;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+      transition: transform .2s ease, box-shadow .2s ease;
+    }
+    .login-card:hover { transform: translateY(-5px); box-shadow: 0 20px 40px rgba(0,0,0,0.15); }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <header class="site-header shadow-sm">
+    <div class="container d-flex align-items-center justify-content-between py-3">
+      <a href="{{ url_for('index') }}" class="d-flex align-items-center gap-2 text-decoration-none">
+        <img src="{{ url_for('static', filename='images/lavanderia.jpg') }}" alt="logo" style="width:48px;height:48px;border-radius:8px;border:2px solid #007BFF;">
+        <div class="brand h5 mb-0">La Lavandería</div>
+      </a>
+      <div class="d-flex gap-2">
+        <a href="{{ url_for('login') }}" class="btn btn-outline-primary">Iniciar sesión</a>
+        <a href="{{ url_for('registro') }}" class="btn btn-success">Registrarse</a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Login Card -->
+  <main class="container">
+    <div class="login-card text-center">
+      <h2 class="fw-bold mb-4 text-primary">Inicia Sesión</h2>
+
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          {% for category, message in messages %}
+            <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+              {{ message }}
+              <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+          {% endfor %}
+        {% endif %}
+      {% endwith %}
+
+      <form method="POST">
+        <div class="mb-3 text-start">
+          <label for="username" class="form-label">Usuario</label>
+          <input type="text" class="form-control" id="username" name="username" placeholder="Ingresa tu usuario" required>
+        </div>
+        <div class="mb-3 text-start">
+          <label for="password" class="form-label">Contraseña</label>
+          <input type="password" class="form-control" id="password" name="password" placeholder="Ingresa tu contraseña" required>
+        </div>
+        <button type="submit" class="btn btn-primary w-100">Ingresar</button>
+      </form>
+
+      <p class="mt-3">¿No tienes cuenta? <a href="{{ url_for('registro') }}" class="text-success fw-bold">Regístrate aquí</a></p>
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="text-center py-4 mt-5" style="background:#007BFF; color:white;">
+    <small>&copy; {{ now().year }} La Lavandería — Todos los derechos reservados</small>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

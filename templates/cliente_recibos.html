@@ -1,0 +1,17 @@
+{% extends "cliente_base.html" %}
+{% block title %}Mis Recibos{% endblock %}
+
+{% block content %}
+<h2 class="mb-4">Mis Recibos</h2>
+{% if recibos %}
+<ul class="list-group">
+  {% for r in recibos %}
+  <li class="list-group-item">
+    Pedido #{{ r.id_pedido }} - {{ r.fecha_ingreso }} - Estado: {{ r.estado }}
+  </li>
+  {% endfor %}
+</ul>
+{% else %}
+<p>No tienes recibos generados.</p>
+{% endif %}
+{% endblock %}

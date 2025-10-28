@@ -1,0 +1,33 @@
+{% extends "cliente_base.html" %}
+{% block title %}Inicio - Cliente{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-column align-items-center justify-content-center text-center">
+  <h1 class="mb-4">¡Bienvenido, {{ session.get('username') }}!</h1>
+  <p class="lead mb-5">Desde aquí puedes consultar tus pedidos, ver recibos y aprovechar nuestras promociones.</p>
+
+  <div class="row g-4 justify-content-center">
+    <div class="col-md-3">
+      <div class="card p-4 shadow-sm h-100">
+        <h5 class="card-title">Pedidos</h5>
+        <p class="card-text">Consulta tus pedidos actuales y su estado.</p>
+        <a href="{{ url_for('cliente_pedidos', username=session.get('username')) }}" class="btn btn-primary w-100">Ver Pedidos</a>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card p-4 shadow-sm h-100">
+        <h5 class="card-title">Recibos</h5>
+        <p class="card-text">Revisa tus recibos y comprobantes de pago.</p>
+        <a href="{{ url_for('cliente_recibos', username=session.get('username')) }}" class="btn btn-success w-100">Ver Recibos</a>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card p-4 shadow-sm h-100">
+        <h5 class="card-title">Promociones</h5>
+        <p class="card-text">Descubre nuestras promociones vigentes y aprovecha descuentos.</p>
+        <a href="{{ url_for('cliente_promociones', username=session.get('username')) }}" class="btn btn-warning text-white w-100">Ver Promociones</a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
