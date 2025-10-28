@@ -22,10 +22,11 @@ app.secret_key = "1379"
 # Leer configuración de base de datos desde variables de entorno si están disponibles.
 db_user = os.getenv('DB_USER')
 if db_user:
-    db_password = os.getenv('DB_PASSWORD', '')
-    db_host = os.getenv('DB_HOST', 'localhost')
-    db_name = os.getenv('DB_NAME', '')
-    db_port = os.getenv('DB_PORT')
+    db_user = os.getenv('DB_USER', '437867')  # tu usuario MySQL
+    db_password = os.getenv('DB_PASSWORD', 'U4C9FKrw')  # cambia esto
+    db_host = os.getenv('DB_HOST', 'mysql-fabianmedina.alwaysdata.net')  # host AlwaysData
+    db_name = os.getenv('DB_NAME', 'fabianmedina_miapp')  # nombre de la base de datos
+    db_port = os.getenv('DB_PORT', '')  # no es obligatorio para AlwaysData
     if db_port:
         app.config['SQLALCHEMY_DATABASE_URI'] = f"mysql+pymysql://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}"
     else:
