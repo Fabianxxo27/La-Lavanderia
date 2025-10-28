@@ -89,7 +89,7 @@ def login():
         password = request.form.get('password', '').strip()
 
         user = run_query(
-            "SELECT username, password, rol FROM USUARIO WHERE username = :u",
+            "SELECT username, password, rol FROM usuario WHERE username = :u",
             {"u": username},
             fetchone=True
         )
@@ -144,13 +144,13 @@ def registro():
         try:
             # Verificar si el username ya 
             existing_user = run_query(
-                "SELECT id_usuario FROM USUARIO WHERE username = :u",
+                "SELECT id_usuario FROM usuario WHERE username = :u",
                 {"u": username},
                 fetchone=True
             )
-            # Verificar que el email no esté ya registrado en USUARIO
+            # Verificar que el email no esté ya registrado en usuario
             existing_email = run_query(
-                "SELECT id_usuario FROM USUARIO WHERE email = :e",
+                "SELECT id_usuario FROM usuario WHERE email = :e",
                 {"e": email},
                 fetchone=True
             )
@@ -163,7 +163,7 @@ def registro():
 
             # Insertar el nuevo usuario
             run_query(
-                "INSERT INTO USUARIO (nombre, username, password, rol, email) VALUES (:n, :u, :p, :r, :e)",
+                "INSERT INTO usuario (nombre, username, password, rol, email) VALUES (:n, :u, :p, :r, :e)",
                 {
                     "n": nombre,
                     "u": username,
@@ -214,9 +214,9 @@ def cliente_pedidos():
 
     pedidos = run_query("""
         SELECT p.id_pedido, p.fecha_ingreso, p.fecha_entrega, p.estado
-        FROM PEDIDO p
+        FROM pedido p
         LEFT JOIN CLIENTE c ON p.id_cliente = c.id_cliente
-        LEFT JOIN USUARIO u ON u.email = c.email
+        LEFT JOIN usuario u ON u.email = c.email
         WHERE u.username = :u
         ORDER BY p.fecha_ingreso DESC
     """, {"u": username}, fetchall=True)
@@ -246,8 +246,8 @@ def cliente_recibos():
 
     recibos = run_query("""
         SELECT r.id_recibo, r.id_pedido, r.monto, r.fecha
-        FROM RECIBO r
-        LEFT JOIN USUARIO u ON r.id_cliente = u.id_usuario
+        FROM recibo r
+        LEFT JOIN usuario u ON r.id_cliente = u.id_usuario
         WHERE u.username = :u
         ORDER BY r.fecha DESC
     """, {"u": username}, fetchall=True)
@@ -269,7 +269,7 @@ def cliente_promociones():
     # Promociones generales activas
     promociones = run_query("""
         SELECT id_promocion, descripcion, descuento, fecha_inicio, fecha_fin
-        FROM PROMOCION
+        FROM promocion
         WHERE fecha_fin >= CURDATE()
         ORDER BY fecha_inicio DESC
     """, fetchall=True) or []
@@ -277,7 +277,7 @@ def cliente_promociones():
     # Calcular promoción personalizada: 1% acumulativo por cada pedido del cliente (si tiene >=1 pedidos)
     # Contar pedidos asociados al usuario (a través de CLIENTE.email)
     count_row = run_query(
-        "SELECT COUNT(*) FROM PEDIDO p JOIN CLIENTE c ON p.id_cliente = c.id_cliente JOIN USUARIO u ON u.email = c.email WHERE u.username = :u",
+        "SELECT COUNT(*) FROM pedido p JOIN cliente c ON p.id_cliente = c.id_cliente JOIN usuario u ON u.email = c.email WHERE u.username = :u",
         {"u": username},
         fetchone=True
     )
@@ -310,16 +310,16 @@ def agregar_pedido():
         flash('Inicia sesión para crear un pedido.', 'warning')
         return redirect(url_for('login'))
 
-    # Obtener lista de 'clientes' desde la tabla USUARIO para admin (usuarios con rol 'cliente')
+    # Obtener lista de 'clientes' desde la tabla usuario para admin (usuarios con rol 'cliente')
     clients = None
     if rol == 'administrador':
-        users = run_query("SELECT id_usuario, nombre, username, email FROM USUARIO WHERE rol = 'cliente' ORDER BY nombre", fetchall=True)
+        users = run_query("SELECT id_usuario, nombre, username, email FROM usuario WHERE rol = 'cliente' ORDER BY nombre", fetchall=True)
         clients = [(u[0], f"{u[1]} ({u[2]})") for u in users] if users else []
 
     if request.method == 'POST':
-        # Determinar id_cliente: si admin, viene del form; si cliente, buscar por email en USUARIO->CLIENTE
+        # Determinar id_cliente: si admin, viene del form; si cliente, buscar por email en usuario->CLIENTE
         if rol == 'administrador':
-            # El admin selecciona un USUARIO (id_usuario). Necesitamos mapearlo a CLIENTE.id_cliente
+            # El admin selecciona un usuario (id_usuario). Necesitamos mapearlo a CLIENTE.id_cliente
             selected_uid = request.form.get('id_cliente')
             if not selected_uid:
                 flash('Selecciona un cliente (usuario).', 'warning')
@@ -332,7 +332,7 @@ def agregar_pedido():
 
             # Obtener datos del usuario
             user_row = run_query(
-                "SELECT nombre, email FROM USUARIO WHERE id_usuario = :uid",
+                "SELECT nombre, email FROM usuario WHERE id_usuario = :uid",
                 {"uid": uid},
                 fetchone=True
             )
@@ -347,14 +347,14 @@ def agregar_pedido():
 
             # Buscar CLIENTE por email
             client_row = run_query(
-                "SELECT id_cliente FROM CLIENTE WHERE email = :e",
+                "SELECT id_cliente FROM cliente WHERE email = :e",
                 {"e": user_email},
                 fetchone=True
             )
             if client_row:
                 id_cliente = client_row[0]
             else:
-                # Crear CLIENTE a partir del USUARIO
+                # Crear CLIENTE a partir del usuario
                 try:
                     run_query(
                         "INSERT INTO CLIENTE (nombre, telefono, email, direccion) VALUES (:n, NULL, :e, NULL)",
@@ -362,7 +362,7 @@ def agregar_pedido():
                         commit=True
                     )
                     new_row = run_query(
-                        "SELECT id_cliente FROM CLIENTE WHERE email = :e ORDER BY id_cliente DESC LIMIT 1",
+                        "SELECT id_cliente FROM cliente WHERE email = :e ORDER BY id_cliente DESC LIMIT 1",
                         {"e": user_email},
                         fetchone=True
                     )
@@ -372,20 +372,20 @@ def agregar_pedido():
 
         else:
             # intentar mapear usuario a cliente por email
-            # Primero asegurarnos que el usuario existe en USUARIO
-            user_row = run_query("SELECT nombre, email FROM USUARIO WHERE username = :u", {"u": username}, fetchone=True)
+            # Primero asegurarnos que el usuario existe en usuario
+            user_row = run_query("SELECT nombre, email FROM usuario WHERE username = :u", {"u": username}, fetchone=True)
             if not user_row:
                 flash('Usuario en sesión no encontrado en la base de datos. Inicia sesión nuevamente o contacta al administrador.', 'danger')
                 return redirect(url_for('login'))
 
             id_cliente_row = run_query(
-                "SELECT c.id_cliente FROM CLIENTE c JOIN USUARIO u ON u.email = c.email WHERE u.username = :u",
+                "SELECT c.id_cliente FROM cliente c JOIN usuario u ON u.email = c.email WHERE u.username = :u",
                 {"u": username},
                 fetchone=True
             )
             id_cliente = id_cliente_row[0] if id_cliente_row else None
 
-            # Si no existe un CLIENTE con el mismo email, crear uno a partir del USUARIO (si tiene email)
+            # Si no existe un CLIENTE con el mismo email, crear uno a partir del usuario (si tiene email)
             if not id_cliente:
                 user_nombre, user_email = user_row[0], user_row[1]
                 if not user_email:
@@ -399,7 +399,7 @@ def agregar_pedido():
                     )
                     # recuperar id_cliente recién creado
                     new_row = run_query(
-                        "SELECT id_cliente FROM CLIENTE WHERE email = :e ORDER BY id_cliente DESC LIMIT 1",
+                        "SELECT id_cliente FROM cliente WHERE email = :e ORDER BY id_cliente DESC LIMIT 1",
                         {"e": user_email},
                         fetchone=True
                     )
@@ -489,7 +489,7 @@ def agregar_pedido():
 @app.route('/agregar_cliente', methods=['GET', 'POST'])
 def agregar_cliente():
     """
-    Crear un nuevo cliente como un USUARIO con rol 'cliente'.
+    Crear un nuevo cliente como un usuario con rol 'cliente'.
     Campos esperados: nombre, username, email, password
     """
     if request.method == 'POST':
@@ -503,11 +503,11 @@ def agregar_cliente():
             return redirect(url_for('agregar_cliente'))
 
         # Verificar que el username no exista y que el email no esté usado
-        exists = run_query("SELECT id_usuario FROM USUARIO WHERE username = :u", {"u": username}, fetchone=True)
+        exists = run_query("SELECT id_usuario FROM usuario WHERE username = :u", {"u": username}, fetchone=True)
         if exists:
             flash('El nombre de usuario ya existe. Elige otro.', 'danger')
             return redirect(url_for('agregar_cliente'))
-        exists_email = run_query("SELECT id_usuario FROM USUARIO WHERE email = :e", {"e": email}, fetchone=True)
+        exists_email = run_query("SELECT id_usuario FROM usuario WHERE email = :e", {"e": email}, fetchone=True)
         if exists_email:
             flash('El email ya está en uso por otro usuario.', 'danger')
             return redirect(url_for('agregar_cliente'))
@@ -515,7 +515,7 @@ def agregar_cliente():
         hashed = generate_password_hash(password)
         try:
             run_query(
-                "INSERT INTO USUARIO (nombre, username, password, rol, email) VALUES (:n, :u, :p, :r, :e)",
+                "INSERT INTO usuario (nombre, username, password, rol, email) VALUES (:n, :u, :p, :r, :e)",
                 {"n": nombre, "u": username, "p": hashed, "r": 'cliente', "e": email},
                 commit=True
             )
@@ -532,18 +532,18 @@ def agregar_cliente():
 @app.route('/clientes', methods=['GET', 'POST'])
 def clientes():
     """
-    Mostrar todos los clientes basados en la tabla USUARIO (rol='cliente').
+    Mostrar todos los clientes basados en la tabla usuario (rol='cliente').
     """
     if request.method == 'POST':
         q = request.form.get('q', '').strip()
         data = run_query(
-            "SELECT id_usuario, nombre, username, email FROM USUARIO WHERE rol = 'cliente' AND (nombre LIKE :q OR email LIKE :q OR username LIKE :q)",
+            "SELECT id_usuario, nombre, username, email FROM usuario WHERE rol = 'cliente' AND (nombre LIKE :q OR email LIKE :q OR username LIKE :q)",
             {"q": f"%{q}%"},
             fetchall=True
         )
     else:
         data = run_query(
-            "SELECT id_usuario, nombre, username, email FROM USUARIO WHERE rol = 'cliente' ORDER BY id_usuario DESC",
+            "SELECT id_usuario, nombre, username, email FROM usuario WHERE rol = 'cliente' ORDER BY id_usuario DESC",
             fetchall=True
         )
     return render_template('clientes.html', clients=data)
@@ -555,7 +555,7 @@ def clientes():
 @app.route('/actualizar_cliente/<int:id_cliente>', methods=['GET', 'POST'])
 def actualizar_cliente(id_cliente):
     """
-    Actualiza un cliente que en realidad está en la tabla USUARIO (id_cliente == id_usuario).
+    Actualiza un cliente que en realidad está en la tabla usuario (id_cliente == id_usuario).
     """
     if request.method == 'POST':
         nombre = request.form.get('nombre')
@@ -569,7 +569,7 @@ def actualizar_cliente(id_cliente):
 
         try:
             # Evitar colisiones de username con otros usuarios
-            existing = run_query("SELECT id_usuario FROM USUARIO WHERE username = :u AND id_usuario <> :id", {"u": username, "id": id_cliente}, fetchone=True)
+            existing = run_query("SELECT id_usuario FROM usuario WHERE username = :u AND id_usuario <> :id", {"u": username, "id": id_cliente}, fetchone=True)
             if existing:
                 flash('El username ya está en uso por otro usuario.', 'danger')
                 return redirect(url_for('actualizar_cliente', id_cliente=id_cliente))
@@ -577,13 +577,13 @@ def actualizar_cliente(id_cliente):
             if password:
                 hashed = generate_password_hash(password)
                 run_query(
-                    "UPDATE USUARIO SET nombre = :n, username = :u, email = :e, password = :p WHERE id_usuario = :id",
+                    "UPDATE usuario SET nombre = :n, username = :u, email = :e, password = :p WHERE id_usuario = :id",
                     {"n": nombre, "u": username, "e": email, "p": hashed, "id": id_cliente},
                     commit=True
                 )
             else:
                 run_query(
-                    "UPDATE USUARIO SET nombre = :n, username = :u, email = :e WHERE id_usuario = :id",
+                    "UPDATE usuario SET nombre = :n, username = :u, email = :e WHERE id_usuario = :id",
                     {"n": nombre, "u": username, "e": email, "id": id_cliente},
                     commit=True
                 )
@@ -595,7 +595,7 @@ def actualizar_cliente(id_cliente):
             return redirect(url_for('actualizar_cliente', id_cliente=id_cliente))
 
     # GET
-    row = run_query("SELECT id_usuario, nombre, username, email FROM USUARIO WHERE id_usuario = :id", {"id": id_cliente}, fetchone=True)
+    row = run_query("SELECT id_usuario, nombre, username, email FROM usuario WHERE id_usuario = :id", {"id": id_cliente}, fetchone=True)
     if not row:
         flash('Usuario no encontrado.', 'danger')
         return redirect(url_for('clientes'))
@@ -605,7 +605,7 @@ def actualizar_cliente(id_cliente):
 @app.route('/eliminar_cliente/<int:id_cliente>', methods=['POST'])
 def eliminar_cliente(id_cliente):
     try:
-        run_query("DELETE FROM USUARIO WHERE id_usuario = :id", {"id": id_cliente}, commit=True)
+        run_query("DELETE FROM usuario WHERE id_usuario = :id", {"id": id_cliente}, commit=True)
         flash('Usuario (cliente) eliminado correctamente.', 'success')
     except Exception as e:
         flash(f'Error al eliminar usuario: {e}', 'danger')
@@ -619,7 +619,7 @@ def eliminar_cliente(id_cliente):
 def pedidos():
     pedidos = run_query("""
         SELECT p.id_pedido, p.fecha_ingreso, p.fecha_entrega, p.estado, c.nombre 
-        FROM PEDIDO p
+        FROM pedido p
         LEFT JOIN CLIENTE c ON p.id_cliente = c.id_cliente
         ORDER BY p.id_pedido DESC
     """, fetchall=True)
@@ -631,7 +631,7 @@ def pedidos():
 def eliminar_pedido(id_pedido):
     """Eliminar un pedido (y sus prendas por FK)."""
     try:
-        run_query("DELETE FROM PEDIDO WHERE id_pedido = :id", {"id": id_pedido}, commit=True)
+        run_query("DELETE FROM pedido WHERE id_pedido = :id", {"id": id_pedido}, commit=True)
         flash('Pedido eliminado correctamente.', 'success')
     except Exception as e:
         flash(f'Error al eliminar pedido: {e}', 'danger')
@@ -651,19 +651,19 @@ def reportes():
     q = (request.args.get('q') or '').strip()
     if q:
         raw_users = run_query(
-            "SELECT id_usuario, nombre, username, rol, email FROM USUARIO WHERE nombre LIKE :q ORDER BY id_usuario DESC",
+            "SELECT id_usuario, nombre, username, rol, email FROM usuario WHERE nombre LIKE :q ORDER BY id_usuario DESC",
             {"q": f"%{q}%"},
             fetchall=True
         ) or []
     else:
-        raw_users = run_query("SELECT id_usuario, nombre, username, rol, email FROM USUARIO ORDER BY id_usuario DESC", fetchall=True) or []
+        raw_users = run_query("SELECT id_usuario, nombre, username, rol, email FROM usuario ORDER BY id_usuario DESC", fetchall=True) or []
 
     # Calcular pedidos_count y descuento acumulado por usuario (1% por pedido)
     usuarios = []
     for ru in raw_users:
         uid = ru[0]
         cnt_row = run_query(
-            "SELECT COUNT(*) FROM PEDIDO p JOIN CLIENTE c ON p.id_cliente = c.id_cliente JOIN USUARIO u ON u.email = c.email WHERE u.id_usuario = :uid",
+            "SELECT COUNT(*) FROM pedido p JOIN cliente c ON p.id_cliente = c.id_cliente JOIN usuario u ON u.email = c.email WHERE u.id_usuario = :uid",
             {"uid": uid},
             fetchone=True
         )
@@ -689,22 +689,22 @@ def reportes():
             # Obtener pedidos asociados al usuario (mediante CLIENTE.email)
             pedidos = run_query(
                 "SELECT p.id_pedido, p.fecha_ingreso, p.fecha_entrega, p.estado, p.id_cliente "
-                "FROM PEDIDO p JOIN CLIENTE c ON p.id_cliente = c.id_cliente JOIN USUARIO u ON u.email = c.email "
+                "FROM pedido p JOIN cliente c ON p.id_cliente = c.id_cliente JOIN usuario u ON u.email = c.email "
                 "WHERE u.id_usuario = :uid ORDER BY p.id_pedido DESC",
                 {"uid": uid},
                 fetchall=True
             ) or []
             # Obtener nombre/username del usuario seleccionado
-            usr = run_query("SELECT id_usuario, nombre, username FROM USUARIO WHERE id_usuario = :id", {"id": uid}, fetchone=True)
+            usr = run_query("SELECT id_usuario, nombre, username FROM usuario WHERE id_usuario = :id", {"id": uid}, fetchone=True)
             if usr:
                 pedidos_owner = {'id': usr[0], 'nombre': usr[1], 'username': usr[2]}
         except ValueError:
             pedidos = []
     else:
-        pedidos = run_query("SELECT id_pedido, fecha_ingreso, fecha_entrega, estado, id_cliente FROM PEDIDO ORDER BY id_pedido DESC", fetchall=True) or []
+        pedidos = run_query("SELECT id_pedido, fecha_ingreso, fecha_entrega, estado, id_cliente FROM pedido ORDER BY id_pedido DESC", fetchall=True) or []
 
     # Promociones
-    promociones = run_query("SELECT id_promocion, descripcion, descuento, fecha_inicio, fecha_fin FROM PROMOCION ORDER BY id_promocion DESC", fetchall=True) or []
+    promociones = run_query("SELECT id_promocion, descripcion, descuento, fecha_inicio, fecha_fin FROM promocion ORDER BY id_promocion DESC", fetchall=True) or []
 
     return render_template('reportes.html', usuarios=usuarios, pedidos=pedidos, promociones=promociones, q=q, pedidos_owner=pedidos_owner)
 
@@ -717,7 +717,7 @@ def reportes():
 def pedido_detalles(id_pedido):
     # Obtener pedido
     pedido = run_query(
-        "SELECT id_pedido, fecha_ingreso, fecha_entrega, estado, id_cliente FROM PEDIDO WHERE id_pedido = :id",
+        "SELECT id_pedido, fecha_ingreso, fecha_entrega, estado, id_cliente FROM pedido WHERE id_pedido = :id",
         {"id": id_pedido},
         fetchone=True
     )
@@ -727,7 +727,7 @@ def pedido_detalles(id_pedido):
 
     # Obtener nombre del cliente
     cliente = run_query(
-        "SELECT nombre FROM CLIENTE WHERE id_cliente = :id",
+        "SELECT nombre FROM cliente WHERE id_cliente = :id",
         {"id": pedido[4]},
         fetchone=True
     )
@@ -735,7 +735,7 @@ def pedido_detalles(id_pedido):
 
     # Obtener prendas asociadas
     prendas = run_query(
-        "SELECT id_prenda, tipo, descripcion, observaciones FROM PRENDA WHERE id_pedido = :id",
+        "SELECT id_prenda, tipo, descripcion, observaciones FROM prenda WHERE id_pedido = :id",
         {"id": id_pedido},
         fetchall=True
     ) or []
@@ -762,15 +762,15 @@ def actualizar_pedido(id_pedido):
         # Si el pedido se marca como completado, generar recibo automáticamente (si no existe aún)
         if nuevo_estado.lower() in ('completado', 'finalizado', 'entregado'):
             # Verificar si ya existe recibo para este pedido
-            existing = run_query("SELECT id_recibo FROM RECIBO WHERE id_pedido = :id", {"id": id_pedido}, fetchone=True)
+            existing = run_query("SELECT id_recibo FROM recibo WHERE id_pedido = :id", {"id": id_pedido}, fetchone=True)
             if not existing:
                 # contar prendas
-                cnt = run_query("SELECT COUNT(*) FROM PRENDA WHERE id_pedido = :id", {"id": id_pedido}, fetchone=True)
+                cnt = run_query("SELECT COUNT(*) FROM prenda WHERE id_pedido = :id", {"id": id_pedido}, fetchone=True)
                 prendas_count = int(cnt[0]) if cnt and cnt[0] is not None else 0
 
                 # recuperar usuario (id_usuario) a partir del pedido -> cliente -> usuario
                 usr = run_query(
-                    "SELECT u.id_usuario FROM USUARIO u JOIN CLIENTE c ON u.email = c.email JOIN PEDIDO p ON p.id_cliente = c.id_cliente WHERE p.id_pedido = :id",
+                    "SELECT u.id_usuario FROM usuario u JOIN cliente c ON u.email = c.email JOIN PEDIDO p ON p.id_cliente = c.id_cliente WHERE p.id_pedido = :id",
                     {"id": id_pedido},
                     fetchone=True
                 )
@@ -781,7 +781,7 @@ def actualizar_pedido(id_pedido):
                 descuento_pct = 0.0
                 if user_id_for_recibo:
                     cnt_row = run_query(
-                        "SELECT COUNT(*) FROM PEDIDO p JOIN CLIENTE c ON p.id_cliente = c.id_cliente JOIN USUARIO u ON u.email = c.email WHERE u.id_usuario = :uid",
+                        "SELECT COUNT(*) FROM pedido p JOIN cliente c ON p.id_cliente = c.id_cliente JOIN usuario u ON u.email = c.email WHERE u.id_usuario = :uid",
                         {"uid": user_id_for_recibo},
                         fetchone=True
                     )
@@ -854,7 +854,7 @@ def exportar_usuarios():
     if not _admin_only():
         flash('Acceso denegado.', 'danger')
         return redirect(url_for('index'))
-    data = run_query("SELECT id_usuario, nombre, username, rol, email FROM USUARIO ORDER BY id_usuario DESC", fetchall=True) or []
+    data = run_query("SELECT id_usuario, nombre, username, rol, email FROM usuario ORDER BY id_usuario DESC", fetchall=True) or []
     cols = ['id_usuario', 'nombre', 'username', 'rol', 'email']
     return _make_excel_response(data, cols, 'usuarios')
 
@@ -864,7 +864,7 @@ def exportar_pedidos():
     if not _admin_only():
         flash('Acceso denegado.', 'danger')
         return redirect(url_for('index'))
-    data = run_query("SELECT id_pedido, fecha_ingreso, fecha_entrega, estado, id_cliente FROM PEDIDO ORDER BY id_pedido DESC", fetchall=True) or []
+    data = run_query("SELECT id_pedido, fecha_ingreso, fecha_entrega, estado, id_cliente FROM pedido ORDER BY id_pedido DESC", fetchall=True) or []
     cols = ['id_pedido', 'fecha_ingreso', 'fecha_entrega', 'estado', 'id_cliente']
     return _make_excel_response(data, cols, 'pedidos')
 
@@ -874,7 +874,7 @@ def exportar_promociones():
     if not _admin_only():
         flash('Acceso denegado.', 'danger')
         return redirect(url_for('index'))
-    data = run_query("SELECT id_promocion, descripcion, descuento, fecha_inicio, fecha_fin FROM PROMOCION ORDER BY id_promocion DESC", fetchall=True) or []
+    data = run_query("SELECT id_promocion, descripcion, descuento, fecha_inicio, fecha_fin FROM promocion ORDER BY id_promocion DESC", fetchall=True) or []
     cols = ['id_promocion', 'descripcion', 'descuento', 'fecha_inicio', 'fecha_fin']
     return _make_excel_response(data, cols, 'promociones')
 
@@ -883,7 +883,7 @@ def exportar_promociones():
 def agregar_prenda(id_pedido):
     """Añade una prenda al pedido indicado por id_pedido."""
     # Validar que el pedido exista
-    pedido = run_query("SELECT id_pedido FROM PEDIDO WHERE id_pedido = :id", {"id": id_pedido}, fetchone=True)
+    pedido = run_query("SELECT id_pedido FROM pedido WHERE id_pedido = :id", {"id": id_pedido}, fetchone=True)
     if not pedido:
         flash('Pedido no encontrado.', 'danger')
         return redirect(url_for('pedidos'))
