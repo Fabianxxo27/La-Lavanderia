@@ -212,7 +212,7 @@ def cliente_pedidos():
         flash("No se pudo identificar al usuario.", "danger")
         return redirect(url_for('login'))
 
-    pedidos = run_query("""
+    pedido = run_query("""
         SELECT p.id_pedido, p.fecha_ingreso, p.fecha_entrega, p.estado
         FROM pedido p
         LEFT JOIN cliente c ON p.id_cliente = c.id_cliente
@@ -221,7 +221,7 @@ def cliente_pedidos():
         ORDER BY p.fecha_ingreso DESC
     """, {"u": username}, fetchall=True)
 
-    return render_template('cliente_pedidos.html', pedidos=pedido, username=username)
+    return render_template('cliente_pedidos.html', pedido=pedido, username=username)
 
 
 # -----------------------------------------------
