@@ -215,7 +215,7 @@ def cliente_pedidos():
     pedidos = run_query("""
         SELECT p.id_pedido, p.fecha_ingreso, p.fecha_entrega, p.estado
         FROM pedido p
-        LEFT JOIN CLIENTE c ON p.id_cliente = c.id_cliente
+        LEFT JOIN cliente c ON p.id_cliente = c.id_cliente
         LEFT JOIN usuario u ON u.email = c.email
         WHERE u.username = :u
         ORDER BY p.fecha_ingreso DESC
@@ -357,7 +357,7 @@ def agregar_pedido():
                 # Crear CLIENTE a partir del usuario
                 try:
                     run_query(
-                        "INSERT INTO CLIENTE (nombre, telefono, email, direccion) VALUES (:n, NULL, :e, NULL)",
+                        "INSERT INTO cliente (nombre, telefono, email, direccion) VALUES (:n, NULL, :e, NULL)",
                         {"n": user_nombre, "e": user_email},
                         commit=True
                     )
@@ -393,7 +393,7 @@ def agregar_pedido():
                     return redirect(url_for('agregar_pedido'))
                 try:
                     run_query(
-                        "INSERT INTO CLIENTE (nombre, telefono, email, direccion) VALUES (:n, NULL, :e, NULL)",
+                        "INSERT INTO cliente (nombre, telefono, email, direccion) VALUES (:n, NULL, :e, NULL)",
                         {"n": user_nombre, "e": user_email},
                         commit=True
                     )
