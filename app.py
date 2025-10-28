@@ -443,7 +443,7 @@ def agregar_pedido():
             # Insertar pedido (la tabla PEDIDO en el esquema contiene id_pedido, fecha_ingreso, fecha_entrega, estado, id_cliente)
             # Insertar pedido y obtener id_pedido de forma fiable
             id_pedido = run_query(
-                "INSERT INTO PEDIDO (id_cliente, fecha_ingreso, fecha_entrega, estado) VALUES (:id_cliente, NOW(), :fecha_entrega, :estado)",
+                "INSERT INTO pedido (id_cliente, fecha_ingreso, fecha_entrega, estado) VALUES (:id_cliente, NOW(), :fecha_entrega, :estado)",
                 {"id_cliente": id_cliente, "fecha_entrega": fecha_entrega, "estado": estado},
                 commit=True,
                 get_lastrowid=True
@@ -463,7 +463,7 @@ def agregar_pedido():
                     o_val = (observaciones[i] if i < len(observaciones) else '').strip()
                     try:
                         run_query(
-                            "INSERT INTO PRENDA (tipo, descripcion, observaciones, id_pedido) VALUES (:tipo, :desc, :obs, :id)",
+                            "INSERT INTO prenda (tipo, descripcion, observaciones, id_pedido) VALUES (:tipo, :desc, :obs, :id)",
                             {"tipo": t_val, "desc": d_val, "obs": o_val, "id": id_pedido},
                             commit=True
                         )
