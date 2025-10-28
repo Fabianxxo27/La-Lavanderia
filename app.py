@@ -212,7 +212,7 @@ def cliente_pedidos():
         flash("No se pudo identificar al usuario.", "danger")
         return redirect(url_for('login'))
 
-    pedido = run_query("""
+    pedidos = run_query("""
         SELECT p.id_pedido, p.fecha_ingreso, p.fecha_entrega, p.estado
         FROM pedido p
         LEFT JOIN cliente c ON p.id_cliente = c.id_cliente
@@ -221,7 +221,7 @@ def cliente_pedidos():
         ORDER BY p.fecha_ingreso DESC
     """, {"u": username}, fetchall=True)
 
-    return render_template('cliente_pedidos.html', pedidos=pedidos, username=username)
+    return render_template('cliente_pedidos.html', pedidos=pedido, username=username)
 
 
 # -----------------------------------------------
@@ -616,15 +616,15 @@ def eliminar_cliente(id_cliente):
 # PEDIDOS
 # -----------------------------------------------
 @app.route('/pedidos', methods=['GET', 'POST'])
-def pedidos():
-    pedidos = run_query("""
+def pedido():
+    pedido = run_query("""
         SELECT p.id_pedido, p.fecha_ingreso, p.fecha_entrega, p.estado, c.nombre 
         FROM pedido p
         LEFT JOIN CLIENTE c ON p.id_cliente = c.id_cliente
         ORDER BY p.id_pedido DESC
     """, fetchall=True)
 
-    return render_template('pedidos.html', pedidos=pedidos)
+    return render_template('pedido.html', pedido=pedido)
 
 
 @app.route('/eliminar_pedido/<int:id_pedido>', methods=['POST'])
@@ -681,7 +681,7 @@ def reportes():
 
     # Pedidos: si se pasa user_id mostrar solo pedidos de ese usuario
     user_id = request.args.get('user_id')
-    pedidos = []
+    pedido = []
     pedidos_owner = None
     if user_id:
         try:
@@ -706,7 +706,7 @@ def reportes():
     # Promociones
     promociones = run_query("SELECT id_promocion, descripcion, descuento, fecha_inicio, fecha_fin FROM promocion ORDER BY id_promocion DESC", fetchall=True) or []
 
-    return render_template('reportes.html', usuarios=usuarios, pedidos=pedidos, promociones=promociones, q=q, pedidos_owner=pedidos_owner)
+    return render_template('reportes.html', usuarios=usuarios, pedidos=pedido, promociones=promociones, q=q, pedidos_owner=pedidos_owner)
 
 
 # -----------------------------------------------
