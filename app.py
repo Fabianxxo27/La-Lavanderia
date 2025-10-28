@@ -212,7 +212,7 @@ def cliente_pedidos():
         flash("No se pudo identificar al usuario.", "danger")
         return redirect(url_for('login'))
 
-    pedidos = run_query("""
+    pedido = run_query("""
         SELECT p.id_pedido, p.fecha_ingreso, p.fecha_entrega, p.estado
         FROM pedido p
         LEFT JOIN cliente c ON p.id_cliente = c.id_cliente
