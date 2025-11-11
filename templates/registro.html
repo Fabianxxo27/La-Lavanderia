@@ -10,16 +10,25 @@
   
   <style>
     body {
-      background-color: #f8f9fa; /* fondo claro */
-      color: #343a40;
+      background: linear-gradient(180deg, #d1e77d 0%, #a6cc48 100%);
+      color: #222;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen,
+        Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+      margin: 0;
+      padding: 0;
     }
     .site-header { 
       position: sticky; top: 0; z-index: 1100; 
       backdrop-filter: blur(6px); 
-      background: #ffffffcc; 
+      background: linear-gradient(180deg, #a6cc48 0%, #84af1d 100%) !important;
+      border-bottom: 3px solid #1a4e7b;
       box-shadow: 0 2px 6px rgba(0,0,0,0.1);
     }
-    .brand { font-weight:700; letter-spacing:0.3px; color: #007BFF; }
+    .brand { 
+      font-weight:700; 
+      letter-spacing:0.3px; 
+      color: #1a4e7b !important; 
+    }
     .register-card {
       max-width: 450px;
       margin: 4rem auto;
@@ -29,7 +38,66 @@
       box-shadow: 0 10px 30px rgba(0,0,0,0.1);
       transition: transform .2s ease, box-shadow .2s ease;
     }
-    .register-card:hover { transform: translateY(-5px); box-shadow: 0 20px 40px rgba(0,0,0,0.15); }
+    .register-card:hover { 
+      transform: translateY(-5px); 
+      box-shadow: 0 20px 40px rgba(0,0,0,0.15); 
+    }
+    .text-primary {
+      color: #0f33b0 !important;
+    }
+    .text-success {
+      color: #a6cc48 !important;
+    }
+    .btn-outline-primary {
+      border-color: #1a4e7b;
+      color: #1a4e7b;
+      font-weight: 700;
+      letter-spacing: 0.7px;
+      transition: all 0.3s ease;
+    }
+    .btn-outline-primary:hover {
+      background-color: #1a4e7b;
+      color: #fff;
+    }
+    .btn-success {
+      background-color: #a6cc48;
+      border-color: #7dbc30;
+      font-weight: 700;
+      letter-spacing: 0.7px;
+      transition: all 0.3s ease;
+    }
+    .btn-success:hover {
+      background-color: #7dbc30;
+      border-color: #5f8022;
+      color: #fff;
+    }
+    .btn-back {
+      border-color: #1a4e7b;
+      color: #1a4e7b;
+      font-weight: 700;
+      letter-spacing: 0.7px;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .btn-back:hover {
+      background-color: #1a4e7b;
+      color: #fff;
+    }
+    .btn-back img {
+      width: 20px;
+      height: 20px;
+    }
+    footer {
+      background: #f8f9fa;
+      color: #35472e;
+      font-weight: 600;
+      text-align: center;
+      padding: 1rem 0;
+      border-top: 3px solid #84af1d;
+      margin-top: 3rem;
+    }
   </style>
 </head>
 <body>
@@ -38,10 +106,14 @@
   <header class="site-header shadow-sm">
     <div class="container d-flex align-items-center justify-content-between py-3">
       <a href="{{ url_for('index') }}" class="d-flex align-items-center gap-2 text-decoration-none">
-        <img src="{{ url_for('static', filename='images/lavanderia.jpg') }}" alt="logo" style="width:48px;height:48px;border-radius:8px;border:2px solid #007BFF;">
+        <img src="{{ url_for('static', filename='images/logo.png') }}" alt="logo" style="width:48px;height:48px;border-radius:8px;border:2px solid #84af1d;">
         <div class="brand h5 mb-0">La Lavandería</div>
       </a>
       <div class="d-flex gap-2">
+        <a href="javascript:history.back()" class="btn btn-outline-primary btn-back" title="Regresar">
+          <img src="https://cdn-icons-png.flaticon.com/512/271/271220.png" alt="Regresar" />
+          Regresar
+        </a>
         <a href="{{ url_for('login') }}" class="btn btn-outline-primary">Iniciar sesión</a>
         <a href="{{ url_for('registro') }}" class="btn btn-success">Registrarse</a>
       </div>
@@ -106,7 +178,7 @@
   </main>
 
   <!-- Footer -->
-  <footer class="text-center py-4 mt-5" style="background:#007BFF; color:white;">
+  <footer class="text-center py-4 mt-5">
     <small>&copy; {{ now().year }} La Lavandería — Todos los derechos reservados</small>
   </footer>
 
