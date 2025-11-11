@@ -177,10 +177,7 @@ def registro():
                 commit=True
             )
 
-            # Enviar correo de confirmación
-            send_welcome_email(email, username)
-
-            flash("Usuario registrado exitosamente. Revisa tu correo.", "success")
+            flash("Usuario registrado exitosamente.", "success")
             return redirect(url_for("login"))
 
         except Exception as e:
