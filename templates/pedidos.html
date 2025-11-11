@@ -25,11 +25,13 @@
       <td>{{ p[1] }}</td>
       <td>{{ p[2] or '' }}</td>
       <td>{{ p[3] }}</td>
-  <td>{{ p[4] or 'Sin cliente' }}</td>
+      <td>{{ p[4] or 'Sin cliente' }}</td>
       <td>
-        <a href="{{ url_for('pedido_detalles', id_pedido=p[0]) }}" class="btn btn-sm btn-info">Ver</a>
-        <form action="{{ url_for('eliminar_pedido', id_pedido=p[0]) }}" method="post" style="display:inline-block" onsubmit="return confirm('Eliminar pedido?')">
-          <button class="btn btn-sm btn-danger">Eliminar</button>
+        <a href="{{ url_for('pedido_detalles', id_pedido=p[0]) }}" class="btn btn-sm btn-accion btn-ver">Ver</a>
+        <form action="{{ url_for('eliminar_pedido', id_pedido=p[0]) }}" method="post" 
+              style="display:inline-block; background:none; border:none; padding:0; margin:0;" 
+              onsubmit="return confirm('¿Eliminar pedido?')">
+          <button class="btn btn-sm btn-accion btn-eliminar">Eliminar</button>
         </form>
       </td>
     </tr>
@@ -38,4 +40,46 @@
     {% endfor %}
   </tbody>
 </table>
+
+<style>
+  /* --- Botones uniformes dentro de tablas --- */
+  .btn-accion {
+    color: #fff !important;
+    border: none !important;
+    border-radius: 6px;
+    padding: 6px 12px;
+    font-size: 14px;
+    transition: background-color 0.3s, transform 0.2s;
+  }
+
+  .btn-accion:hover {
+    transform: scale(1.05);
+  }
+
+  .btn-ver {
+    background-color: #1a4e7b !important; /* azul oscuro similar al anterior */
+  }
+
+  .btn-ver:hover {
+    background-color: #163e62 !important;
+  }
+
+  .btn-eliminar {
+    background-color: #a6cc48 !important; /* verde limón igual al anterior */
+  }
+
+  .btn-eliminar:hover {
+    background-color: #8db53f !important;
+  }
+
+  /* 🔧 Quitar fondo blanco del form */
+  td form {
+    display: inline-block;
+    background: transparent !important;
+  }
+
+  td form button {
+    background: none;
+  }
+</style>
 {% endblock %}
