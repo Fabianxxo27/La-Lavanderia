@@ -1,0 +1,87 @@
+l{% extends "base.html" %}
+{% block title %}Reportes - La Lavandería{% endblock %}
+
+{% block content %}
+<h2>Reportes</h2>
+<div class="d-flex justify-content-between align-items-center">
+  <h4 class="mt-4">Usuarios</h4>
+  <form class="d-flex" method="get" action="{{ url_for('reportes') }}">
+    <input class="form-control me-2" type="search" name="q" placeholder="Buscar por nombre" value="{{ q or '' }}">
+    <button class="btn btn-outline-primary" type="submit">Buscar</button>
+  </form>
+</div>
+<table class="table table-striped">
+  <thead>
+    <tr><th>ID</th><th>Nombre</th><th>Username</th><th>Rol</th><th>Email</th><th>Pedidos</th><th>Descuento</th><th>Acciones</th></tr>
+  </thead>
+  <tbody>
+    {% for u in usuarios %}
+    <tr>
+      <td>{{ u.id }}</td>
+      <td>{{ u.nombre }}</td>
+      <td>{{ u.username }}</td>
+      <td>{{ u.rol }}</td>
+      <td>{{ u.email }}</td>
+      <td>{{ u.pedidos_count }}</td>
+      <td>{{ u.descuento }}%</td>
+      <td>
+        <a class="btn btn-sm btn-outline-primary" href="{{ url_for('reportes') }}?user_id={{ u.id }}">Ver pedidos</a>
+      </td>
+    </tr>
+    {% else %}
+    <tr><td colspan="8">No hay usuarios.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+{% if pedidos_owner %}
+  <h4 class="mt-4">Pedidos de {{ pedidos_owner.username }} ({{ pedidos_owner.nombre }})</h4>
+{% else %}
+  <h4 class="mt-4">Pedidos</h4>
+{% endif %}
+<table class="table table-striped">
+  <thead>
+    <tr><th>ID</th><th>Fecha ingreso</th><th>Fecha entrega</th><th>Estado</th><th>ID Cliente</th></tr>
+  </thead>
+  <tbody>
+    {% for p in pedidos %}
+    <tr>
+      <td>{{ p[0] }}</td>
+      <td>{{ p[1] }}</td>
+      <td>{{ p[2] or '' }}</td>
+      <td>{{ p[3] }}</td>
+      <td>{{ p[4] }}</td>
+    </tr>
+    {% else %}
+    <tr><td colspan="5">No hay pedidos.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<h4 class="mt-4">Promociones</h4>
+<table class="table table-striped">
+  <thead>
+    <tr><th>ID</th><th>Descripcion</th><th>Descuento</th><th>Inicio</th><th>Fin</th></tr>
+  </thead>
+  <tbody>
+    {% for pr in promociones %}
+    <tr>
+      <td>{{ pr[0] }}</td>
+      <td>{{ pr[1] }}</td>
+      <td>{{ pr[2] }}%</td>
+      <td>{{ pr[3] }}</td>
+      <td>{{ pr[4] }}</td>
+    </tr>
+    {% else %}
+    <tr><td colspan="5">No hay promociones.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<div class="mt-4 d-flex gap-2">
+  <a class="btn btn-outline-success" href="{{ url_for('exportar_usuarios') }}">Exportar Usuarios (Excel)</a>
+  <a class="btn btn-outline-success" href="{{ url_for('exportar_pedidos') }}">Exportar Pedidos (Excel)</a>
+  <a class="btn btn-outline-success" href="{{ url_for('exportar_promociones') }}">Exportar Promociones (Excel)</a>
+</div>
+
+{% endblock %}

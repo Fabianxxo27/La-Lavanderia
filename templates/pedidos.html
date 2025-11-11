@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Pedidos - La Lavandería{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h2>Pedidos</h2>
+  <a href="{{ url_for('agregar_pedido') }}" class="btn btn-success">Crear Pedido</a>
+</div>
+
+<table class="table table-hover">
+  <thead>
+    <tr>
+      <th>ID</th>
+      <th>Fecha ingreso</th>
+      <th>Fecha entrega</th>
+      <th>Estado</th>
+      <th>Cliente</th>
+      <th>Acciones</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for p in pedidos %}
+    <tr>
+      <td>{{ p[0] }}</td>
+      <td>{{ p[1] }}</td>
+      <td>{{ p[2] or '' }}</td>
+      <td>{{ p[3] }}</td>
+  <td>{{ p[4] or 'Sin cliente' }}</td>
+      <td>
+        <a href="{{ url_for('pedido_detalles', id_pedido=p[0]) }}" class="btn btn-sm btn-info">Ver</a>
+        <form action="{{ url_for('eliminar_pedido', id_pedido=p[0]) }}" method="post" style="display:inline-block" onsubmit="return confirm('Eliminar pedido?')">
+          <button class="btn btn-sm btn-danger">Eliminar</button>
+        </form>
+      </td>
+    </tr>
+    {% else %}
+    <tr><td colspan="6">No hay pedidos.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

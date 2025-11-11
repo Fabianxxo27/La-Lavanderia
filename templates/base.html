@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{% block title %}La Lavandería - Panel{% endblock %}</title>
+
+    <!-- Bootstrap (CDN) -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Tu CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+
+    <style>
+      body {
+        background: linear-gradient(180deg, #d1e77d 0%, #a6cc48 100%);
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen,
+          Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+        margin: 0;
+        padding: 0;
+        color: #222;
+      }
+
+      .navbar {
+        background: linear-gradient(180deg, #a6cc48 0%, #84af1d 100%) !important;
+        border-bottom: 3px solid #1a4e7b;
+        padding: 1rem 0;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      }
+
+      .navbar-brand {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        color: #1a4e7b !important;
+        font-weight: 700;
+        letter-spacing: 0.4px;
+      }
+
+      .navbar-logo {
+        width: 48px;
+        height: 48px;
+        object-fit: cover;
+        border-radius: 8px;
+        border: 2px solid #84af1d;
+      }
+
+      .navbar-brand strong {
+        color: #1a4e7b !important;
+        font-weight: 700;
+      }
+
+      .navbar-buttons {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+
+      .btn-outline-primary {
+        border-color: #1a4e7b;
+        color: #1a4e7b;
+        font-weight: 700;
+        letter-spacing: 0.7px;
+        transition: all 0.3s ease;
+      }
+
+      .btn-outline-primary:hover {
+        background-color: #1a4e7b;
+        color: #fff;
+      }
+
+      .btn-success {
+        background-color: #a6cc48;
+        border-color: #7dbc30;
+        font-weight: 700;
+        letter-spacing: 0.7px;
+        transition: all 0.3s ease;
+      }
+
+      .btn-success:hover {
+        background-color: #7dbc30;
+        border-color: #5f8022;
+        color: #fff;
+      }
+
+      .btn-light {
+        background-color: #fff;
+        border-color: #1a4e7b;
+        color: #1a4e7b;
+        font-weight: 700;
+      }
+
+      .dropdown-menu {
+        background-color: #fff;
+        border: 1px solid #84af1d;
+      }
+
+      .dropdown-item {
+        color: #1a4e7b;
+        font-weight: 600;
+      }
+
+      .dropdown-item:hover {
+        background-color: #a6cc48;
+        color: #fff;
+      }
+
+      .container {
+        max-width: 1140px;
+        margin: 2rem auto;
+        padding: 0 1.5rem;
+      }
+
+      .alert {
+        border-radius: 1rem;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      }
+
+      footer {
+        background: #f8f9fa;
+        padding: 1rem 0;
+        border-top: 3px solid #84af1d;
+        color: #35472e;
+        font-weight: 600;
+        text-align: center;
+        margin-top: 3rem;
+      }
+    </style>
+
+    {% block head %}{% endblock %}
+  </head>
+  <body>
+    <nav class="navbar">
+      <div class="navbar-brand">
+        <img src="{{ url_for('static', filename='images/lavanderia.jpg') }}" alt="logo" class="navbar-logo">
+        <div>
+          <strong>La Lavandería</strong>
+        </div>
+      </div>
+      <div class="navbar-buttons">
+        {% if session.get('username') %}
+          {# Mostrar nombre de usuario y dropdown con Cerrar sesión #}
+          <div class="dropdown">
+            <button class="btn btn-light dropdown-toggle" type="button" id="userMenu" data-bs-toggle="dropdown" aria-expanded="false">
+              {{ session.get('username') }}
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userMenu">
+              <li><a class="dropdown-item" href="{{ url_for('logout') }}">Cerrar sesión</a></li>
+            </ul>
+          </div>
+        {% else %}
+          <a class="btn btn-outline-primary" href="{{ url_for('login') }}">Iniciar sesión</a>
+          <a class="btn btn-success" href="{{ url_for('registro') }}">Registrarse</a>
+        {% endif %}
+      </div>
+    </nav>
+
+    <div class="container">
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          {% for category, msg in messages %}
+            <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+              {{ msg }}
+              <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+          {% endfor %}
+        {% endif %}
+      {% endwith %}
+
+      {% block content %}{% endblock %}
+    </div>
+
+    <footer class="text-center mt-5 mb-3 text-muted">
+      &copy; {{ now().year if now is defined else "" }} La Lavandería
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    {% block scripts %}{% endblock %}
+  </body>
+</html>

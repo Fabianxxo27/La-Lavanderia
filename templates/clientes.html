@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Clientes - La Lavandería{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h2>Clientes</h2>
+  <a href="{{ url_for('agregar_cliente') }}" class="btn btn-success">Agregar Cliente</a>
+</div>
+
+<form method="post" class="mb-3">
+  <div class="input-group">
+    <input type="text" name="q" class="form-control" placeholder="Buscar por nombre o email">
+    <button class="btn btn-outline-secondary" type="submit">Buscar</button>
+  </div>
+</form>
+
+<table class="table table-striped">
+  <thead>
+    <tr>
+      <th>ID</th>
+      <th>Nombre</th>
+      <th>Username</th>
+      <th>Email</th>
+      <th>Acciones</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for c in clients %}
+    <tr>
+      <td>{{ c[0] }}</td>
+      <td>{{ c[1] }}</td>
+      <td>{{ c[2] }}</td>
+      <td>{{ c[3] }}</td>
+      <td>
+        <a href="{{ url_for('actualizar_cliente', id_cliente=c[0]) }}" class="btn btn-sm btn-primary">Editar</a>
+        <form action="{{ url_for('eliminar_cliente', id_cliente=c[0]) }}" method="post" style="display:inline-block" onsubmit="return confirm('Eliminar cliente?')">
+          <button class="btn btn-sm btn-danger">Eliminar</button>
+        </form>
+      </td>
+    </tr>
+    {% else %}
+    <tr><td colspan="5">No hay clientes.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

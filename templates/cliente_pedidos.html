@@ -1,0 +1,33 @@
+{% extends "cliente_base.html" %}
+{% block title %}Mis Pedidos{% endblock %}
+
+{% block content %}
+<h2 class="mb-4">Mis Pedidos</h2>
+<div class="mb-3">
+  <a href="{{ url_for('agregar_pedido') }}" class="btn btn-success">Crear Pedido</a>
+</div>
+{% if pedidos %}
+<table class="table table-striped">
+  <thead>
+    <tr>
+      <th>ID</th>
+      <th>Fecha Ingreso</th>
+      <th>Fecha Entrega</th>
+      <th>Estado</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for p in pedidos %}
+    <tr>
+      <td>{{ p.id_pedido }}</td>
+      <td>{{ p.fecha_ingreso }}</td>
+      <td>{{ p.fecha_entrega or 'Pendiente' }}</td>
+      <td>{{ p.estado }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p>No tienes pedidos registrados.</p>
+{% endif %}
+{% endblock %}
