@@ -805,10 +805,14 @@ def reportes():
 @app.route('/agregar_pedido', methods=['GET', 'POST'])
 def agregar_pedido():
     """Crear un nuevo pedido (clientes y administradores)."""
+    print(f"DEBUG: Función agregar_pedido llamada. Método: {request.method}")
+    
     username = session.get('username')
     if not username:
         flash('Debes iniciar sesión para crear pedidos.', 'danger')
         return redirect(url_for('login'))
+    
+    print(f"DEBUG: Usuario logueado: {username}")
     
     # Obtener rol del usuario
     usuario = run_query(
@@ -817,6 +821,8 @@ def agregar_pedido():
         fetchone=True
     )
     rol = usuario[0].strip().lower() if usuario else 'cliente'
+    
+    print(f"DEBUG: Rol del usuario: {rol}")
     
     # Prendas predefinidas con precios estimados
     prendas_default = [
@@ -838,13 +844,18 @@ def agregar_pedido():
     ]
     
     if request.method == 'POST':
+        print(f"DEBUG: Procesando POST request")
         try:
             from datetime import datetime, timedelta
             
+            print(f"DEBUG: Iniciando procesamiento de pedido")
+            
             # Obtener id_usuario (para recibo) e id_cliente (para pedido)
             if rol == 'administrador':
+                print(f"DEBUG: Modo administrador - buscando id_cliente del formulario")
                 # El admin selecciona un id_usuario del formulario
                 id_usuario_seleccionado = request.form.get('id_cliente')
+                print(f"DEBUG: id_cliente del form: {id_usuario_seleccionado}")
                 
                 # Asegurarse que existe el cliente
                 ensure_cliente_exists(id_usuario_seleccionado)
@@ -853,17 +864,21 @@ def agregar_pedido():
                 id_cliente_pedido = id_usuario_seleccionado  # Para el pedido
                 id_usuario_recibo = id_usuario_seleccionado  # Para el recibo
             else:
+                print(f"DEBUG: Modo cliente - buscando id_usuario del logueado")
                 # Buscar el id_usuario del cliente logueado
                 usuario_data = run_query(
                     "SELECT id_usuario FROM usuario WHERE username = :u",
                     {"u": username},
                     fetchone=True
                 )
+                print(f"DEBUG: Usuario encontrado: {usuario_data}")
+                
                 if not usuario_data:
                     flash('No se encontró tu usuario en el sistema.', 'danger')
                     return redirect(url_for('cliente_inicio'))
                 
                 id_usuario_actual = usuario_data[0]
+                print(f"DEBUG: id_usuario actual: {id_usuario_actual}")
                 
                 # Asegurarse que existe el cliente
                 ensure_cliente_exists(id_usuario_actual)
@@ -872,6 +887,8 @@ def agregar_pedido():
                 id_cliente_pedido = id_usuario_actual
                 id_usuario_recibo = id_usuario_actual
             
+            print(f"DEBUG: id_cliente_pedido={id_cliente_pedido}, id_usuario_recibo={id_usuario_recibo}")
+            
             # Garantizar que existe el cliente antes de crear el pedido
             ensure_cliente_exists(id_cliente_pedido)
             
@@ -879,6 +896,8 @@ def agregar_pedido():
             tipos = request.form.getlist('tipo[]')
             cantidades = request.form.getlist('cantidad[]')
             descripciones = request.form.getlist('descripcion[]')
+            
+            print(f"DEBUG: Datos del formulario - tipos={tipos}, cantidades={cantidades}")
             
             if not tipos or not cantidades:
                 flash('Debes agregar al menos una prenda al pedido.', 'warning')
