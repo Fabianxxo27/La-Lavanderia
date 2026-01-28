@@ -878,23 +878,27 @@ def agregar_pedido():
                 return redirect(url_for('agregar_pedido'))
             
             # Insertar las prendas
-            for i, tipo in enumerate(tipos):
-                if tipo and i < len(cantidades):
-                    cantidad = int(cantidades[i]) if cantidades[i] else 1
-                    descripcion = descripciones[i] if i < len(descripciones) else ''
-                    
-                    # Insertar cada prenda según la cantidad
-                    for _ in range(cantidad):
-                        run_query(
-                            "INSERT INTO prenda (tipo, descripcion, observaciones, id_pedido) VALUES (:t, :d, :o, :ip)",
-                            {
-                                "t": tipo,
-                                "d": descripcion,
-                                "o": f"Cantidad solicitada: {cantidad}",
-                                "ip": id_pedido
-                            },
-                            commit=True
-                        )
+            try:
+                for i, tipo in enumerate(tipos):
+                    if tipo and i < len(cantidades):
+                        cantidad = int(cantidades[i]) if cantidades[i] else 1
+                        descripcion = descripciones[i] if i < len(descripciones) else ''
+                        
+                        # Insertar cada prenda según la cantidad
+                        for _ in range(cantidad):
+                            run_query(
+                                "INSERT INTO prenda (tipo, descripcion, observaciones, id_pedido) VALUES (:t, :d, :o, :ip)",
+                                {
+                                    "t": tipo,
+                                    "d": descripcion,
+                                    "o": f"Cantidad solicitada: {cantidad}",
+                                    "ip": id_pedido
+                                },
+                                commit=True
+                            )
+            except Exception as e:
+                print(f"Error al insertar prendas: {e}")
+                raise
             
             flash(f'¡Pedido creado exitosamente! Total: {total_prendas} prendas. Entrega estimada: {fecha_entrega}', 'success')
             
