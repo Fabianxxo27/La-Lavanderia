@@ -21,8 +21,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 # 4. Copia el Código de la Aplicación
 COPY . .
 
-# 5. Comando de Inicio (CMD) para Flask con Gunicorn
+# 5. Comando de Inicio (CMD) para Flask con Gunicorn o Waitress
 ENV PORT 8080
-# Asume que tu archivo principal es 'app.py' y la instancia es 'app'
-CMD ["sh", "-c", "gunicorn app:app --bind 0.0.0.0:$PORT"]
+# Puedes usar gunicorn o waitress, ambos funcionan bien con Render
+CMD ["sh", "-c", "python app.py"]
 

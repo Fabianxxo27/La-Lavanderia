@@ -11,41 +11,53 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 import os
 import urllib.parse
+from dotenv import load_dotenv
+
+# Cargar variables de entorno desde .env (si existe)
+load_dotenv()
 
 # Precio por prenda (asunción razonable). Cambia este valor si deseas otra tarifa.
 PRICE_PER_PRENDA = 5000.0
 
 # Configuración de la app
 app = Flask(__name__)
-app.secret_key = "1379"
+app.secret_key = os.getenv('SECRET_KEY', '1379')
 
 # ------------------ Configuración de la base de datos (reemplazo robusto) ------------------
 # Este bloque prioriza DATABASE_URL, luego DB_* (DB_USER, DB_PASSWORD, etc.) y
 # como último recurso usa credentials.py solo para desarrollo local.
 database_url = os.getenv('DATABASE_URL')
+
 if database_url:
     # Usar la URL completa si la definiste en Render o manualmente
+    # Si es PostgreSQL desde Render, asegúrate de que el driver esté disponible
+    if database_url.startswith('postgres://'):
+        database_url = database_url.replace('postgres://', 'postgresql://', 1)
     app.config['SQLALCHEMY_DATABASE_URI'] = database_url
 else:
     db_user = os.getenv('DB_USER')
     if db_user:
         db_password = os.getenv('DB_PASSWORD', '')
         db_host = os.getenv('DB_HOST', 'localhost')
-        db_name = os.getenv('DB_NAME', 'fabianmedina_miapp')
-        db_port = os.getenv('DB_PORT', '')
+        db_name = os.getenv('DB_NAME', 'clienteslavanderia')
+        db_port = os.getenv('DB_PORT', '3306')
 
         # encodear la contraseña por si tiene caracteres especiales
         pwd = urllib.parse.quote_plus(db_password)
 
-        if db_port:
-            app.config['SQLALCHEMY_DATABASE_URI'] = f"mysql+pymysql://{db_user}:{pwd}@{db_host}:{db_port}/{db_name}?charset=utf8mb4"
-        else:
-            app.config['SQLALCHEMY_DATABASE_URI'] = f"mysql+pymysql://{db_user}:{pwd}@{db_host}/{db_name}?charset=utf8mb4"
+        app.config['SQLALCHEMY_DATABASE_URI'] = f"mysql+pymysql://{db_user}:{pwd}@{db_host}:{db_port}/{db_name}?charset=utf8mb4"
     else:
         # Fallback a credentials.py (solo para desarrollo local). En producción NO usar esto.
-        app.logger.warning("No se encontró DATABASE_URL ni DB_USER en variables de entorno; usando credentials.py (solo para desarrollo).")
         pwd = urllib.parse.quote_plus(cd.password)
         app.config['SQLALCHEMY_DATABASE_URI'] = f"mysql+pymysql://{cd.user}:{pwd}@{cd.host}/{cd.db}?charset=utf8mb4"
+
+# Configuración de conexión para Render
+app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
+    'pool_size': 5,
+    'pool_recycle': 3600,
+    'pool_pre_ping': True,
+    'max_overflow': 10,
+}
 
 # Desactivar track modifications de SQLAlchemy
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False

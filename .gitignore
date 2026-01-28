@@ -1,0 +1,69 @@
+# Entorno Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Variables de entorno
+.env
+.env.local
+.env.*.local
+
+# Credenciales (NUNCA subir esto!)
+credentials.py
+
+# Base de datos
+*.db
+*.sqlite
+*.sqlite3
+
+# Logs
+*.log
+logs/
+
+# Caché del sistema
+.cache/
+.pytest_cache/
+.mypy_cache/
+.coverage
+
+# Archivos temporales
+*.tmp
+temp/
+tmp/
+
+# Excel/Datos
+*.xlsx
+*.xls
+*.csv
+
+# Docker
+.dockerignore
+.docker/
