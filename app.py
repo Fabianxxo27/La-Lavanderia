@@ -526,18 +526,121 @@ def agregar_prenda(id_pedido):
 # -----------------------------------------------
 # REPORTES
 # -----------------------------------------------
+# REPORTES
+# -----------------------------------------------
 @app.route('/reportes')
 def reportes():
-    """Página de reportes para administrador."""
+    """Página de reportes avanzados para administrador."""
     if not _admin_only():
         flash('Acceso denegado.', 'danger')
         return redirect(url_for('index'))
     
-    usuarios = run_query(
-        "SELECT id_usuario, nombre, email FROM usuario WHERE rol='cliente'",
-        fetchall=True
-    )
-    return render_template('reportes.html', usuarios=usuarios)
+    import json
+    from datetime import datetime, timedelta
+    
+    # 1. CLIENTES NUEVOS (últimos 30 días)
+    clientes_nuevos = run_query("""
+        SELECT DATE(p.fecha_ingreso) as fecha, COUNT(DISTINCT p.id_cliente) as cantidad
+        FROM pedido p
+        WHERE p.fecha_ingreso >= CURRENT_DATE - INTERVAL 30 DAY
+        GROUP BY DATE(p.fecha_ingreso)
+        ORDER BY fecha
+    """, fetchall=True) or []
+    
+    # 2. PEDIDOS POR DÍA (últimos 30 días)
+    pedidos_por_dia = run_query("""
+        SELECT DATE(fecha_ingreso) as fecha, COUNT(*) as cantidad
+        FROM pedido
+        WHERE fecha_ingreso >= CURRENT_DATE - INTERVAL 30 DAY
+        GROUP BY DATE(fecha_ingreso)
+        ORDER BY fecha
+    """, fetchall=True) or []
+    
+    # 3. TIPOS DE PRENDAS Y SU CANTIDAD
+    prendas_por_tipo = run_query("""
+        SELECT tipo, COUNT(*) as cantidad
+        FROM prenda
+        GROUP BY tipo
+        ORDER BY cantidad DESC
+    """, fetchall=True) or []
+    
+    # 4. INGRESOS POR MES
+    ingresos_por_mes = run_query("""
+        SELECT DATE_TRUNC('month', fecha)::date as mes, SUM(monto) as total
+        FROM recibo
+        GROUP BY DATE_TRUNC('month', fecha)
+        ORDER BY mes DESC
+        LIMIT 12
+    """, fetchall=True) or []
+    
+    # 5. ESTADO DE PEDIDOS
+    estado_pedidos = run_query("""
+        SELECT estado, COUNT(*) as cantidad
+        FROM pedido
+        GROUP BY estado
+    """, fetchall=True) or []
+    
+    # 6. TOP 10 CLIENTES POR CANTIDAD DE PEDIDOS
+    top_clientes = run_query("""
+        SELECT c.nombre, COUNT(p.id_pedido) as cantidad_pedidos
+        FROM cliente c
+        LEFT JOIN pedido p ON c.id_cliente = p.id_cliente
+        GROUP BY c.id_cliente, c.nombre
+        ORDER BY cantidad_pedidos DESC
+        LIMIT 10
+    """, fetchall=True) or []
+    
+    # 7. ESTADÍSTICAS GENERALES
+    total_clientes = run_query("SELECT COUNT(*) FROM cliente", fetchone=True)[0] or 0
+    total_pedidos = run_query("SELECT COUNT(*) FROM pedido", fetchone=True)[0] or 0
+    total_ingresos = run_query("SELECT COALESCE(SUM(monto), 0) FROM recibo", fetchone=True)[0] or 0
+    total_prendas = run_query("SELECT COUNT(*) FROM prenda", fetchone=True)[0] or 0
+    
+    # 8. PROMEDIO DE PRENDAS POR PEDIDO
+    promedio_prendas = run_query("""
+        SELECT AVG(cantidad) as promedio
+        FROM (
+            SELECT COUNT(*) as cantidad
+            FROM prenda
+            GROUP BY id_pedido
+        ) subq
+    """, fetchone=True)[0] or 0
+    
+    # Preparar datos para gráficos (formato JSON)
+    graficos = {
+        'clientes_nuevos': {
+            'labels': [str(row[0]) for row in clientes_nuevos],
+            'data': [row[1] for row in clientes_nuevos]
+        },
+        'pedidos_dia': {
+            'labels': [str(row[0]) for row in pedidos_por_dia],
+            'data': [row[1] for row in pedidos_por_dia]
+        },
+        'prendas_tipo': {
+            'labels': [row[0] for row in prendas_por_tipo],
+            'data': [row[1] for row in prendas_por_tipo]
+        },
+        'estado_pedidos': {
+            'labels': [row[0] for row in estado_pedidos],
+            'data': [row[1] for row in estado_pedidos]
+        },
+        'top_clientes': {
+            'labels': [row[0] for row in top_clientes],
+            'data': [row[1] for row in top_clientes]
+        },
+        'ingresos_mes': {
+            'labels': [str(row[0]) if row[0] else 'N/A' for row in ingresos_por_mes],
+            'data': [float(row[1]) if row[1] else 0 for row in ingresos_por_mes]
+        }
+    }
+    
+    return render_template('reportes.html',
+                         graficos=json.dumps(graficos),
+                         total_clientes=total_clientes,
+                         total_pedidos=total_pedidos,
+                         total_ingresos=float(total_ingresos),
+                         total_prendas=total_prendas,
+                         promedio_prendas=round(float(promedio_prendas), 2))
 
 
 # -----------------------------------------------

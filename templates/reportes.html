@@ -1,88 +1,296 @@
 {% extends "base.html" %}
-{% block title %}Reportes - La Lavandería{% endblock %}
 
 {% block content %}
-<h2>Reportes</h2>
-<div class="d-flex justify-content-between align-items-center">
-  <h4 class="mt-4">Usuarios</h4>
-  <form class="d-flex" method="get" action="{{ url_for('reportes') }}">
-    <input class="form-control me-2" type="search" name="q" placeholder="Buscar por nombre" value="{{ q or '' }}">
-    <button class="btn btn-outline-primary" type="submit">Buscar</button>
-  </form>
+<div class="container-fluid py-5">
+    <h1 class="mb-5">📊 Reportes y Estadísticas</h1>
+
+    <!-- KPIs (Métricas clave) -->
+    <div class="row mb-5">
+        <div class="col-md-3 mb-3">
+            <div class="card bg-primary text-white h-100">
+                <div class="card-body">
+                    <h6 class="card-title">Total de Clientes</h6>
+                    <h2 class="card-text">{{ total_clientes }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card bg-success text-white h-100">
+                <div class="card-body">
+                    <h6 class="card-title">Total de Pedidos</h6>
+                    <h2 class="card-text">{{ total_pedidos }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card bg-warning text-dark h-100">
+                <div class="card-body">
+                    <h6 class="card-title">Total de Prendas</h6>
+                    <h2 class="card-text">{{ total_prendas }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card bg-info text-white h-100">
+                <div class="card-body">
+                    <h6 class="card-title">Ingresos Totales</h6>
+                    <h2 class="card-text">${{ "%.2f"|format(total_ingresos) }}</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gráficos principales -->
+    <div class="row mb-5">
+        <!-- Pedidos por día -->
+        <div class="col-lg-6 mb-4">
+            <div class="card">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0">📈 Pedidos por Día (Últimos 30 días)</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="pedidosDiaChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Clientes nuevos -->
+        <div class="col-lg-6 mb-4">
+            <div class="card">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0">👥 Clientes Nuevos por Día (Últimos 30 días)</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="clientesNuevosChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gráficos secundarios -->
+    <div class="row mb-5">
+        <!-- Tipos de prendas -->
+        <div class="col-lg-6 mb-4">
+            <div class="card">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0">👕 Prendas por Tipo</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="prendasTipoChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Estado de pedidos -->
+        <div class="col-lg-6 mb-4">
+            <div class="card">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0">✅ Estado de Pedidos</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="estadoPedidosChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Más gráficos -->
+    <div class="row mb-5">
+        <!-- Top clientes -->
+        <div class="col-lg-6 mb-4">
+            <div class="card">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0">⭐ Top 10 Clientes por Pedidos</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="topClientesChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Ingresos por mes -->
+        <div class="col-lg-6 mb-4">
+            <div class="card">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0">💰 Ingresos por Mes (Últimos 12 meses)</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="ingresosMesChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Promedio de prendas -->
+    <div class="row mb-5">
+        <div class="col-lg-12">
+            <div class="card bg-light">
+                <div class="card-body">
+                    <h5>📊 Métrica: Promedio de Prendas por Pedido</h5>
+                    <h3 class="text-primary">{{ promedio_prendas }} prendas</h3>
+                    <small class="text-muted">Este es el número promedio de prendas que se incluyen en cada pedido</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
 </div>
-<table class="table table-striped">
-  <thead>
-    <tr><th>ID</th><th>Nombre</th><th>Username</th><th>Rol</th><th>Email</th><th>Pedidos</th><th>Descuento</th><th>Acciones</th></tr>
-  </thead>
-  <tbody>
-    {% for u in usuarios %}
-    <tr>
-      <td>{{ u.id }}</td>
-      <td>{{ u.nombre }}</td>
-      <td>{{ u.username }}</td>
-      <td>{{ u.rol }}</td>
-      <td>{{ u.email }}</td>
-      <td>{{ u.pedidos_count }}</td>
-      <td>{{ u.descuento }}%</td>
-      <td>
-        <a class="btn btn-sm btn-outline-primary" href="{{ url_for('reportes') }}?user_id={{ u.id }}">Ver pedidos</a>
-      </td>
-    </tr>
-    {% else %}
-    <tr><td colspan="8">No hay usuarios.</td></tr>
-    {% endfor %}
-  </tbody>
-</table>
 
-{% if pedidos_owner %}
-  <h4 class="mt-4">Pedidos de {{ pedidos_owner.username }} ({{ pedidos_owner.nombre }})</h4>
-{% else %}
-  <h4 class="mt-4">Pedidos</h4>
-{% endif %}
-<table class="table table-striped">
-  <thead>
-    <tr><th>ID</th><th>Fecha ingreso</th><th>Fecha entrega</th><th>Estado</th><th>ID Cliente</th></tr>
-  </thead>
-  <tbody>
-    {% for p in pedidos %}
-    <tr>
-      <td>{{ p[0] }}</td>
-      <td>{{ p[1] }}</td>
-      <td>{{ p[2] or '' }}</td>
-      <td>{{ p[3] }}</td>
-      <td>{{ p[4] }}</td>
-    </tr>
-    {% else %}
-    <tr><td colspan="5">No hay pedidos.</td></tr>
-    {% endfor %}
-  </tbody>
-</table>
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // Datos desde backend
+    const graficos = {{ graficos | safe }};
 
-<h4 class="mt-4">Promociones</h4>
-<table class="table table-striped">
-  <thead>
-    <tr><th>ID</th><th>Descripcion</th><th>Descuento</th><th>Inicio</th><th>Fin</th></tr>
-  </thead>
-  <tbody>
-    {% for pr in promociones %}
-    <tr>
-      <td>{{ pr[0] }}</td>
-      <td>{{ pr[1] }}</td>
-      <td>{{ pr[2] }}%</td>
-      <td>{{ pr[3] }}</td>
-      <td>{{ pr[4] }}</td>
-    </tr>
-    {% else %}
-    <tr><td colspan="5">No hay promociones.</td></tr>
-    {% endfor %}
-  </tbody>
-</table>
+    // Colores personalizados
+    const coloresPrimarios = [
+        '#4CAF50', '#2196F3', '#FF9800', '#F44336', '#9C27B0',
+        '#00BCD4', '#FFC107', '#795548', '#607D8B', '#E91E63'
+    ];
 
-<div class="mt-4 d-flex gap-2">
-  <a class="btn btn-outline-success" href="{{ url_for('exportar_usuarios') }}">Exportar Usuarios (Excel)</a>
-  <a class="btn btn-outline-success" href="{{ url_for('exportar_pedidos') }}">Exportar Pedidos (Excel)</a>
-  <a class="btn btn-outline-success" href="{{ url_for('exportar_promociones') }}">Exportar Promociones (Excel)</a>
-</div>
+    // 1. Pedidos por día
+    const ctxPedidosDia = document.getElementById('pedidosDiaChart').getContext('2d');
+    new Chart(ctxPedidosDia, {
+        type: 'line',
+        data: {
+            labels: graficos.pedidos_dia.labels,
+            datasets: [{
+                label: 'Cantidad de Pedidos',
+                data: graficos.pedidos_dia.data,
+                borderColor: '#2196F3',
+                backgroundColor: 'rgba(33, 150, 243, 0.1)',
+                borderWidth: 2,
+                fill: true,
+                tension: 0.4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+                legend: { display: true }
+            },
+            scales: {
+                y: { beginAtZero: true }
+            }
+        }
+    });
+
+    // 2. Clientes nuevos
+    const ctxClientesNuevos = document.getElementById('clientesNuevosChart').getContext('2d');
+    new Chart(ctxClientesNuevos, {
+        type: 'bar',
+        data: {
+            labels: graficos.clientes_nuevos.labels,
+            datasets: [{
+                label: 'Clientes Nuevos',
+                data: graficos.clientes_nuevos.data,
+                backgroundColor: '#4CAF50',
+                borderColor: '#388E3C',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: { legend: { display: true } },
+            scales: { y: { beginAtZero: true } }
+        }
+    });
+
+    // 3. Prendas por tipo
+    const ctxPrendasTipo = document.getElementById('prendasTipoChart').getContext('2d');
+    new Chart(ctxPrendasTipo, {
+        type: 'doughnut',
+        data: {
+            labels: graficos.prendas_tipo.labels,
+            datasets: [{
+                data: graficos.prendas_tipo.data,
+                backgroundColor: coloresPrimarios.slice(0, graficos.prendas_tipo.labels.length),
+                borderColor: '#fff',
+                borderWidth: 2
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: { legend: { position: 'bottom' } }
+        }
+    });
+
+    // 4. Estado de pedidos
+    const ctxEstadoPedidos = document.getElementById('estadoPedidosChart').getContext('2d');
+    new Chart(ctxEstadoPedidos, {
+        type: 'pie',
+        data: {
+            labels: graficos.estado_pedidos.labels,
+            datasets: [{
+                data: graficos.estado_pedidos.data,
+                backgroundColor: ['#FF9800', '#4CAF50', '#2196F3', '#F44336'],
+                borderColor: '#fff',
+                borderWidth: 2
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: { legend: { position: 'bottom' } }
+        }
+    });
+
+    // 5. Top clientes
+    const ctxTopClientes = document.getElementById('topClientesChart').getContext('2d');
+    new Chart(ctxTopClientes, {
+        type: 'bar',
+        data: {
+            labels: graficos.top_clientes.labels,
+            datasets: [{
+                label: 'Cantidad de Pedidos',
+                data: graficos.top_clientes.data,
+                backgroundColor: '#9C27B0',
+                borderColor: '#6A1B9A',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            indexAxis: 'y',
+            responsive: true,
+            plugins: { legend: { display: false } },
+            scales: { x: { beginAtZero: true } }
+        }
+    });
+
+    // 6. Ingresos por mes
+    const ctxIngresosMes = document.getElementById('ingresosMesChart').getContext('2d');
+    new Chart(ctxIngresosMes, {
+        type: 'bar',
+        data: {
+            labels: graficos.ingresos_mes.labels,
+            datasets: [{
+                label: 'Ingresos ($)',
+                data: graficos.ingresos_mes.data,
+                backgroundColor: '#00BCD4',
+                borderColor: '#00838F',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: { legend: { display: true } },
+            scales: { y: { beginAtZero: true } }
+        }
+    });
+</script>
+
+<style>
+    .card {
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        transition: transform 0.3s;
+    }
+    .card:hover {
+        transform: translateY(-5px);
+    }
+    .card-header {
+        border-bottom: 2px solid rgba(0,0,0,0.1);
+    }
+</style>
 
 {% endblock %}
 
