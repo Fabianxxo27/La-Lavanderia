@@ -24,4 +24,5 @@ COPY . .
 # 5. Comando de Inicio (CMD) para Flask con Gunicorn
 ENV PORT 8080
 # Asume que tu archivo principal es 'app.py' y la instancia es 'app'
-CMD ["gunicorn", "app:app", "--bind", "0.0.0.0:$PORT"]
+CMD ["sh", "-c", "gunicorn app:app --bind 0.0.0.0:$PORT"]
+
