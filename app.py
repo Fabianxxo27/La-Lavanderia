@@ -24,37 +24,20 @@ app = Flask(__name__)
 app.secret_key = os.getenv('SECRET_KEY', '1379')
 
 # Configuración de la base de datos
-# En Render: usar DATABASE_URL desde variables de entorno
-# En desarrollo local: usar credentials.py
+# En Render: usar DATABASE_URL desde variables de entorno (PostgreSQL)
+# En desarrollo local: usar credentials.py (MySQL)
 database_url = os.getenv('DATABASE_URL')
 
-def fix_ipv6_url(url):
-    """Envuelve direcciones IPv6 en corchetes en la URL de conexión."""
-    # Detectar si hay una dirección IPv6 sin corchetes
-    # IPv6: múltiples dos puntos (: ) antes del puerto
-    import re
-    # Buscar patrón: usuario:password@[posible ipv6]:puerto
-    # Regexión que detecte IPv6 sin corchetes seguido de :puerto
-    pattern = r'@([0-9a-f]{0,4}:[0-9a-f:]+):'
-    if re.search(pattern, url, re.IGNORECASE):
-        # Hay un IPv6 sin corchetes, lo envolvemos
-        match = re.search(pattern, url, re.IGNORECASE)
-        ipv6 = match.group(1)
-        url = url.replace(f"@{ipv6}:", f"@[{ipv6}]:", 1)
-    return url
-
 if not database_url:
-    # Si no hay DATABASE_URL, usar credenciales locales (desarrollo)
+    # Si no hay DATABASE_URL, usar credenciales locales (desarrollo con MySQL)
     print("⚠️ DATABASE_URL no encontrado, usando credentials.py (desarrollo local)")
     pwd = urllib.parse.quote_plus(cd.password)
     database_url = f"mysql+pymysql://{cd.user}:{pwd}@{cd.host}/{cd.db}?charset=utf8mb4"
-
-# Convertir postgres:// a postgresql:// si es necesario
-if database_url.startswith('postgres://'):
-    database_url = database_url.replace('postgres://', 'postgresql://', 1)
-
-# Arreglar direcciones IPv6 sin corchetes
-database_url = fix_ipv6_url(database_url)
+else:
+    # Si viene de Render, convertir postgres:// a postgresql://
+    if database_url.startswith('postgres://'):
+        database_url = database_url.replace('postgres://', 'postgresql://', 1)
+    print("✓ Usando DATABASE_URL desde Render (PostgreSQL)")
 
 app.config['SQLALCHEMY_DATABASE_URI'] = database_url
 print(f"✓ Base de datos configurada: {database_url[:50]}...")
