@@ -540,19 +540,19 @@ def reportes():
     
     # 1. CLIENTES NUEVOS (últimos 30 días)
     clientes_nuevos = run_query("""
-        SELECT DATE(p.fecha_ingreso) as fecha, COUNT(DISTINCT p.id_cliente) as cantidad
+        SELECT p.fecha_ingreso::date as fecha, COUNT(DISTINCT p.id_cliente) as cantidad
         FROM pedido p
-        WHERE p.fecha_ingreso >= CURRENT_DATE - INTERVAL 30 DAY
-        GROUP BY DATE(p.fecha_ingreso)
+        WHERE p.fecha_ingreso >= CURRENT_DATE - INTERVAL '30 days'
+        GROUP BY p.fecha_ingreso::date
         ORDER BY fecha
     """, fetchall=True) or []
     
     # 2. PEDIDOS POR DÍA (últimos 30 días)
     pedidos_por_dia = run_query("""
-        SELECT DATE(fecha_ingreso) as fecha, COUNT(*) as cantidad
+        SELECT fecha_ingreso::date as fecha, COUNT(*) as cantidad
         FROM pedido
-        WHERE fecha_ingreso >= CURRENT_DATE - INTERVAL 30 DAY
-        GROUP BY DATE(fecha_ingreso)
+        WHERE fecha_ingreso >= CURRENT_DATE - INTERVAL '30 days'
+        GROUP BY fecha_ingreso::date
         ORDER BY fecha
     """, fetchall=True) or []
     
