@@ -877,9 +877,14 @@ def agregar_pedido():
             
             # Insertar las prendas
             try:
+                print(f"DEBUG: Insertando prendas para pedido {id_pedido}")
+                print(f"DEBUG: tipos = {tipos}")
+                print(f"DEBUG: cantidades = {cantidades}")
+                
                 for i, tipo in enumerate(tipos):
                     if tipo and i < len(cantidades):
                         cantidad = int(cantidades[i]) if cantidades[i] else 1
+                        print(f"DEBUG: Insertando {cantidad}x {tipo}")
                         
                         # Insertar cada prenda según la cantidad
                         for _ in range(cantidad):
@@ -891,8 +896,12 @@ def agregar_pedido():
                                 },
                                 commit=True
                             )
+                print(f"DEBUG: Todas las prendas insertadas correctamente")
             except Exception as e:
-                print(f"Error al insertar prendas: {e}")
+                import traceback
+                print(f"ERROR al insertar prendas: {e}")
+                print(f"TRACEBACK: {traceback.format_exc()}")
+                flash(f'Error al insertar prendas: {str(e)}', 'danger')
                 raise
             
             flash(f'¡Pedido creado exitosamente! Total: {total_prendas} prendas. Entrega estimada: {fecha_entrega}', 'success')
