@@ -332,6 +332,99 @@ def clientes():
 
 
 # -----------------------------------------------
+# AGREGAR CLIENTE
+# -----------------------------------------------
+@app.route('/agregar_cliente', methods=['GET', 'POST'])
+def agregar_cliente():
+    """Agregar un nuevo cliente."""
+    if not _admin_only():
+        flash('Acceso denegado.', 'danger')
+        return redirect(url_for('index'))
+    
+    if request.method == 'POST':
+        nombre = request.form.get('nombre')
+        email = request.form.get('email')
+        telefono = request.form.get('telefono')
+        direccion = request.form.get('direccion')
+        
+        try:
+            run_query(
+                "INSERT INTO cliente (nombre, email, telefono, direccion) VALUES (:n, :e, :t, :d)",
+                {"n": nombre, "e": email, "t": telefono, "d": direccion},
+                commit=True
+            )
+            flash('Cliente agregado correctamente.', 'success')
+            return redirect(url_for('clientes'))
+        except Exception as e:
+            flash(f'Error al agregar cliente: {e}', 'danger')
+    
+    return render_template('agregar_cliente.html')
+
+
+# -----------------------------------------------
+# ACTUALIZAR CLIENTE
+# -----------------------------------------------
+@app.route('/actualizar_cliente/<int:id_cliente>', methods=['GET', 'POST'])
+def actualizar_cliente(id_cliente):
+    """Actualizar datos de un cliente."""
+    if not _admin_only():
+        flash('Acceso denegado.', 'danger')
+        return redirect(url_for('index'))
+    
+    cliente = run_query(
+        "SELECT id_cliente, nombre, email, telefono, direccion FROM cliente WHERE id_cliente = :id",
+        {"id": id_cliente},
+        fetchone=True
+    )
+    
+    if not cliente:
+        flash('Cliente no encontrado.', 'danger')
+        return redirect(url_for('clientes'))
+    
+    if request.method == 'POST':
+        nombre = request.form.get('nombre')
+        email = request.form.get('email')
+        telefono = request.form.get('telefono')
+        direccion = request.form.get('direccion')
+        
+        try:
+            run_query(
+                "UPDATE cliente SET nombre = :n, email = :e, telefono = :t, direccion = :d WHERE id_cliente = :id",
+                {"n": nombre, "e": email, "t": telefono, "d": direccion, "id": id_cliente},
+                commit=True
+            )
+            flash('Cliente actualizado correctamente.', 'success')
+            return redirect(url_for('clientes'))
+        except Exception as e:
+            flash(f'Error al actualizar cliente: {e}', 'danger')
+    
+    return render_template('actualizar_cliente.html', cliente=cliente, id_cliente=id_cliente)
+
+
+# -----------------------------------------------
+# ELIMINAR CLIENTE
+# -----------------------------------------------
+@app.route('/eliminar_cliente/<int:id_cliente>', methods=['POST'])
+def eliminar_cliente(id_cliente):
+    """Eliminar un cliente."""
+    if not _admin_only():
+        flash('Acceso denegado.', 'danger')
+        return redirect(url_for('index'))
+    
+    try:
+        run_query(
+            "DELETE FROM cliente WHERE id_cliente = :id",
+            {"id": id_cliente},
+            commit=True
+        )
+        flash('Cliente eliminado correctamente.', 'success')
+    except Exception as e:
+        flash(f'Error al eliminar cliente: {e}', 'danger')
+    
+    return redirect(url_for('clientes'))
+
+
+# -----------------------------------------------
 # EXPORTAR tablas a Excel
 # -----------------------------------------------
 @app.route('/exportar')
