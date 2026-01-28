@@ -291,6 +291,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Submit form
     formPedido.addEventListener('submit', function(e) {
+        console.log('Form submitted, prendasArray length:', prendasArray.length);
+        
         if (prendasArray.length === 0) {
             e.preventDefault();
             alert('Debes agregar al menos una prenda al pedido');
@@ -298,7 +300,10 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         // Agregar campos hidden al formulario
-        prendasArray.forEach(prenda => {
+        console.log('Agregando campos hidden al formulario...');
+        prendasArray.forEach((prenda, index) => {
+            console.log(`Agregando prenda ${index}:`, prenda);
+            
             const inputTipo = document.createElement('input');
             inputTipo.type = 'hidden';
             inputTipo.name = 'tipo[]';
@@ -317,6 +322,9 @@ document.addEventListener('DOMContentLoaded', function() {
             inputDescripcion.value = prenda.descripcion;
             formPedido.appendChild(inputDescripcion);
         });
+        
+        console.log('Form data ready, submitting...');
+        // No retornar false, permitir que el formulario se envíe
     });
 
     // Inicializar
