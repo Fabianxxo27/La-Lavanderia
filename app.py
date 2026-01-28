@@ -97,22 +97,22 @@ def ensure_cliente_exists(id_usuario):
     Garantiza que existe un registro en la tabla cliente para un usuario.
     Si no existe, lo crea automáticamente.
     """
-    cliente_exists = run_query(
-        "SELECT id_cliente FROM cliente WHERE id_cliente = :id",
-        {"id": id_usuario},
-        fetchone=True
-    )
-    
-    if not cliente_exists:
-        # Obtener datos del usuario para crear el cliente
-        usuario = run_query(
-            "SELECT nombre, email FROM usuario WHERE id_usuario = :id",
+    try:
+        cliente_exists = run_query(
+            "SELECT id_cliente FROM cliente WHERE id_cliente = :id",
             {"id": id_usuario},
             fetchone=True
         )
         
-        if usuario:
-            try:
+        if not cliente_exists:
+            # Obtener datos del usuario para crear el cliente
+            usuario = run_query(
+                "SELECT nombre, email FROM usuario WHERE id_usuario = :id",
+                {"id": id_usuario},
+                fetchone=True
+            )
+            
+            if usuario:
                 run_query(
                     "INSERT INTO cliente (id_cliente, nombre, email) VALUES (:ic, :n, :e)",
                     {
@@ -123,8 +123,9 @@ def ensure_cliente_exists(id_usuario):
                     commit=True
                 )
                 print(f"✓ Cliente creado automáticamente para id_usuario={id_usuario}")
-            except Exception as e:
-                print(f"✗ Error al crear cliente: {e}")
+    except Exception as e:
+        print(f"✗ Error en ensure_cliente_exists: {e}")
+        raise
 
 # -----------------------------------------------
 # RUTA PRINCIPAL
