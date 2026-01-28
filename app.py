@@ -841,9 +841,21 @@ def agregar_pedido():
         try:
             from datetime import datetime, timedelta
             
-            # Obtener id_cliente
+            # Obtener id_usuario para usar como id_cliente
             if rol == 'administrador':
-                id_cliente = request.form.get('id_cliente')
+                # El admin selecciona un cliente del form
+                id_cliente_form = request.form.get('id_cliente')
+                # Buscar el id_usuario correspondiente a ese cliente
+                usuario_cliente = run_query(
+                    "SELECT id_usuario FROM usuario u INNER JOIN cliente c ON u.id_usuario = c.id_cliente WHERE c.id_cliente = :ic",
+                    {"ic": id_cliente_form},
+                    fetchone=True
+                )
+                if usuario_cliente:
+                    id_cliente = usuario_cliente[0]
+                else:
+                    # Si no hay match, usar el id_cliente directamente (puede ser que ya sea id_usuario)
+                    id_cliente = id_cliente_form
             else:
                 # Buscar el id_usuario que actúa como id_cliente
                 cliente_data = run_query(
@@ -955,7 +967,7 @@ def agregar_pedido():
             flash(f'Error al crear pedido: {e}', 'danger')
     
     clientes = run_query(
-        "SELECT id_cliente, nombre FROM cliente ORDER BY nombre",
+        "SELECT id_usuario, nombre FROM usuario WHERE rol = 'cliente' ORDER BY nombre",
         fetchall=True
     )
     
