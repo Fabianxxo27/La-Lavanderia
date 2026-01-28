@@ -173,9 +173,12 @@
     }
 </style>
 
+{% endblock %}
+
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('DOMContentLoaded event fired');
+// Esperar a que el DOM esté listo
+setTimeout(function() {
+    console.log('Script ejecutándose - buscando elementos...');
     
     const selectPrenda = document.getElementById('selectPrenda');
     const inputCantidad = document.getElementById('inputCantidad');
@@ -185,7 +188,16 @@ document.addEventListener('DOMContentLoaded', function() {
     const emptyMessage = document.getElementById('emptyMessage');
     const formPedido = document.getElementById('formPedido');
     
-    console.log('Elements found - selectPrenda:', selectPrenda, 'btnAgregarPrenda:', btnAgregarPrenda, 'formPedido:', formPedido);
+    console.log('Elementos encontrados:', {
+        selectPrenda: !!selectPrenda,
+        btnAgregarPrenda: !!btnAgregarPrenda,
+        formPedido: !!formPedido
+    });
+    
+    if (!selectPrenda || !btnAgregarPrenda || !formPedido) {
+        console.error('ERROR: No se encontraron los elementos necesarios');
+        return;
+    }
     
     let prendasArray = [];
 
@@ -331,7 +343,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Inicializar
     actualizarResumen();
-});
+}, 500); // Esperar 500ms para asegurar que el DOM está listo
 </script>
 
 {% endblock %}
