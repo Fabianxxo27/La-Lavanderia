@@ -670,14 +670,16 @@ def agregar_pedido():
             if rol == 'administrador':
                 id_cliente = request.form.get('id_cliente')
             else:
-                # Buscar el id_cliente asociado al usuario
+                # Buscar el id_usuario que actúa como id_cliente
                 cliente_data = run_query(
-                    "SELECT id_cliente FROM cliente WHERE username = :u",
+                    "SELECT id_usuario FROM usuario WHERE username = :u",
                     {"u": username},
                     fetchone=True
                 )
                 if not cliente_data:
-                    flash('No se encontró un cliente asociado a tu usuario.', 'danger')
+                    flash('No se encontró tu usuario en el sistema.', 'danger')
+                    return redirect(url_for('cliente_inicio'))
+                id_cliente = cliente_data[0]
                     return redirect(url_for('cliente_inicio'))
                 id_cliente = cliente_data[0]
             
