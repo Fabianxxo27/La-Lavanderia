@@ -181,8 +181,8 @@ def registro():
                 return redirect(url_for("registro"))
 
             # Insertar el nuevo usuario
-            run_query(
-                "INSERT INTO usuario (nombre, username, password, rol, email) VALUES (:n, :u, :p, :r, :e)",
+            result = run_query(
+                "INSERT INTO usuario (nombre, username, password, rol, email) VALUES (:n, :u, :p, :r, :e) RETURNING id_usuario",
                 {
                     "n": nombre,
                     "u": username,
@@ -190,8 +190,23 @@ def registro():
                     "r": "cliente",
                     "e": email
                 },
-                commit=True
+                commit=True,
+                fetchone=True
             )
+            
+            id_usuario = result[0] if result else None
+            
+            # Crear el registro en la tabla cliente
+            if id_usuario:
+                run_query(
+                    "INSERT INTO cliente (id_cliente, nombre, email) VALUES (:ic, :n, :e)",
+                    {
+                        "ic": id_usuario,
+                        "n": nombre,
+                        "e": email
+                    },
+                    commit=True
+                )
 
             flash("Usuario registrado exitosamente.", "success")
             return redirect(url_for("login"))

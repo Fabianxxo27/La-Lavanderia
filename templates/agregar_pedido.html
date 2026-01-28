@@ -57,7 +57,6 @@
                                                     {{ prenda.nombre }} - ${{ "{:,.0f}".format(prenda.precio) }}
                                                 </option>
                                             {% endfor %}
-                                            <option value="otra">✏️ Otra (escribir manualmente)</option>
                                         </select>
                                     </div>
                                     <div class="col-md-3">
@@ -70,12 +69,7 @@
                                         </button>
                                     </div>
                                 </div>
-                                
-                                <!-- Campo de texto para "Otra" prenda -->
-                                <div class="mb-3 d-none" id="divOtraPrenda">
-                                    <label class="form-label fw-bold">Especificar tipo de prenda:</label>
-                                    <input type="text" class="form-control" id="inputOtraPrenda" placeholder="Ej: Manta, Toalla, etc.">
-                                </div>
+
 
                                 <!-- Descripción adicional -->
                                 <div class="mb-3">
@@ -193,29 +187,9 @@ document.addEventListener('DOMContentLoaded', function() {
     
     let prendasArray = [];
 
-    // Mostrar/ocultar campo "Otra prenda"
-    selectPrenda.addEventListener('change', function() {
-        if (this.value === 'otra') {
-            divOtraPrenda.classList.remove('d-none');
-            inputOtraPrenda.required = true;
-        } else {
-            divOtraPrenda.classList.add('d-none');
-            inputOtraPrenda.required = false;
-        }
-    });
-
     // Agregar prenda al array
     btnAgregarPrenda.addEventListener('click', function() {
         let tipoPrenda = selectPrenda.value;
-        
-        // Si seleccionó "otra", usar el input de texto
-        if (tipoPrenda === 'otra') {
-            tipoPrenda = inputOtraPrenda.value.trim();
-            if (!tipoPrenda) {
-                alert('Por favor, especifica el tipo de prenda');
-                return;
-            }
-        }
         
         if (!tipoPrenda) {
             alert('Selecciona un tipo de prenda');
@@ -240,8 +214,6 @@ document.addEventListener('DOMContentLoaded', function() {
         selectPrenda.value = '';
         inputCantidad.value = '1';
         inputDescripcion.value = '';
-        inputOtraPrenda.value = '';
-        divOtraPrenda.classList.add('d-none');
     });
 
     // Renderizar lista de prendas
