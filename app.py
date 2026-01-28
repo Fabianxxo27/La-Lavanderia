@@ -23,33 +23,23 @@ PRICE_PER_PRENDA = 5000.0
 app = Flask(__name__)
 app.secret_key = os.getenv('SECRET_KEY', '1379')
 
-# ------------------ Configuración de la base de datos (reemplazo robusto) ------------------
-# Este bloque prioriza DATABASE_URL, luego DB_* (DB_USER, DB_PASSWORD, etc.) y
-# como último recurso usa credentials.py solo para desarrollo local.
+# Configuración de la base de datos
+# En Render: usar DATABASE_URL desde variables de entorno
+# En desarrollo local: usar credentials.py
 database_url = os.getenv('DATABASE_URL')
 
-if database_url:
-    # Usar la URL completa si la definiste en Render o manualmente
-    # Si es PostgreSQL desde Render, asegúrate de que el driver esté disponible
-    if database_url.startswith('postgres://'):
-        database_url = database_url.replace('postgres://', 'postgresql://', 1)
-    app.config['SQLALCHEMY_DATABASE_URI'] = database_url
-else:
-    db_user = os.getenv('DB_USER')
-    if db_user:
-        db_password = os.getenv('DB_PASSWORD', '')
-        db_host = os.getenv('DB_HOST', 'localhost')
-        db_name = os.getenv('DB_NAME', 'clienteslavanderia')
-        db_port = os.getenv('DB_PORT', '3306')
+if not database_url:
+    # Si no hay DATABASE_URL, usar credenciales locales (desarrollo)
+    print("⚠️ DATABASE_URL no encontrado, usando credentials.py (desarrollo local)")
+    pwd = urllib.parse.quote_plus(cd.password)
+    database_url = f"mysql+pymysql://{cd.user}:{pwd}@{cd.host}/{cd.db}?charset=utf8mb4"
 
-        # encodear la contraseña por si tiene caracteres especiales
-        pwd = urllib.parse.quote_plus(db_password)
+# Convertir postgres:// a postgresql:// si es necesario
+if database_url.startswith('postgres://'):
+    database_url = database_url.replace('postgres://', 'postgresql://', 1)
 
-        app.config['SQLALCHEMY_DATABASE_URI'] = f"mysql+pymysql://{db_user}:{pwd}@{db_host}:{db_port}/{db_name}?charset=utf8mb4"
-    else:
-        # Fallback a credentials.py (solo para desarrollo local). En producción NO usar esto.
-        pwd = urllib.parse.quote_plus(cd.password)
-        app.config['SQLALCHEMY_DATABASE_URI'] = f"mysql+pymysql://{cd.user}:{pwd}@{cd.host}/{cd.db}?charset=utf8mb4"
+app.config['SQLALCHEMY_DATABASE_URI'] = database_url
+print(f"✓ Base de datos configurada: {database_url[:50]}...")
 
 # Configuración de conexión para Render
 app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
