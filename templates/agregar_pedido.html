@@ -175,6 +175,8 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOMContentLoaded event fired');
+    
     const selectPrenda = document.getElementById('selectPrenda');
     const inputCantidad = document.getElementById('inputCantidad');
     const inputDescripcion = document.getElementById('inputDescripcion');
@@ -182,8 +184,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const listaPrendas = document.getElementById('listaPrendas');
     const emptyMessage = document.getElementById('emptyMessage');
     const formPedido = document.getElementById('formPedido');
-    const divOtraPrenda = document.getElementById('divOtraPrenda');
-    const inputOtraPrenda = document.getElementById('inputOtraPrenda');
+    
+    console.log('Elements found - selectPrenda:', selectPrenda, 'btnAgregarPrenda:', btnAgregarPrenda, 'formPedido:', formPedido);
     
     let prendasArray = [];
 
