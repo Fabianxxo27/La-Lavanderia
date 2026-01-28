@@ -176,174 +176,182 @@
 {% endblock %}
 
 {% block scripts %}
-<script>
-// Esperar a que el DOM esté listo
-setTimeout(function() {
+<script type="text/javascript">
+(function() {
     console.log('Script ejecutándose - buscando elementos...');
     
-    const selectPrenda = document.getElementById('selectPrenda');
-    const inputCantidad = document.getElementById('inputCantidad');
-    const inputDescripcion = document.getElementById('inputDescripcion');
-    const btnAgregarPrenda = document.getElementById('btnAgregarPrenda');
-    const listaPrendas = document.getElementById('listaPrendas');
-    const emptyMessage = document.getElementById('emptyMessage');
-    const formPedido = document.getElementById('formPedido');
-    
-    console.log('Elementos encontrados:', {
-        selectPrenda: !!selectPrenda,
-        btnAgregarPrenda: !!btnAgregarPrenda,
-        formPedido: !!formPedido
-    });
-    
-    if (!selectPrenda || !btnAgregarPrenda || !formPedido) {
-        console.error('ERROR: No se encontraron los elementos necesarios');
-        return;
-    }
-    
-    let prendasArray = [];
-
-    // Agregar prenda al array
-    btnAgregarPrenda.addEventListener('click', function() {
-        let tipoPrenda = selectPrenda.value;
+    // Esperar a que el DOM esté listo
+    function iniciar() {
+        const selectPrenda = document.getElementById('selectPrenda');
+        const inputCantidad = document.getElementById('inputCantidad');
+        const inputDescripcion = document.getElementById('inputDescripcion');
+        const btnAgregarPrenda = document.getElementById('btnAgregarPrenda');
+        const listaPrendas = document.getElementById('listaPrendas');
+        const emptyMessage = document.getElementById('emptyMessage');
+        const formPedido = document.getElementById('formPedido');
         
-        if (!tipoPrenda) {
-            alert('Selecciona un tipo de prenda');
+        console.log('Elementos encontrados:', {
+            selectPrenda: !!selectPrenda,
+            btnAgregarPrenda: !!btnAgregarPrenda,
+            formPedido: !!formPedido
+        });
+        
+        if (!selectPrenda || !btnAgregarPrenda || !formPedido) {
+            console.error('ERROR: No se encontraron los elementos necesarios');
             return;
         }
+        
+        let prendasArray = [];
 
-        const cantidad = parseInt(inputCantidad.value) || 1;
-        const descripcion = inputDescripcion.value.trim();
-        const selectedOption = selectPrenda.selectedOptions[0];
-        const precio = selectedOption && selectedOption.dataset.precio ? parseInt(selectedOption.dataset.precio) : 0;
+        // Agregar prenda al array
+        btnAgregarPrenda.addEventListener('click', function() {
+            let tipoPrenda = selectPrenda.value;
+            
+            if (!tipoPrenda) {
+                alert('Selecciona un tipo de prenda');
+                return;
+            }
 
-        prendasArray.push({
-            tipo: tipoPrenda,
-            cantidad: cantidad,
-            descripcion: descripcion,
-            precio: precio
+            const cantidad = parseInt(inputCantidad.value) || 1;
+            const descripcion = inputDescripcion.value.trim();
+            const selectedOption = selectPrenda.selectedOptions[0];
+            const precio = selectedOption && selectedOption.dataset.precio ? parseInt(selectedOption.dataset.precio) : 0;
+
+            prendasArray.push({
+                tipo: tipoPrenda,
+                cantidad: cantidad,
+                descripcion: descripcion,
+                precio: precio
+            });
+
+            renderPrendas();
+            
+            // Limpiar campos
+            selectPrenda.value = '';
+            inputCantidad.value = '1';
+            inputDescripcion.value = '';
         });
 
-        renderPrendas();
-        
-        // Limpiar campos
-        selectPrenda.value = '';
-        inputCantidad.value = '1';
-        inputDescripcion.value = '';
-    });
+        // Renderizar lista de prendas
+        function renderPrendas() {
+            if (prendasArray.length === 0) {
+                emptyMessage.classList.remove('d-none');
+                listaPrendas.innerHTML = '';
+                listaPrendas.appendChild(emptyMessage);
+                actualizarResumen();
+                return;
+            }
 
-    // Renderizar lista de prendas
-    function renderPrendas() {
-        if (prendasArray.length === 0) {
-            emptyMessage.classList.remove('d-none');
+            emptyMessage.classList.add('d-none');
             listaPrendas.innerHTML = '';
-            listaPrendas.appendChild(emptyMessage);
-            actualizarResumen();
-            return;
-        }
 
-        emptyMessage.classList.add('d-none');
-        listaPrendas.innerHTML = '';
-
-        prendasArray.forEach((prenda, index) => {
-            const card = document.createElement('div');
-            card.className = 'card prenda-card mb-2';
-            card.innerHTML = `
-                <div class="card-body">
-                    <div class="row align-items-center">
-                        <div class="col-md-4">
-                            <h6 class="mb-1">
-                                <i class="fas fa-tshirt text-primary"></i> 
-                                <strong>${prenda.tipo}</strong>
-                            </h6>
-                            ${prenda.descripcion ? `<small class="text-muted">${prenda.descripcion}</small>` : ''}
-                        </div>
-                        <div class="col-md-3 text-center">
-                            <span class="badge badge-cantidad bg-primary">
-                                <i class="fas fa-hashtag"></i> ${prenda.cantidad} unidad${prenda.cantidad > 1 ? 'es' : ''}
-                            </span>
-                        </div>
-                        <div class="col-md-3 text-center">
-                            <span class="text-success fw-bold">
-                                <i class="fas fa-dollar-sign"></i> ${(prenda.precio * prenda.cantidad).toLocaleString('es-CO')}
-                            </span>
-                        </div>
-                        <div class="col-md-2 text-end">
-                            <button type="button" class="btn btn-danger btn-sm btn-delete-prenda" data-index="${index}">
-                                <i class="fas fa-trash"></i> Eliminar
-                            </button>
+            prendasArray.forEach((prenda, index) => {
+                const card = document.createElement('div');
+                card.className = 'card prenda-card mb-2';
+                card.innerHTML = `
+                    <div class="card-body">
+                        <div class="row align-items-center">
+                            <div class="col-md-4">
+                                <h6 class="mb-1">
+                                    <i class="fas fa-tshirt text-primary"></i> 
+                                    <strong>${prenda.tipo}</strong>
+                                </h6>
+                                ${prenda.descripcion ? `<small class="text-muted">${prenda.descripcion}</small>` : ''}
+                            </div>
+                            <div class="col-md-3 text-center">
+                                <span class="badge badge-cantidad bg-primary">
+                                    <i class="fas fa-hashtag"></i> ${prenda.cantidad} unidad${prenda.cantidad > 1 ? 'es' : ''}
+                                </span>
+                            </div>
+                            <div class="col-md-3 text-center">
+                                <span class="text-success fw-bold">
+                                    <i class="fas fa-dollar-sign"></i> ${(prenda.precio * prenda.cantidad).toLocaleString('es-CO')}
+                                </span>
+                            </div>
+                            <div class="col-md-2 text-end">
+                                <button type="button" class="btn btn-danger btn-sm btn-delete-prenda" data-index="${index}">
+                                    <i class="fas fa-trash"></i> Eliminar
+                                </button>
+                            </div>
                         </div>
                     </div>
-                </div>
-            `;
-            listaPrendas.appendChild(card);
+                `;
+                listaPrendas.appendChild(card);
+            });
+
+            actualizarResumen();
+        }
+
+        // Eliminar prenda
+        listaPrendas.addEventListener('click', function(e) {
+            if (e.target.closest('.btn-delete-prenda')) {
+                const index = e.target.closest('.btn-delete-prenda').dataset.index;
+                prendasArray.splice(index, 1);
+                renderPrendas();
+            }
         });
 
+        // Actualizar resumen
+        function actualizarResumen() {
+            const totalPrendas = prendasArray.reduce((sum, p) => sum + p.cantidad, 0);
+            const costoTotal = prendasArray.reduce((sum, p) => sum + (p.precio * p.cantidad), 0);
+            
+            let diasEntrega = 3;
+            if (totalPrendas > 15) diasEntrega = 7;
+            else if (totalPrendas > 5) diasEntrega = 5;
+
+            document.getElementById('totalPrendas').textContent = totalPrendas;
+            document.getElementById('diasEntrega').textContent = totalPrendas > 0 ? `${diasEntrega} días` : '-';
+            document.getElementById('costoTotal').textContent = `$${costoTotal.toLocaleString('es-CO')}`;
+        }
+
+        // Submit form
+        formPedido.addEventListener('submit', function(e) {
+            console.log('Form submitted, prendasArray length:', prendasArray.length);
+            
+            if (prendasArray.length === 0) {
+                e.preventDefault();
+                alert('Debes agregar al menos una prenda al pedido');
+                return false;
+            }
+
+            // Agregar campos hidden al formulario
+            console.log('Agregando campos hidden al formulario...');
+            prendasArray.forEach((prenda, index) => {
+                console.log(`Agregando prenda ${index}:`, prenda);
+                
+                const inputTipo = document.createElement('input');
+                inputTipo.type = 'hidden';
+                inputTipo.name = 'tipo[]';
+                inputTipo.value = prenda.tipo;
+                formPedido.appendChild(inputTipo);
+
+                const inputCantidad = document.createElement('input');
+                inputCantidad.type = 'hidden';
+                inputCantidad.name = 'cantidad[]';
+                inputCantidad.value = prenda.cantidad;
+                formPedido.appendChild(inputCantidad);
+
+                const inputDescripcion = document.createElement('input');
+                inputDescripcion.type = 'hidden';
+                inputDescripcion.name = 'descripcion[]';
+                inputDescripcion.value = prenda.descripcion;
+                formPedido.appendChild(inputDescripcion);
+            });
+            
+            console.log('Form data ready, submitting...');
+        });
+
+        // Inicializar
         actualizarResumen();
     }
-
-    // Eliminar prenda
-    listaPrendas.addEventListener('click', function(e) {
-        if (e.target.closest('.btn-delete-prenda')) {
-            const index = e.target.closest('.btn-delete-prenda').dataset.index;
-            prendasArray.splice(index, 1);
-            renderPrendas();
-        }
-    });
-
-    // Actualizar resumen
-    function actualizarResumen() {
-        const totalPrendas = prendasArray.reduce((sum, p) => sum + p.cantidad, 0);
-        const costoTotal = prendasArray.reduce((sum, p) => sum + (p.precio * p.cantidad), 0);
-        
-        let diasEntrega = 3;
-        if (totalPrendas > 15) diasEntrega = 7;
-        else if (totalPrendas > 5) diasEntrega = 5;
-
-        document.getElementById('totalPrendas').textContent = totalPrendas;
-        document.getElementById('diasEntrega').textContent = totalPrendas > 0 ? `${diasEntrega} días` : '-';
-        document.getElementById('costoTotal').textContent = `$${costoTotal.toLocaleString('es-CO')}`;
+    
+    // Ejecutar cuando el DOM esté listo
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', iniciar);
+    } else {
+        iniciar();
     }
-
-    // Submit form
-    formPedido.addEventListener('submit', function(e) {
-        console.log('Form submitted, prendasArray length:', prendasArray.length);
-        
-        if (prendasArray.length === 0) {
-            e.preventDefault();
-            alert('Debes agregar al menos una prenda al pedido');
-            return false;
-        }
-
-        // Agregar campos hidden al formulario
-        console.log('Agregando campos hidden al formulario...');
-        prendasArray.forEach((prenda, index) => {
-            console.log(`Agregando prenda ${index}:`, prenda);
-            
-            const inputTipo = document.createElement('input');
-            inputTipo.type = 'hidden';
-            inputTipo.name = 'tipo[]';
-            inputTipo.value = prenda.tipo;
-            formPedido.appendChild(inputTipo);
-
-            const inputCantidad = document.createElement('input');
-            inputCantidad.type = 'hidden';
-            inputCantidad.name = 'cantidad[]';
-            inputCantidad.value = prenda.cantidad;
-            formPedido.appendChild(inputCantidad);
-
-            const inputDescripcion = document.createElement('input');
-            inputDescripcion.type = 'hidden';
-            inputDescripcion.name = 'descripcion[]';
-            inputDescripcion.value = prenda.descripcion;
-            formPedido.appendChild(inputDescripcion);
-        });
-        
-        console.log('Form data ready, submitting...');
-        // No retornar false, permitir que el formulario se envíe
-    });
-
-    // Inicializar
-    actualizarResumen();
-}, 500); // Esperar 500ms para asegurar que el DOM está listo
+})();
 </script>
 {% endblock %}
