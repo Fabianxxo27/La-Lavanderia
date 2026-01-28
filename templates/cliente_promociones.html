@@ -108,10 +108,10 @@
                                     <tbody>
                                         <tr class="{% if nivel == 'Bronce' %}table-active{% endif %}">
                                             <td><span class="fs-5">🥉</span> Bronce</td>
-                                            <td>0 - 4 pedidos</td>
+                                            <td>0 - 2 pedidos</td>
                                             <td><span class="badge bg-secondary">0%</span></td>
                                             <td>
-                                                {% if pedidos_count < 5 %}
+                                                {% if pedidos_count < 3 %}
                                                 <span class="badge bg-primary">Nivel Actual</span>
                                                 {% else %}
                                                 <i class="fas fa-check-circle text-success"></i> Completado
@@ -120,12 +120,12 @@
                                         </tr>
                                         <tr class="{% if nivel == 'Plata' %}table-active{% endif %}">
                                             <td><span class="fs-5">🥈</span> Plata</td>
-                                            <td>5 - 9 pedidos</td>
-                                            <td><span class="badge bg-info">10%</span></td>
+                                            <td>3 - 5 pedidos</td>
+                                            <td><span class="badge bg-info">5%</span></td>
                                             <td>
-                                                {% if pedidos_count >= 5 and pedidos_count < 10 %}
+                                                {% if pedidos_count >= 3 and pedidos_count < 6 %}
                                                 <span class="badge bg-primary">Nivel Actual</span>
-                                                {% elif pedidos_count >= 10 %}
+                                                {% elif pedidos_count >= 6 %}
                                                 <i class="fas fa-check-circle text-success"></i> Completado
                                                 {% else %}
                                                 <i class="fas fa-lock text-muted"></i> Bloqueado
@@ -134,12 +134,12 @@
                                         </tr>
                                         <tr class="{% if nivel == 'Oro' %}table-active{% endif %}">
                                             <td><span class="fs-5">🥇</span> Oro</td>
-                                            <td>10 - 19 pedidos</td>
-                                            <td><span class="badge bg-warning text-dark">15%</span></td>
+                                            <td>6 - 9 pedidos</td>
+                                            <td><span class="badge bg-warning text-dark">10%</span></td>
                                             <td>
-                                                {% if pedidos_count >= 10 and pedidos_count < 20 %}
+                                                {% if pedidos_count >= 6 and pedidos_count < 10 %}
                                                 <span class="badge bg-primary">Nivel Actual</span>
-                                                {% elif pedidos_count >= 20 %}
+                                                {% elif pedidos_count >= 10 %}
                                                 <i class="fas fa-check-circle text-success"></i> Completado
                                                 {% else %}
                                                 <i class="fas fa-lock text-muted"></i> Bloqueado
@@ -148,10 +148,10 @@
                                         </tr>
                                         <tr class="{% if nivel == 'Diamante' %}table-active{% endif %}">
                                             <td><span class="fs-5">💎</span> Diamante</td>
-                                            <td>20+ pedidos</td>
-                                            <td><span class="badge bg-success">20%</span></td>
+                                            <td>10+ pedidos</td>
+                                            <td><span class="badge bg-success">15%</span></td>
                                             <td>
-                                                {% if pedidos_count >= 20 %}
+                                                {% if pedidos_count >= 10 %}
                                                 <span class="badge bg-primary">Nivel Actual</span>
                                                 {% else %}
                                                 <i class="fas fa-lock text-muted"></i> Bloqueado
@@ -258,15 +258,5 @@
         overflow: hidden;
     }
 </style>
-
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    var progressBar = document.querySelector('.progress-bar');
-    if (progressBar) {
-        var progreso = {{ progreso }};
-        progressBar.style.width = progreso + '%';
-    }
-});
-</script>
 
 {% endblock %}
