@@ -64,16 +64,16 @@
                     <div class="mb-3">
                         <div class="d-flex justify-content-between mb-2">
                             <span class="fw-bold">Progreso al siguiente nivel: {{ siguiente_nivel }}</span>
-                            <span class="text-muted">{{ "%.0f"|format(progreso|float) }}%</span>
+                            <span class="text-muted">{{ progreso|round(0)|int }}%</span>
                         </div>
                         <div class="progress" style="height: 25px;">
                             <div class="progress-bar bg-success progress-bar-striped progress-bar-animated" 
                                  role="progressbar" 
-                                 style="width: {{ "%.0f"|format(progreso|float) }}%;"
-                                 aria-valuenow="{{ progreso|float }}" 
+                                 style="width: {{ progreso|round(0)|int }}%"
+                                 aria-valuenow="{{ progreso|round(0)|int }}" 
                                  aria-valuemin="0" 
                                  aria-valuemax="100">
-                                {{ "%.0f"|format(progreso|float) }}%
+                                {{ progreso|round(0)|int }}%
                             </div>
                         </div>
                         <small class="text-muted mt-2 d-block">
