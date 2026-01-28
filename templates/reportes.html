@@ -140,7 +140,7 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
     // Datos desde backend
-    const graficos = {{ graficos | safe }};
+    const graficos = JSON.parse('{{ graficos | safe }}');
 
     // Colores personalizados
     const coloresPrimarios = [
