@@ -785,8 +785,6 @@ def agregar_pedido():
                     flash('No se encontró tu usuario en el sistema.', 'danger')
                     return redirect(url_for('cliente_inicio'))
                 id_cliente = cliente_data[0]
-                    return redirect(url_for('cliente_inicio'))
-                id_cliente = cliente_data[0]
             
             # Procesar las prendas del formulario
             tipos = request.form.getlist('tipo[]')

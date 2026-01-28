@@ -69,11 +69,11 @@
                         <div class="progress" style="height: 25px;">
                             <div class="progress-bar bg-success progress-bar-striped progress-bar-animated" 
                                  role="progressbar" 
-                                 style="width: {{ progreso }}%"
+                                 style="width: {{ progreso }}%;"
                                  aria-valuenow="{{ progreso }}" 
                                  aria-valuemin="0" 
                                  aria-valuemax="100">
-                                {{ progreso|round|int }}%
+                                {{ "%.0f"|format(progreso) }}%
                             </div>
                         </div>
                         <small class="text-muted mt-2 d-block">

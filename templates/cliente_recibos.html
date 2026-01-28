@@ -93,7 +93,7 @@
                                     </td>
                                     <td class="text-end">
                                         <strong class="text-success fs-5">
-                                            ${{ "{:,.0f}".format(r[2]) if r[2] else '0' }}
+                                            ${{ "{:,.0f}".format(r[2]|float) if r[2] else '0' }}
                                         </strong>
                                     </td>
                                     <td class="text-center">
@@ -134,7 +134,7 @@
                                 </small>
                             </div>
                             <div class="text-end">
-                                <h5 class="mb-0 text-success">${{ "{:,.0f}".format(r[2]) if r[2] else '0' }}</h5>
+                                <h5 class="mb-0 text-success">${{ "{:,.0f}".format(r[2]|float) if r[2] else '0' }}</h5>
                             </div>
                         </div>
                     </div>
