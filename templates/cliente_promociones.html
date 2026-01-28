@@ -1,31 +1,264 @@
 {% extends "cliente_base.html" %}
-{% block title %}Promociones{% endblock %}
+{% block title %}Promociones y Recompensas - La Lavandería{% endblock %}
 
 {% block content %}
-<h2 class="mb-4">Promociones Activas</h2>
-{% if promo_personalizada %}
-<div class="mb-4">
-  <div class="card p-3 border-primary">
-    <h5 class="text-primary">Promoción personalizada</h5>
-    <p><strong>{{ promo_personalizada.descripcion }}</strong></p>
-    <p>Descuento acumulado: <strong>{{ promo_personalizada.descuento }}%</strong> — <small>{{ promo_personalizada.nota }}</small></p>
-    <p class="text-muted">Has realizado {{ pedidos_count }} pedido(s).</p>
-  </div>
-</div>
-{% endif %}
-{% if promociones %}
-<div class="row g-3">
-  {% for promo in promociones %}
-  <div class="col-md-4">
-    <div class="card p-3">
-      <h5>{{ promo.descripcion }}</h5>
-      <p>Descuento: {{ promo.descuento }}%</p>
-      <p>Válido: {{ promo.fecha_inicio }} al {{ promo.fecha_fin }}</p>
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-lg border-0" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);">
+                <div class="card-body text-white py-4">
+                    <h1 class="mb-2">
+                        <i class="fas fa-gift"></i> Promociones y Recompensas
+                    </h1>
+                    <p class="mb-0 opacity-75">¡Gana descuentos por tu lealtad!</p>
+                </div>
+            </div>
+        </div>
     </div>
-  </div>
-  {% endfor %}
+
+    <!-- Programa de Lealtad -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-lg border-0">
+                <div class="card-header text-white text-center py-3" 
+                     style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                    <h4 class="mb-0">
+                        {{ icono }} Programa de Lealtad - Nivel {{ nivel }}
+                    </h4>
+                </div>
+                <div class="card-body p-4">
+                    <!-- Nivel y Descuento Actual -->
+                    <div class="row text-center mb-4">
+                        <div class="col-md-4 mb-3">
+                            <div class="p-3 bg-light rounded">
+                                <div class="mb-2">
+                                    <span style="font-size: 3rem;">{{ icono }}</span>
+                                </div>
+                                <h5 class="mb-0">{{ nivel }}</h5>
+                                <small class="text-muted">Tu Nivel Actual</small>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <div class="p-3 bg-light rounded">
+                                <div class="mb-2">
+                                    <i class="fas fa-percentage fa-3x text-success"></i>
+                                </div>
+                                <h5 class="mb-0">{{ descuento_base }}%</h5>
+                                <small class="text-muted">Descuento Actual</small>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <div class="p-3 bg-light rounded">
+                                <div class="mb-2">
+                                    <i class="fas fa-shopping-bag fa-3x text-primary"></i>
+                                </div>
+                                <h5 class="mb-0">{{ pedidos_count }}</h5>
+                                <small class="text-muted">Pedidos Realizados</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Barra de Progreso -->
+                    {% if pedidos_faltantes > 0 %}
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="fw-bold">Progreso al siguiente nivel: {{ siguiente_nivel }}</span>
+                            <span class="text-muted">{{ progreso|round|int }}%</span>
+                        </div>
+                        <div class="progress" style="height: 25px;">
+                            <div class="progress-bar bg-success progress-bar-striped progress-bar-animated" 
+                                 role="progressbar" 
+                                 style="width: {{ progreso }}%"
+                                 aria-valuenow="{{ progreso }}" 
+                                 aria-valuemin="0" 
+                                 aria-valuemax="100">
+                                {{ progreso|round|int }}%
+                            </div>
+                        </div>
+                        <small class="text-muted mt-2 d-block">
+                            <i class="fas fa-info-circle"></i> 
+                            Te faltan <strong>{{ pedidos_faltantes }} pedido{{ 's' if pedidos_faltantes != 1 else '' }}</strong> 
+                            para alcanzar el nivel {{ siguiente_nivel }}
+                        </small>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-success mb-3">
+                        <i class="fas fa-trophy"></i> 
+                        <strong>¡Felicidades!</strong> Has alcanzado el nivel máximo de lealtad
+                    </div>
+                    {% endif %}
+
+                    <!-- Tabla de Niveles -->
+                    <div class="card mt-4">
+                        <div class="card-header bg-dark text-white">
+                            <h6 class="mb-0">
+                                <i class="fas fa-layer-group"></i> Niveles de Lealtad
+                            </h6>
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="table-responsive">
+                                <table class="table table-hover mb-0">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Nivel</th>
+                                            <th>Pedidos Requeridos</th>
+                                            <th>Descuento</th>
+                                            <th>Estado</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr class="{% if nivel == 'Bronce' %}table-active{% endif %}">
+                                            <td><span class="fs-5">🥉</span> Bronce</td>
+                                            <td>0 - 4 pedidos</td>
+                                            <td><span class="badge bg-secondary">0%</span></td>
+                                            <td>
+                                                {% if pedidos_count < 5 %}
+                                                <span class="badge bg-primary">Nivel Actual</span>
+                                                {% else %}
+                                                <i class="fas fa-check-circle text-success"></i> Completado
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                        <tr class="{% if nivel == 'Plata' %}table-active{% endif %}">
+                                            <td><span class="fs-5">🥈</span> Plata</td>
+                                            <td>5 - 9 pedidos</td>
+                                            <td><span class="badge bg-info">10%</span></td>
+                                            <td>
+                                                {% if pedidos_count >= 5 and pedidos_count < 10 %}
+                                                <span class="badge bg-primary">Nivel Actual</span>
+                                                {% elif pedidos_count >= 10 %}
+                                                <i class="fas fa-check-circle text-success"></i> Completado
+                                                {% else %}
+                                                <i class="fas fa-lock text-muted"></i> Bloqueado
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                        <tr class="{% if nivel == 'Oro' %}table-active{% endif %}">
+                                            <td><span class="fs-5">🥇</span> Oro</td>
+                                            <td>10 - 19 pedidos</td>
+                                            <td><span class="badge bg-warning text-dark">15%</span></td>
+                                            <td>
+                                                {% if pedidos_count >= 10 and pedidos_count < 20 %}
+                                                <span class="badge bg-primary">Nivel Actual</span>
+                                                {% elif pedidos_count >= 20 %}
+                                                <i class="fas fa-check-circle text-success"></i> Completado
+                                                {% else %}
+                                                <i class="fas fa-lock text-muted"></i> Bloqueado
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                        <tr class="{% if nivel == 'Diamante' %}table-active{% endif %}">
+                                            <td><span class="fs-5">💎</span> Diamante</td>
+                                            <td>20+ pedidos</td>
+                                            <td><span class="badge bg-success">20%</span></td>
+                                            <td>
+                                                {% if pedidos_count >= 20 %}
+                                                <span class="badge bg-primary">Nivel Actual</span>
+                                                {% else %}
+                                                <i class="fas fa-lock text-muted"></i> Bloqueado
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Promociones Generales -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-tags"></i> Promociones Activas
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if promociones %}
+                    <div class="row">
+                        {% for promo in promociones %}
+                        <div class="col-md-6 col-lg-4 mb-3">
+                            <div class="card h-100 border-success promo-card">
+                                <div class="card-body">
+                                    <div class="d-flex align-items-start mb-2">
+                                        <div class="me-3">
+                                            <i class="fas fa-tag fa-2x text-success"></i>
+                                        </div>
+                                        <div class="flex-grow-1">
+                                            <h6 class="mb-1">{{ promo[1] }}</h6>
+                                            <span class="badge bg-success fs-6">{{ promo[2] }}% OFF</span>
+                                        </div>
+                                    </div>
+                                    <hr>
+                                    <small class="text-muted d-block">
+                                        <i class="fas fa-calendar"></i> 
+                                        Válido: {{ promo[3] }} al {{ promo[4] }}
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                        <p class="text-muted">No hay promociones generales activas en este momento</p>
+                        <small class="text-muted">¡Pero tienes tu descuento de lealtad del {{ descuento_base }}%!</small>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Call to Action -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="alert alert-info shadow">
+                <div class="d-flex align-items-center">
+                    <div class="me-3">
+                        <i class="fas fa-lightbulb fa-3x"></i>
+                    </div>
+                    <div class="flex-grow-1">
+                        <h5 class="mb-1">💡 Consejo</h5>
+                        <p class="mb-0">
+                            ¡Crea más pedidos para subir de nivel y obtener descuentos mayores! 
+                            Tu descuento de lealtad se aplicará automáticamente en tu próximo pedido.
+                        </p>
+                    </div>
+                    <div>
+                        <a href="{{ url_for('agregar_pedido') }}" class="btn btn-primary">
+                            <i class="fas fa-plus"></i> Crear Pedido
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
-{% else %}
-<p>No hay promociones activas en este momento.</p>
-{% endif %}
+
+<style>
+    .promo-card {
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .promo-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 16px rgba(0,0,0,0.15);
+    }
+    .table-active {
+        background-color: rgba(102, 126, 234, 0.1);
+        font-weight: bold;
+    }
+    .card {
+        border-radius: 12px;
+        overflow: hidden;
+    }
+</style>
+
 {% endblock %}

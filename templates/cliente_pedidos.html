@@ -1,33 +1,181 @@
 {% extends "cliente_base.html" %}
-{% block title %}Mis Pedidos{% endblock %}
+{% block title %}Mis Pedidos - La Lavandería{% endblock %}
 
 {% block content %}
-<h2 class="mb-4">Mis Pedidos</h2>
-<div class="mb-3">
-  <a href="{{ url_for('agregar_pedido') }}" class="btn btn-success">Crear Pedido</a>
+<div class="container-fluid py-4">
+    <!-- Header con degradado -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-lg border-0" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                <div class="card-body text-white py-4">
+                    <h1 class="mb-2">
+                        <i class="fas fa-box"></i> Mis Pedidos
+                    </h1>
+                    <p class="mb-0 opacity-75">Revisa el estado de todos tus pedidos</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Estadísticas -->
+    <div class="row mb-4">
+        <div class="col-md-3 mb-3">
+            <div class="card text-center h-100 shadow-sm">
+                <div class="card-body">
+                    <div class="mb-2">
+                        <i class="fas fa-boxes fa-2x text-primary"></i>
+                    </div>
+                    <h3 class="mb-0 text-primary">{{ stats.total_pedidos }}</h3>
+                    <p class="text-muted mb-0">Total Pedidos</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card text-center h-100 shadow-sm">
+                <div class="card-body">
+                    <div class="mb-2">
+                        <i class="fas fa-clock fa-2x text-warning"></i>
+                    </div>
+                    <h3 class="mb-0 text-warning">{{ stats.pendientes }}</h3>
+                    <p class="text-muted mb-0">Pendientes</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card text-center h-100 shadow-sm">
+                <div class="card-body">
+                    <div class="mb-2">
+                        <i class="fas fa-spinner fa-2x text-info"></i>
+                    </div>
+                    <h3 class="mb-0 text-info">{{ stats.en_proceso }}</h3>
+                    <p class="text-muted mb-0">En Proceso</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card text-center h-100 shadow-sm">
+                <div class="card-body">
+                    <div class="mb-2">
+                        <i class="fas fa-check-circle fa-2x text-success"></i>
+                    </div>
+                    <h3 class="mb-0 text-success">{{ stats.completados }}</h3>
+                    <p class="text-muted mb-0">Completados</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Botón crear pedido -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <a href="{{ url_for('agregar_pedido') }}" class="btn btn-success btn-lg shadow">
+                <i class="fas fa-plus-circle"></i> Crear Nuevo Pedido
+            </a>
+        </div>
+    </div>
+
+    <!-- Lista de pedidos -->
+    {% if pedidos %}
+    <div class="row">
+        {% for p in pedidos %}
+        <div class="col-lg-6 mb-4">
+            <div class="card h-100 shadow-sm pedido-card">
+                <div class="card-header {% if p[3] == 'Completado' %}bg-success{% elif p[3] == 'En proceso' %}bg-info{% else %}bg-warning{% endif %} text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">
+                            <i class="fas fa-receipt"></i> Pedido #{{ p[0] }}
+                        </h5>
+                        <span class="badge bg-light text-dark">
+                            <i class="fas fa-tshirt"></i> {{ p[4] }} prenda{{ 's' if p[4] != 1 else '' }}
+                        </span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-6 mb-3">
+                            <small class="text-muted d-block">
+                                <i class="fas fa-calendar-plus"></i> Fecha de Ingreso
+                            </small>
+                            <strong>{{ p[1] }}</strong>
+                        </div>
+                        <div class="col-6 mb-3">
+                            <small class="text-muted d-block">
+                                <i class="fas fa-calendar-check"></i> Fecha de Entrega
+                            </small>
+                            <strong>{{ p[2] if p[2] else 'Por confirmar' }}</strong>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <small class="text-muted d-block mb-1">
+                            <i class="fas fa-info-circle"></i> Estado
+                        </small>
+                        {% if p[3] == 'Completado' %}
+                            <span class="badge bg-success fs-6">
+                                <i class="fas fa-check-circle"></i> Completado
+                            </span>
+                        {% elif p[3] == 'En proceso' %}
+                            <span class="badge bg-info fs-6">
+                                <i class="fas fa-spinner"></i> En Proceso
+                            </span>
+                        {% else %}
+                            <span class="badge bg-warning text-dark fs-6">
+                                <i class="fas fa-clock"></i> Pendiente
+                            </span>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Barra de progreso -->
+                    {% if p[3] == 'Completado' %}
+                    <div class="progress mb-2" style="height: 8px;">
+                        <div class="progress-bar bg-success" style="width: 100%"></div>
+                    </div>
+                    <small class="text-success"><i class="fas fa-check"></i> Pedido entregado</small>
+                    {% elif p[3] == 'En proceso' %}
+                    <div class="progress mb-2" style="height: 8px;">
+                        <div class="progress-bar bg-info progress-bar-striped progress-bar-animated" style="width: 60%"></div>
+                    </div>
+                    <small class="text-info"><i class="fas fa-cog fa-spin"></i> Estamos lavando tus prendas...</small>
+                    {% else %}
+                    <div class="progress mb-2" style="height: 8px;">
+                        <div class="progress-bar bg-warning" style="width: 20%"></div>
+                    </div>
+                    <small class="text-muted"><i class="fas fa-hourglass-half"></i> Esperando inicio de lavado</small>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="row">
+        <div class="col-12">
+            <div class="card text-center py-5">
+                <div class="card-body">
+                    <i class="fas fa-box-open fa-4x text-muted mb-3"></i>
+                    <h4 class="text-muted">No tienes pedidos registrados</h4>
+                    <p class="text-muted">¡Crea tu primer pedido para comenzar!</p>
+                    <a href="{{ url_for('agregar_pedido') }}" class="btn btn-primary btn-lg mt-3">
+                        <i class="fas fa-plus-circle"></i> Crear Primer Pedido
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
 </div>
-{% if pedidos %}
-<table class="table table-striped">
-  <thead>
-    <tr>
-      <th>ID</th>
-      <th>Fecha Ingreso</th>
-      <th>Fecha Entrega</th>
-      <th>Estado</th>
-    </tr>
-  </thead>
-  <tbody>
-    {% for p in pedidos %}
-    <tr>
-      <td>{{ p.id_pedido }}</td>
-      <td>{{ p.fecha_ingreso }}</td>
-      <td>{{ p.fecha_entrega or 'Pendiente' }}</td>
-      <td>{{ p.estado }}</td>
-    </tr>
-    {% endfor %}
-  </tbody>
-</table>
-{% else %}
-<p>No tienes pedidos registrados.</p>
-{% endif %}
+
+<style>
+    .pedido-card {
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        border-left: 4px solid #667eea;
+    }
+    .pedido-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 16px rgba(0,0,0,0.15) !important;
+    }
+    .card {
+        border-radius: 12px;
+        overflow: hidden;
+    }
+</style>
 {% endblock %}

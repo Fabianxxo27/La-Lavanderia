@@ -1,17 +1,188 @@
 {% extends "cliente_base.html" %}
-{% block title %}Mis Recibos{% endblock %}
+{% block title %}Mis Recibos - La Lavandería{% endblock %}
 
 {% block content %}
-<h2 class="mb-4">Mis Recibos</h2>
-{% if recibos %}
-<ul class="list-group">
-  {% for r in recibos %}
-  <li class="list-group-item">
-    Pedido #{{ r.id_pedido }} - {{ r.fecha_ingreso }} - Estado: {{ r.estado }}
-  </li>
-  {% endfor %}
-</ul>
-{% else %}
-<p>No tienes recibos generados.</p>
-{% endif %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-lg border-0" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                <div class="card-body text-white py-4">
+                    <h1 class="mb-2">
+                        <i class="fas fa-file-invoice-dollar"></i> Mis Recibos
+                    </h1>
+                    <p class="mb-0 opacity-75">Historial completo de tus pagos</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Estadísticas Financieras -->
+    <div class="row mb-4">
+        <div class="col-md-4 mb-3">
+            <div class="card text-center h-100 shadow-sm border-primary">
+                <div class="card-body">
+                    <div class="mb-2">
+                        <i class="fas fa-receipt fa-2x text-primary"></i>
+                    </div>
+                    <h3 class="mb-0 text-primary">{{ total_recibos }}</h3>
+                    <p class="text-muted mb-0">Total de Recibos</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-3">
+            <div class="card text-center h-100 shadow-sm border-success">
+                <div class="card-body">
+                    <div class="mb-2">
+                        <i class="fas fa-money-bill-wave fa-2x text-success"></i>
+                    </div>
+                    <h3 class="mb-0 text-success">${{ "{:,.0f}".format(total_gastado) }}</h3>
+                    <p class="text-muted mb-0">Total Gastado</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-3">
+            <div class="card text-center h-100 shadow-sm border-info">
+                <div class="card-body">
+                    <div class="mb-2">
+                        <i class="fas fa-chart-line fa-2x text-info"></i>
+                    </div>
+                    <h3 class="mb-0 text-info">${{ "{:,.0f}".format(promedio_gasto) }}</h3>
+                    <p class="text-muted mb-0">Gasto Promedio</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lista de Recibos -->
+    {% if recibos %}
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-list"></i> Historial de Recibos
+                    </h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th><i class="fas fa-hashtag"></i> Recibo</th>
+                                    <th><i class="fas fa-box"></i> Pedido</th>
+                                    <th><i class="fas fa-calendar"></i> Fecha</th>
+                                    <th class="text-end"><i class="fas fa-dollar-sign"></i> Monto</th>
+                                    <th class="text-center">Acción</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for r in recibos %}
+                                <tr class="recibo-row">
+                                    <td>
+                                        <strong class="text-primary">#{{ r[0] }}</strong>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-secondary">
+                                            <i class="fas fa-box"></i> Pedido #{{ r[1] }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <i class="fas fa-calendar-day text-muted"></i>
+                                        {{ r[3] }}
+                                    </td>
+                                    <td class="text-end">
+                                        <strong class="text-success fs-5">
+                                            ${{ "{:,.0f}".format(r[2]) if r[2] else '0' }}
+                                        </strong>
+                                    </td>
+                                    <td class="text-center">
+                                        <button class="btn btn-sm btn-outline-primary" onclick="imprimirRecibo({{ r[0] }})">
+                                            <i class="fas fa-print"></i> Imprimir
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Resumen Visual (Timeline) -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-chart-area"></i> Últimos 5 Recibos
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% for r in recibos[:5] %}
+                    <div class="timeline-item mb-3 pb-3 {% if not loop.last %}border-bottom{% endif %}">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="mb-1">
+                                    <i class="fas fa-circle text-success" style="font-size: 0.5rem;"></i>
+                                    Recibo #{{ r[0] }} - Pedido #{{ r[1] }}
+                                </h6>
+                                <small class="text-muted">
+                                    <i class="fas fa-clock"></i> {{ r[3] }}
+                                </small>
+                            </div>
+                            <div class="text-end">
+                                <h5 class="mb-0 text-success">${{ "{:,.0f}".format(r[2]) if r[2] else '0' }}</h5>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="row">
+        <div class="col-12">
+            <div class="card text-center py-5">
+                <div class="card-body">
+                    <i class="fas fa-file-invoice fa-4x text-muted mb-3"></i>
+                    <h4 class="text-muted">No tienes recibos generados</h4>
+                    <p class="text-muted">Los recibos se generan automáticamente cuando completas un pedido</p>
+                    <a href="{{ url_for('agregar_pedido') }}" class="btn btn-primary btn-lg mt-3">
+                        <i class="fas fa-plus-circle"></i> Crear Pedido
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<style>
+    .recibo-row {
+        transition: background-color 0.3s ease;
+    }
+    .recibo-row:hover {
+        background-color: #f8f9fa;
+    }
+    .timeline-item {
+        position: relative;
+        padding-left: 0;
+    }
+    .card {
+        border-radius: 12px;
+        overflow: hidden;
+    }
+</style>
+
+<script>
+function imprimirRecibo(idRecibo) {
+    alert('Función de impresión para recibo #' + idRecibo + ' - Por implementar');
+    // Aquí puedes agregar lógica para generar PDF o imprimir
+}
+</script>
+
 {% endblock %}

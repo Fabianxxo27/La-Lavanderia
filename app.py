@@ -233,7 +233,7 @@ def cliente_inicio():
 # -----------------------------------------------
 @app.route('/cliente_recibos')
 def cliente_recibos():
-    """Ver recibos del cliente actual."""
+    """Ver recibos del cliente actual con estadísticas."""
     username = session.get('username')
     if not username:
         flash("No se pudo identificar al usuario.", "danger")
@@ -247,7 +247,15 @@ def cliente_recibos():
         ORDER BY r.fecha DESC
     """, {"u": username}, fetchall=True)
     
-    return render_template('cliente_recibos.html', recibos=recibos)
+    # Calcular estadísticas
+    total_gastado = sum(float(r[2]) if r[2] else 0 for r in recibos)
+    promedio_gasto = total_gastado / len(recibos) if recibos else 0
+    
+    return render_template('cliente_recibos.html', 
+                         recibos=recibos,
+                         total_gastado=total_gastado,
+                         promedio_gasto=promedio_gasto,
+                         total_recibos=len(recibos))
 
 
 # -----------------------------------------------
@@ -255,7 +263,66 @@ def cliente_recibos():
 # -----------------------------------------------
 @app.route('/cliente_promociones')
 def cliente_promociones():
-    """Ver promociones disponibles para el cliente."""
+    """Ver promociones disponibles para el cliente con sistema de lealtad."""
+    username = session.get('username')
+    if not username:
+        flash("No se pudo identificar al usuario.", "danger")
+        return redirect(url_for('login'))
+    
+    # Obtener id_usuario del cliente
+    usuario = run_query(
+        "SELECT id_usuario FROM usuario WHERE username = :u",
+        {"u": username},
+        fetchone=True
+    )
+    
+    if not usuario:
+        flash("Usuario no encontrado.", "danger")
+        return redirect(url_for('login'))
+    
+    id_usuario = usuario[0]
+    
+    # Contar pedidos del cliente
+    pedidos_count = run_query(
+        "SELECT COUNT(*) FROM pedido WHERE id_cliente = :id",
+        {"id": id_usuario},
+        fetchone=True
+    )[0] or 0
+    
+    # Calcular nivel de cliente y descuento
+    nivel = 'Bronce'
+    descuento_base = 0
+    icono = '🥉'
+    progreso = 0
+    siguiente_nivel = 'Plata'
+    pedidos_faltantes = 5
+    
+    if pedidos_count >= 20:
+        nivel = 'Diamante'
+        descuento_base = 20
+        icono = '💎'
+        progreso = 100
+        siguiente_nivel = 'Máximo nivel alcanzado'
+        pedidos_faltantes = 0
+    elif pedidos_count >= 10:
+        nivel = 'Oro'
+        descuento_base = 15
+        icono = '🥇'
+        progreso = ((pedidos_count - 10) / 10) * 100
+        siguiente_nivel = 'Diamante'
+        pedidos_faltantes = 20 - pedidos_count
+    elif pedidos_count >= 5:
+        nivel = 'Plata'
+        descuento_base = 10
+        icono = '🥈'
+        progreso = ((pedidos_count - 5) / 5) * 100
+        siguiente_nivel = 'Oro'
+        pedidos_faltantes = 10 - pedidos_count
+    else:
+        progreso = (pedidos_count / 5) * 100
+        pedidos_faltantes = 5 - pedidos_count
+    
+    # Promociones generales activas
     promociones = run_query("""
         SELECT id_promocion, descripcion, descuento, fecha_inicio, fecha_fin
         FROM promocion
@@ -263,7 +330,15 @@ def cliente_promociones():
         ORDER BY fecha_inicio DESC
     """, fetchall=True)
     
-    return render_template('cliente_promociones.html', promociones=promociones)
+    return render_template('cliente_promociones.html', 
+                         promociones=promociones,
+                         pedidos_count=pedidos_count,
+                         nivel=nivel,
+                         descuento_base=descuento_base,
+                         icono=icono,
+                         progreso=progreso,
+                         siguiente_nivel=siguiente_nivel,
+                         pedidos_faltantes=pedidos_faltantes)
 
 
 # -----------------------------------------------
@@ -276,17 +351,47 @@ def cliente_pedidos():
     if not username:
         flash("No se pudo identificar al usuario.", "danger")
         return redirect(url_for('login'))
+    
+    # Obtener id_usuario
+    usuario = run_query(
+        "SELECT id_usuario FROM usuario WHERE username = :u",
+        {"u": username},
+        fetchone=True
+    )
+    
+    if not usuario:
+        flash("Usuario no encontrado.", "danger")
+        return redirect(url_for('login'))
+    
+    id_usuario = usuario[0]
 
+    # Obtener pedidos con conteo de prendas
     pedidos = run_query("""
-        SELECT p.id_pedido, p.fecha_ingreso, p.fecha_entrega, p.estado
+        SELECT 
+            p.id_pedido, 
+            p.fecha_ingreso, 
+            p.fecha_entrega, 
+            p.estado,
+            COUNT(pr.id_prenda) as total_prendas
         FROM pedido p
-        LEFT JOIN cliente c ON p.id_cliente = c.id_cliente
-        LEFT JOIN usuario u ON u.email = c.email
-        WHERE u.username = :u
+        LEFT JOIN prenda pr ON p.id_pedido = pr.id_pedido
+        WHERE p.id_cliente = :id
+        GROUP BY p.id_pedido, p.fecha_ingreso, p.fecha_entrega, p.estado
         ORDER BY p.fecha_ingreso DESC
-    """, {"u": username}, fetchall=True)
+    """, {"id": id_usuario}, fetchall=True)
+    
+    # Estadísticas del cliente
+    stats = {
+        'total_pedidos': len(pedidos),
+        'pendientes': sum(1 for p in pedidos if p[3] == 'Pendiente'),
+        'en_proceso': sum(1 for p in pedidos if p[3] == 'En proceso'),
+        'completados': sum(1 for p in pedidos if p[3] == 'Completado')
+    }
 
-    return render_template('cliente_pedidos.html', pedidos=pedidos, username=username)
+    return render_template('cliente_pedidos.html', 
+                         pedidos=pedidos, 
+                         username=username,
+                         stats=stats)
 
 
 # -----------------------------------------------
