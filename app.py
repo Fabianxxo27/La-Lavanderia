@@ -913,11 +913,14 @@ def agregar_pedido():
             # Insertar las prendas
             total_costo = 0
             prendas_insertadas = 0
+            print(f"DEBUG: Iniciando inserción de prendas. tipos={tipos}, cantidades={cantidades}")
             try:
                 for i, tipo in enumerate(tipos):
                     if tipo and i < len(cantidades):
                         cantidad = int(cantidades[i]) if cantidades[i] else 1
                         descripcion = descripciones[i] if i < len(descripciones) else ''
+                        
+                        print(f"DEBUG: Procesando prenda {i}: tipo={tipo}, cantidad={cantidad}")
                         
                         # Calcular costo (usar precios de prendas_default)
                         precio_prenda = 5000  # precio por defecto
@@ -929,8 +932,9 @@ def agregar_pedido():
                         total_costo += precio_prenda * cantidad
                         
                         # Insertar cada prenda según la cantidad
-                        for _ in range(cantidad):
+                        for j in range(cantidad):
                             try:
+                                print(f"DEBUG: Insertando prenda {j+1}/{cantidad} - tipo={tipo}, id_pedido={id_pedido}")
                                 run_query(
                                     "INSERT INTO prenda (tipo, descripcion, observaciones, id_pedido) VALUES (:t, :d, :o, :ip)",
                                     {
@@ -942,27 +946,35 @@ def agregar_pedido():
                                     commit=True
                                 )
                                 prendas_insertadas += 1
+                                print(f"DEBUG: Prenda insertada exitosamente")
                             except Exception as e_prenda:
-                                print(f"ERROR al insertar prenda individual: {e_prenda}")
+                                print(f"ERROR DETALLADO al insertar prenda: {type(e_prenda).__name__}: {str(e_prenda)}")
                                 flash(f'Error al insertar prenda {tipo}: {str(e_prenda)}', 'warning')
             except Exception as e:
-                print(f"ERROR general al insertar prendas: {e}")
+                print(f"ERROR GENERAL al insertar prendas: {type(e).__name__}: {str(e)}")
                 flash(f'Error al procesar prendas: {str(e)}', 'danger')
             
             # Crear recibo automáticamente con id_usuario_recibo
+            print(f"DEBUG: Creando recibo - id_pedido={id_pedido}, id_usuario_recibo={id_usuario_recibo}, total_costo={total_costo}")
             try:
+                from datetime import datetime
+                fecha_actual = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                print(f"DEBUG: Fecha para recibo: {fecha_actual}")
+                
                 run_query(
                     "INSERT INTO recibo (id_pedido, id_cliente, monto, fecha) VALUES (:ip, :ic, :m, :f)",
                     {
                         "ip": id_pedido,
                         "ic": id_usuario_recibo,
                         "m": total_costo,
-                        "f": fecha_ingreso
+                        "f": fecha_actual
                     },
                     commit=True
                 )
+                print(f"DEBUG: Recibo creado exitosamente")
             except Exception as e:
-                print(f"ERROR al crear recibo: {e}")
+                print(f"ERROR DETALLADO al crear recibo: {type(e).__name__}: {str(e)}")
+                flash(f'Advertencia: No se pudo crear el recibo: {str(e)}', 'warning')
             
             flash(f'¡Pedido creado exitosamente! Total: {total_prendas} prendas solicitadas, {prendas_insertadas} insertadas. Entrega estimada: {fecha_entrega}', 'success')
             
@@ -973,7 +985,11 @@ def agregar_pedido():
                 return redirect(url_for('cliente_pedidos'))
                 
         except Exception as e:
-            flash(f'Error al crear pedido: {e}', 'danger')
+            print(f"ERROR CRÍTICO al crear pedido: {type(e).__name__}: {str(e)}")
+            import traceback
+            print(f"TRACEBACK: {traceback.format_exc()}")
+            flash(f'Error al crear pedido: {type(e).__name__}: {str(e)}', 'danger')
+            return redirect(url_for('agregar_pedido'))
     
     clientes = run_query(
         "SELECT id_usuario, nombre FROM usuario WHERE rol = 'cliente' ORDER BY nombre",
