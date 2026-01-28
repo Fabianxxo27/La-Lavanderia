@@ -124,9 +124,10 @@ def login():
             session['username'] = user[0]  # Guarda el username en sesión
             session['rol'] = user[2]       # Guarda el rol en sesión
             flash(f"Bienvenido {username}", "success")
+            print(f"DEBUG: Usuario {username} con rol: '{user[2]}'")
 
             # Redirigir según rol
-            if str(user[2]).lower() == 'administrador':
+            if str(user[2]).strip().lower() == 'administrador':
                 return redirect(url_for('inicio'))
             else:
                 return redirect(url_for('cliente_inicio'))
@@ -655,7 +656,9 @@ def eliminar_pedido(id_pedido):
 # -----------------------------------------------
 def _admin_only():
     rol = session.get('rol')
-    return rol and str(rol).lower() == 'administrador'
+    if not rol:
+        return False
+    return str(rol).strip().lower() == 'administrador'
 
 
 # -----------------------------------------------
