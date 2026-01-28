@@ -661,7 +661,6 @@ def agregar_prenda(id_pedido):
         return redirect(url_for('pedidos'))
 
     tipo = request.form.get('tipo', '').strip()
-    descripcion = request.form.get('descripcion', '').strip()
 
     if not tipo:
         flash('El campo tipo es obligatorio.', 'warning')
@@ -669,8 +668,8 @@ def agregar_prenda(id_pedido):
 
     try:
         run_query(
-            "INSERT INTO prenda (tipo, descripcion, id_pedido) VALUES (:tipo, :desc, :id)",
-            {"tipo": tipo, "desc": descripcion, "id": id_pedido},
+            "INSERT INTO prenda (tipo, id_pedido) VALUES (:tipo, :id)",
+            {"tipo": tipo, "id": id_pedido},
             commit=True
         )
         flash('Prenda agregada correctamente.', 'success')
@@ -881,15 +880,13 @@ def agregar_pedido():
                 for i, tipo in enumerate(tipos):
                     if tipo and i < len(cantidades):
                         cantidad = int(cantidades[i]) if cantidades[i] else 1
-                        descripcion = descripciones[i] if i < len(descripciones) else ''
                         
                         # Insertar cada prenda según la cantidad
                         for _ in range(cantidad):
                             run_query(
-                                "INSERT INTO prenda (tipo, descripcion, id_pedido) VALUES (:t, :d, :ip)",
+                                "INSERT INTO prenda (tipo, id_pedido) VALUES (:t, :ip)",
                                 {
                                     "t": tipo,
-                                    "d": descripcion,
                                     "ip": id_pedido
                                 },
                                 commit=True
