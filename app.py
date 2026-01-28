@@ -654,37 +654,126 @@ def agregar_pedido():
         flash('Debes iniciar sesión para crear pedidos.', 'danger')
         return redirect(url_for('login'))
     
+    # Obtener rol del usuario
+    usuario = run_query(
+        "SELECT rol FROM usuario WHERE username = :u",
+        {"u": username},
+        fetchone=True
+    )
+    rol = usuario[0].strip().lower() if usuario else 'cliente'
+    
     if request.method == 'POST':
-        id_cliente = request.form.get('id_cliente')
-        fecha_ingreso = request.form.get('fecha_ingreso')
-        fecha_entrega = request.form.get('fecha_entrega')
-        
         try:
-            run_query(
-                "INSERT INTO pedido (fecha_ingreso, fecha_entrega, estado, id_cliente) VALUES (:fi, :fe, :e, :ic)",
+            from datetime import datetime, timedelta
+            
+            # Obtener id_cliente
+            if rol == 'administrador':
+                id_cliente = request.form.get('id_cliente')
+            else:
+                # Buscar el id_cliente asociado al usuario
+                cliente_data = run_query(
+                    "SELECT id_cliente FROM cliente WHERE username = :u",
+                    {"u": username},
+                    fetchone=True
+                )
+                if not cliente_data:
+                    flash('No se encontró un cliente asociado a tu usuario.', 'danger')
+                    return redirect(url_for('cliente_inicio'))
+                id_cliente = cliente_data[0]
+            
+            # Procesar las prendas del formulario
+            tipos = request.form.getlist('tipo[]')
+            cantidades = request.form.getlist('cantidad[]')
+            descripciones = request.form.getlist('descripcion[]')
+            
+            if not tipos or not cantidades:
+                flash('Debes agregar al menos una prenda al pedido.', 'warning')
+                return redirect(url_for('agregar_pedido'))
+            
+            # Calcular total de prendas y fecha de entrega
+            total_prendas = sum(int(c) for c in cantidades if c)
+            dias_entrega = 3 if total_prendas <= 5 else (5 if total_prendas <= 15 else 7)
+            
+            fecha_ingreso = datetime.now().strftime('%Y-%m-%d')
+            fecha_entrega = (datetime.now() + timedelta(days=dias_entrega)).strftime('%Y-%m-%d')
+            
+            # Crear el pedido
+            result = run_query(
+                "INSERT INTO pedido (fecha_ingreso, fecha_entrega, estado, id_cliente) VALUES (:fi, :fe, :e, :ic) RETURNING id_pedido",
                 {
                     "fi": fecha_ingreso,
                     "fe": fecha_entrega,
                     "e": "Pendiente",
                     "ic": id_cliente
                 },
-                commit=True
+                commit=True,
+                fetchone=True
             )
-            flash('Pedido creado correctamente.', 'success')
+            
+            id_pedido = result[0] if result else None
+            
+            if not id_pedido:
+                flash('Error al crear el pedido.', 'danger')
+                return redirect(url_for('agregar_pedido'))
+            
+            # Insertar las prendas
+            for i, tipo in enumerate(tipos):
+                if tipo and i < len(cantidades):
+                    cantidad = int(cantidades[i]) if cantidades[i] else 1
+                    descripcion = descripciones[i] if i < len(descripciones) else ''
+                    
+                    # Insertar cada prenda según la cantidad
+                    for _ in range(cantidad):
+                        run_query(
+                            "INSERT INTO prenda (tipo, descripcion, observaciones, id_pedido) VALUES (:t, :d, :o, :ip)",
+                            {
+                                "t": tipo,
+                                "d": descripcion,
+                                "o": f"Cantidad solicitada: {cantidad}",
+                                "ip": id_pedido
+                            },
+                            commit=True
+                        )
+            
+            flash(f'¡Pedido creado exitosamente! Total: {total_prendas} prendas. Entrega estimada: {fecha_entrega}', 'success')
             
             # Redirigir según el rol
-            if _admin_only():
+            if rol == 'administrador':
                 return redirect(url_for('pedidos'))
             else:
                 return redirect(url_for('cliente_pedidos'))
+                
         except Exception as e:
             flash(f'Error al crear pedido: {e}', 'danger')
+    
+    # Prendas predefinidas con precios estimados
+    prendas_default = [
+        {'nombre': 'Camisa', 'precio': 5000},
+        {'nombre': 'Pantalón', 'precio': 6000},
+        {'nombre': 'Vestido', 'precio': 8000},
+        {'nombre': 'Chaqueta', 'precio': 10000},
+        {'nombre': 'Saco', 'precio': 7000},
+        {'nombre': 'Falda', 'precio': 5500},
+        {'nombre': 'Blusa', 'precio': 4500},
+        {'nombre': 'Abrigo', 'precio': 12000},
+        {'nombre': 'Suéter', 'precio': 6500},
+        {'nombre': 'Jeans', 'precio': 7000},
+        {'nombre': 'Corbata', 'precio': 3000},
+        {'nombre': 'Bufanda', 'precio': 3500},
+        {'nombre': 'Sábana', 'precio': 8000},
+        {'nombre': 'Edredón', 'precio': 15000},
+        {'nombre': 'Cortina', 'precio': 12000}
+    ]
     
     clientes = run_query(
         "SELECT id_cliente, nombre FROM cliente ORDER BY nombre",
         fetchall=True
     )
-    return render_template('agregar_pedido.html', clientes=clientes)
+    
+    return render_template('agregar_pedido.html', 
+                         clientes=clientes, 
+                         rol=rol,
+                         prendas_default=prendas_default)
 
 
 # -----------------------------------------------
