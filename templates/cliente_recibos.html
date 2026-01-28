@@ -97,7 +97,7 @@
                                         </strong>
                                     </td>
                                     <td class="text-center">
-                                        <button class="btn btn-sm btn-outline-primary" onclick="imprimirRecibo({{ r[0] }})">
+                                        <button class="btn btn-sm btn-outline-primary" disabled title="Función en desarrollo">
                                             <i class="fas fa-print"></i> Imprimir
                                         </button>
                                     </td>
@@ -177,12 +177,5 @@
         overflow: hidden;
     }
 </style>
-
-<script>
-function imprimirRecibo(idRecibo) {
-    alert('Función de impresión para recibo #' + idRecibo + ' - Por implementar');
-    // Aquí puedes agregar lógica para generar PDF o imprimir
-}
-</script>
 
 {% endblock %}
