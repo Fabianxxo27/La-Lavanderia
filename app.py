@@ -251,6 +251,26 @@ def cliente_pedidos():
 
 
 # -----------------------------------------------
+# LISTAR PEDIDOS (Administrador)
+# -----------------------------------------------
+@app.route('/pedidos')
+def pedidos():
+    """Mostrar todos los pedidos (para administrador)."""
+    if not _admin_only():
+        flash('Acceso denegado.', 'danger')
+        return redirect(url_for('index'))
+    
+    pedidos = run_query("""
+        SELECT p.id_pedido, p.fecha_ingreso, p.fecha_entrega, p.estado, c.nombre
+        FROM pedido p
+        LEFT JOIN cliente c ON p.id_cliente = c.id_cliente
+        ORDER BY p.fecha_ingreso DESC
+    """, fetchall=True)
+    
+    return render_template('pedidos.html', pedidos=pedidos)
+
+
+# -----------------------------------------------
 # LISTAR CLIENTES
 # -----------------------------------------------
 @app.route('/clientes', methods=['GET', 'POST'])
