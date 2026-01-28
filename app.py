@@ -203,6 +203,16 @@ def registro():
 
 
 # -----------------------------------------------
+# LOGOUT
+# -----------------------------------------------
+@app.route('/logout')
+def logout():
+    session.clear()
+    flash("Sesión cerrada.", "success")
+    return redirect(url_for('login'))
+
+
+# -----------------------------------------------
 # PÁGINA PRINCIPAL DEL PANEL
 # -----------------------------------------------
 @app.route('/inicio')
