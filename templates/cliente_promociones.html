@@ -64,16 +64,14 @@
                     <div class="mb-3">
                         <div class="d-flex justify-content-between mb-2">
                             <span class="fw-bold">Progreso al siguiente nivel: {{ siguiente_nivel }}</span>
-                            <span class="text-muted">{{ progreso|round(0)|int }}%</span>
+                            <span class="text-muted">{{ progreso }}%</span>
                         </div>
                         <div class="progress" style="height: 25px;">
                             <div class="progress-bar bg-success progress-bar-striped progress-bar-animated" 
                                  role="progressbar" 
-                                 style="width: {{ progreso|round(0)|int }}%"
-                                 aria-valuenow="{{ progreso|round(0)|int }}" 
+                                 aria-valuenow="{{ progreso }}" 
                                  aria-valuemin="0" 
                                  aria-valuemax="100">
-                                {{ progreso|round(0)|int }}%
                             </div>
                         </div>
                         <small class="text-muted mt-2 d-block">
@@ -260,5 +258,15 @@
         overflow: hidden;
     }
 </style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var progressBar = document.querySelector('.progress-bar');
+    if (progressBar) {
+        var progreso = {{ progreso }};
+        progressBar.style.width = progreso + '%';
+    }
+});
+</script>
 
 {% endblock %}
