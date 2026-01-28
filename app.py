@@ -228,6 +228,44 @@ def cliente_inicio():
 
 
 # -----------------------------------------------
+# RECIBOS DEL CLIENTE
+# -----------------------------------------------
+@app.route('/cliente_recibos')
+def cliente_recibos():
+    """Ver recibos del cliente actual."""
+    username = session.get('username')
+    if not username:
+        flash("No se pudo identificar al usuario.", "danger")
+        return redirect(url_for('login'))
+    
+    recibos = run_query("""
+        SELECT r.id_recibo, r.id_pedido, r.monto, r.fecha
+        FROM recibo r
+        LEFT JOIN usuario u ON r.id_cliente = u.id_usuario
+        WHERE u.username = :u
+        ORDER BY r.fecha DESC
+    """, {"u": username}, fetchall=True)
+    
+    return render_template('cliente_recibos.html', recibos=recibos)
+
+
+# -----------------------------------------------
+# PROMOCIONES DEL CLIENTE
+# -----------------------------------------------
+@app.route('/cliente_promociones')
+def cliente_promociones():
+    """Ver promociones disponibles para el cliente."""
+    promociones = run_query("""
+        SELECT id_promocion, descripcion, descuento, fecha_inicio, fecha_fin
+        FROM promocion
+        WHERE fecha_fin >= CURRENT_DATE
+        ORDER BY fecha_inicio DESC
+    """, fetchall=True)
+    
+    return render_template('cliente_promociones.html', promociones=promociones)
+
+
+# -----------------------------------------------
 # PEDIDOS DEL cliente
 # -----------------------------------------------
 @app.route('/cliente_pedidos')
