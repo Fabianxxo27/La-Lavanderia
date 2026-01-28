@@ -545,11 +545,11 @@ def reportes():
 # -----------------------------------------------
 @app.route('/agregar_pedido', methods=['GET', 'POST'])
 def agregar_pedido():
-    """Crear un nuevo pedido."""
-    # Solo administradores pueden crear pedidos
-    if not _admin_only():
-        flash('Solo administradores pueden crear pedidos.', 'danger')
-        return redirect(url_for('cliente_inicio'))
+    """Crear un nuevo pedido (clientes y administradores)."""
+    username = session.get('username')
+    if not username:
+        flash('Debes iniciar sesión para crear pedidos.', 'danger')
+        return redirect(url_for('login'))
     
     if request.method == 'POST':
         id_cliente = request.form.get('id_cliente')
@@ -568,7 +568,12 @@ def agregar_pedido():
                 commit=True
             )
             flash('Pedido creado correctamente.', 'success')
-            return redirect(url_for('pedidos'))
+            
+            # Redirigir según el rol
+            if _admin_only():
+                return redirect(url_for('pedidos'))
+            else:
+                return redirect(url_for('cliente_pedidos'))
         except Exception as e:
             flash(f'Error al crear pedido: {e}', 'danger')
     
