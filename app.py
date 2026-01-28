@@ -23,10 +23,10 @@ app.secret_key = "1379"
 db_user = os.getenv('DB_USER')
 if db_user:
     db_user = os.getenv('DB_USER', '437867')  # tu usuario MySQL
-    db_password = os.getenv('DB_PASSWORD', 'U4C9FKrw')  # cambia esto
+    db_password = os.getenv('DB_PASSWORD', 'U4C9FKrw')
     db_host = os.getenv('DB_HOST', 'mysql-fabianmedina.alwaysdata.net')  # host AlwaysData
     db_name = os.getenv('DB_NAME', 'fabianmedina_miapp')  # nombre de la base de datos
-    db_port = os.getenv('DB_PORT', '')  # no es obligatorio para AlwaysData
+    db_port = os.getenv('DB_PORT', '')
     if db_port:
         app.config['SQLALCHEMY_DATABASE_URI'] = f"mysql+pymysql://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}"
     else:
@@ -37,10 +37,10 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
 
-# 🔥 Hacer disponible la función now() en todos los templates
+# Hacer disponible la función now() en todos los templates
 app.jinja_env.globals['now'] = datetime.datetime.now
 
-# 🔥 Hacer disponible la función now() en todos los templates
+# Hacer disponible la función now() en todos los templates
 app.jinja_env.globals['now'] = datetime.datetime.now
 
 
