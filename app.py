@@ -841,35 +841,39 @@ def agregar_pedido():
         try:
             from datetime import datetime, timedelta
             
-            # Obtener id_usuario para usar como id_cliente
+            # Obtener id_usuario (para recibo) e id_cliente (para pedido)
             if rol == 'administrador':
-                # El admin selecciona un cliente del form
-                id_cliente_form = request.form.get('id_cliente')
-                # Buscar el id_usuario correspondiente a ese cliente
-                usuario_cliente = run_query(
-                    "SELECT id_usuario FROM usuario u INNER JOIN cliente c ON u.id_usuario = c.id_cliente WHERE c.id_cliente = :ic",
-                    {"ic": id_cliente_form},
-                    fetchone=True
-                )
-                if usuario_cliente:
-                    id_cliente = usuario_cliente[0]
-                else:
-                    # Si no hay match, usar el id_cliente directamente (puede ser que ya sea id_usuario)
-                    id_cliente = id_cliente_form
+                # El admin selecciona un id_usuario del formulario
+                id_usuario_seleccionado = request.form.get('id_cliente')
+                
+                # Asegurarse que existe el cliente
+                ensure_cliente_exists(id_usuario_seleccionado)
+                
+                # Usar el mismo ID para ambos (pedido usa cliente, recibo usa usuario)
+                id_cliente_pedido = id_usuario_seleccionado  # Para el pedido
+                id_usuario_recibo = id_usuario_seleccionado  # Para el recibo
             else:
-                # Buscar el id_usuario que actúa como id_cliente
-                cliente_data = run_query(
+                # Buscar el id_usuario del cliente logueado
+                usuario_data = run_query(
                     "SELECT id_usuario FROM usuario WHERE username = :u",
                     {"u": username},
                     fetchone=True
                 )
-                if not cliente_data:
+                if not usuario_data:
                     flash('No se encontró tu usuario en el sistema.', 'danger')
                     return redirect(url_for('cliente_inicio'))
-                id_cliente = cliente_data[0]
+                
+                id_usuario_actual = usuario_data[0]
+                
+                # Asegurarse que existe el cliente
+                ensure_cliente_exists(id_usuario_actual)
+                
+                # Usar el mismo ID para ambos
+                id_cliente_pedido = id_usuario_actual
+                id_usuario_recibo = id_usuario_actual
             
             # Garantizar que existe el cliente antes de crear el pedido
-            ensure_cliente_exists(id_cliente)
+            ensure_cliente_exists(id_cliente_pedido)
             
             # Procesar las prendas del formulario
             tipos = request.form.getlist('tipo[]')
@@ -887,14 +891,14 @@ def agregar_pedido():
             fecha_ingreso = datetime.now().strftime('%Y-%m-%d')
             fecha_entrega = (datetime.now() + timedelta(days=dias_entrega)).strftime('%Y-%m-%d')
             
-            # Crear el pedido
+            # Crear el pedido con id_cliente_pedido
             result = run_query(
                 "INSERT INTO pedido (fecha_ingreso, fecha_entrega, estado, id_cliente) VALUES (:fi, :fe, :e, :ic) RETURNING id_pedido",
                 {
                     "fi": fecha_ingreso,
                     "fe": fecha_entrega,
                     "e": "Pendiente",
-                    "ic": id_cliente
+                    "ic": id_cliente_pedido
                 },
                 commit=True,
                 fetchone=True
@@ -908,6 +912,7 @@ def agregar_pedido():
             
             # Insertar las prendas
             total_costo = 0
+            prendas_insertadas = 0
             try:
                 for i, tipo in enumerate(tipos):
                     if tipo and i < len(cantidades):
@@ -925,28 +930,32 @@ def agregar_pedido():
                         
                         # Insertar cada prenda según la cantidad
                         for _ in range(cantidad):
-                            run_query(
-                                "INSERT INTO prenda (tipo, descripcion, observaciones, id_pedido) VALUES (:t, :d, :o, :ip)",
-                                {
-                                    "t": tipo,
-                                    "d": descripcion or '',
-                                    "o": '',
-                                    "ip": id_pedido
-                                },
-                                commit=True
-                            )
+                            try:
+                                run_query(
+                                    "INSERT INTO prenda (tipo, descripcion, observaciones, id_pedido) VALUES (:t, :d, :o, :ip)",
+                                    {
+                                        "t": tipo,
+                                        "d": descripcion or '',
+                                        "o": '',
+                                        "ip": id_pedido
+                                    },
+                                    commit=True
+                                )
+                                prendas_insertadas += 1
+                            except Exception as e_prenda:
+                                print(f"ERROR al insertar prenda individual: {e_prenda}")
+                                flash(f'Error al insertar prenda {tipo}: {str(e_prenda)}', 'warning')
             except Exception as e:
-                print(f"ERROR al insertar prendas: {e}")
-                flash(f'Error al insertar prendas: {str(e)}', 'danger')
-                raise
+                print(f"ERROR general al insertar prendas: {e}")
+                flash(f'Error al procesar prendas: {str(e)}', 'danger')
             
-            # Crear recibo automáticamente
+            # Crear recibo automáticamente con id_usuario_recibo
             try:
                 run_query(
                     "INSERT INTO recibo (id_pedido, id_cliente, monto, fecha) VALUES (:ip, :ic, :m, :f)",
                     {
                         "ip": id_pedido,
-                        "ic": id_cliente,
+                        "ic": id_usuario_recibo,
                         "m": total_costo,
                         "f": fecha_ingreso
                     },
@@ -955,7 +964,7 @@ def agregar_pedido():
             except Exception as e:
                 print(f"ERROR al crear recibo: {e}")
             
-            flash(f'¡Pedido creado exitosamente! Total: {total_prendas} prendas. Entrega estimada: {fecha_entrega}', 'success')
+            flash(f'¡Pedido creado exitosamente! Total: {total_prendas} prendas solicitadas, {prendas_insertadas} insertadas. Entrega estimada: {fecha_entrega}', 'success')
             
             # Redirigir según el rol
             if rol == 'administrador':
