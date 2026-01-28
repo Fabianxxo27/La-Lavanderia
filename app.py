@@ -392,6 +392,134 @@ def agregar_prenda(id_pedido):
 
 
 # -----------------------------------------------
+# REPORTES
+# -----------------------------------------------
+@app.route('/reportes')
+def reportes():
+    """Página de reportes para administrador."""
+    if not _admin_only():
+        flash('Acceso denegado.', 'danger')
+        return redirect(url_for('index'))
+    
+    usuarios = run_query(
+        "SELECT id_usuario, nombre, email FROM usuario WHERE rol='cliente'",
+        fetchall=True
+    )
+    return render_template('reportes.html', usuarios=usuarios)
+
+
+# -----------------------------------------------
+# AGREGAR PEDIDO
+# -----------------------------------------------
+@app.route('/agregar_pedido', methods=['GET', 'POST'])
+def agregar_pedido():
+    """Crear un nuevo pedido."""
+    if not _admin_only():
+        flash('Acceso denegado.', 'danger')
+        return redirect(url_for('index'))
+    
+    if request.method == 'POST':
+        id_cliente = request.form.get('id_cliente')
+        fecha_ingreso = request.form.get('fecha_ingreso')
+        fecha_entrega = request.form.get('fecha_entrega')
+        
+        try:
+            run_query(
+                "INSERT INTO pedido (fecha_ingreso, fecha_entrega, estado, id_cliente) VALUES (:fi, :fe, :e, :ic)",
+                {
+                    "fi": fecha_ingreso,
+                    "fe": fecha_entrega,
+                    "e": "Pendiente",
+                    "ic": id_cliente
+                },
+                commit=True
+            )
+            flash('Pedido creado correctamente.', 'success')
+            return redirect(url_for('pedidos'))
+        except Exception as e:
+            flash(f'Error al crear pedido: {e}', 'danger')
+    
+    clientes = run_query(
+        "SELECT id_cliente, nombre FROM cliente ORDER BY nombre",
+        fetchall=True
+    )
+    return render_template('agregar_pedido.html', clientes=clientes)
+
+
+# -----------------------------------------------
+# DETALLES DE PEDIDO
+# -----------------------------------------------
+@app.route('/pedido_detalles/<int:id_pedido>')
+def pedido_detalles(id_pedido):
+    """Ver detalles de un pedido."""
+    pedido = run_query(
+        "SELECT id_pedido, fecha_ingreso, fecha_entrega, estado, id_cliente FROM pedido WHERE id_pedido = :id",
+        {"id": id_pedido},
+        fetchone=True
+    )
+    
+    if not pedido:
+        flash('Pedido no encontrado.', 'danger')
+        return redirect(url_for('pedidos'))
+    
+    prendas = run_query(
+        "SELECT id_prenda, tipo, descripcion, observaciones FROM prenda WHERE id_pedido = :id",
+        {"id": id_pedido},
+        fetchall=True
+    )
+    
+    return render_template('pedido_detalles.html', pedido=pedido, prendas=prendas)
+
+
+# -----------------------------------------------
+# ACTUALIZAR PEDIDO
+# -----------------------------------------------
+@app.route('/actualizar_pedido/<int:id_pedido>', methods=['POST'])
+def actualizar_pedido(id_pedido):
+    """Actualizar estado de un pedido."""
+    if not _admin_only():
+        flash('Acceso denegado.', 'danger')
+        return redirect(url_for('index'))
+    
+    estado = request.form.get('estado')
+    
+    try:
+        run_query(
+            "UPDATE pedido SET estado = :e WHERE id_pedido = :id",
+            {"e": estado, "id": id_pedido},
+            commit=True
+        )
+        flash('Pedido actualizado correctamente.', 'success')
+    except Exception as e:
+        flash(f'Error al actualizar: {e}', 'danger')
+    
+    return redirect(url_for('pedido_detalles', id_pedido=id_pedido))
+
+
+# -----------------------------------------------
+# ELIMINAR PEDIDO
+# -----------------------------------------------
+@app.route('/eliminar_pedido/<int:id_pedido>', methods=['POST'])
+def eliminar_pedido(id_pedido):
+    """Eliminar un pedido."""
+    if not _admin_only():
+        flash('Acceso denegado.', 'danger')
+        return redirect(url_for('index'))
+    
+    try:
+        run_query(
+            "DELETE FROM pedido WHERE id_pedido = :id",
+            {"id": id_pedido},
+            commit=True
+        )
+        flash('Pedido eliminado correctamente.', 'success')
+    except Exception as e:
+        flash(f'Error al eliminar: {e}', 'danger')
+    
+    return redirect(url_for('pedidos'))
+
+
+# -----------------------------------------------
 # FUNCIONES AUXILIARES (ej. _admin_only)
 # -----------------------------------------------
 def _admin_only():
