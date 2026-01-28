@@ -546,9 +546,10 @@ def reportes():
 @app.route('/agregar_pedido', methods=['GET', 'POST'])
 def agregar_pedido():
     """Crear un nuevo pedido."""
+    # Solo administradores pueden crear pedidos
     if not _admin_only():
-        flash('Acceso denegado.', 'danger')
-        return redirect(url_for('index'))
+        flash('Solo administradores pueden crear pedidos.', 'danger')
+        return redirect(url_for('cliente_inicio'))
     
     if request.method == 'POST':
         id_cliente = request.form.get('id_cliente')
