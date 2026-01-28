@@ -342,38 +342,38 @@ def cliente_promociones():
         fetchone=True
     )[0] or 0
     
-    # Calcular nivel de cliente y descuento
+    # Calcular nivel de cliente y descuento (requisitos reducidos)
     nivel = 'Bronce'
     descuento_base = 0
     icono = '🥉'
     progreso = 0
     siguiente_nivel = 'Plata'
-    pedidos_faltantes = 5
+    pedidos_faltantes = 3
     
-    if pedidos_count >= 20:
+    if pedidos_count >= 10:
         nivel = 'Diamante'
-        descuento_base = 20
+        descuento_base = 15
         icono = '💎'
         progreso = 100
         siguiente_nivel = 'Máximo nivel alcanzado'
         pedidos_faltantes = 0
-    elif pedidos_count >= 10:
+    elif pedidos_count >= 6:
         nivel = 'Oro'
-        descuento_base = 15
-        icono = '🥇'
-        progreso = ((pedidos_count - 10) / 10) * 100
-        siguiente_nivel = 'Diamante'
-        pedidos_faltantes = 20 - pedidos_count
-    elif pedidos_count >= 5:
-        nivel = 'Plata'
         descuento_base = 10
-        icono = '🥈'
-        progreso = ((pedidos_count - 5) / 5) * 100
-        siguiente_nivel = 'Oro'
+        icono = '🥇'
+        progreso = ((pedidos_count - 6) / 4) * 100
+        siguiente_nivel = 'Diamante'
         pedidos_faltantes = 10 - pedidos_count
+    elif pedidos_count >= 3:
+        nivel = 'Plata'
+        descuento_base = 5
+        icono = '🥈'
+        progreso = ((pedidos_count - 3) / 3) * 100
+        siguiente_nivel = 'Oro'
+        pedidos_faltantes = 6 - pedidos_count
     else:
-        progreso = (pedidos_count / 5) * 100
-        pedidos_faltantes = 5 - pedidos_count
+        progreso = (pedidos_count / 3) * 100
+        pedidos_faltantes = 3 - pedidos_count
     
     # Promociones generales activas
     promociones = run_query("""
@@ -818,6 +818,25 @@ def agregar_pedido():
     )
     rol = usuario[0].strip().lower() if usuario else 'cliente'
     
+    # Prendas predefinidas con precios estimados
+    prendas_default = [
+        {'nombre': 'Camisa', 'precio': 5000},
+        {'nombre': 'Pantalón', 'precio': 6000},
+        {'nombre': 'Vestido', 'precio': 8000},
+        {'nombre': 'Chaqueta', 'precio': 10000},
+        {'nombre': 'Saco', 'precio': 7000},
+        {'nombre': 'Falda', 'precio': 5500},
+        {'nombre': 'Blusa', 'precio': 4500},
+        {'nombre': 'Abrigo', 'precio': 12000},
+        {'nombre': 'Suéter', 'precio': 6500},
+        {'nombre': 'Jeans', 'precio': 7000},
+        {'nombre': 'Corbata', 'precio': 3000},
+        {'nombre': 'Bufanda', 'precio': 3500},
+        {'nombre': 'Sábana', 'precio': 8000},
+        {'nombre': 'Edredón', 'precio': 15000},
+        {'nombre': 'Cortina', 'precio': 12000}
+    ]
+    
     if request.method == 'POST':
         try:
             from datetime import datetime, timedelta
@@ -876,33 +895,53 @@ def agregar_pedido():
                 return redirect(url_for('agregar_pedido'))
             
             # Insertar las prendas
+            total_costo = 0
             try:
-                print(f"DEBUG: Insertando prendas para pedido {id_pedido}")
-                print(f"DEBUG: tipos = {tipos}")
-                print(f"DEBUG: cantidades = {cantidades}")
-                
                 for i, tipo in enumerate(tipos):
                     if tipo and i < len(cantidades):
                         cantidad = int(cantidades[i]) if cantidades[i] else 1
-                        print(f"DEBUG: Insertando {cantidad}x {tipo}")
+                        descripcion = descripciones[i] if i < len(descripciones) else ''
+                        
+                        # Calcular costo (usar precios de prendas_default)
+                        precio_prenda = 5000  # precio por defecto
+                        for prenda in prendas_default:
+                            if prenda['nombre'] == tipo:
+                                precio_prenda = prenda['precio']
+                                break
+                        
+                        total_costo += precio_prenda * cantidad
                         
                         # Insertar cada prenda según la cantidad
                         for _ in range(cantidad):
                             run_query(
-                                "INSERT INTO prenda (tipo, id_pedido) VALUES (:t, :ip)",
+                                "INSERT INTO prenda (tipo, descripcion, observaciones, id_pedido) VALUES (:t, :d, :o, :ip)",
                                 {
                                     "t": tipo,
+                                    "d": descripcion or '',
+                                    "o": '',
                                     "ip": id_pedido
                                 },
                                 commit=True
                             )
-                print(f"DEBUG: Todas las prendas insertadas correctamente")
             except Exception as e:
-                import traceback
                 print(f"ERROR al insertar prendas: {e}")
-                print(f"TRACEBACK: {traceback.format_exc()}")
                 flash(f'Error al insertar prendas: {str(e)}', 'danger')
                 raise
+            
+            # Crear recibo automáticamente
+            try:
+                run_query(
+                    "INSERT INTO recibo (id_pedido, id_cliente, monto, fecha) VALUES (:ip, :ic, :m, :f)",
+                    {
+                        "ip": id_pedido,
+                        "ic": id_cliente,
+                        "m": total_costo,
+                        "f": fecha_ingreso
+                    },
+                    commit=True
+                )
+            except Exception as e:
+                print(f"ERROR al crear recibo: {e}")
             
             flash(f'¡Pedido creado exitosamente! Total: {total_prendas} prendas. Entrega estimada: {fecha_entrega}', 'success')
             
@@ -914,25 +953,6 @@ def agregar_pedido():
                 
         except Exception as e:
             flash(f'Error al crear pedido: {e}', 'danger')
-    
-    # Prendas predefinidas con precios estimados
-    prendas_default = [
-        {'nombre': 'Camisa', 'precio': 5000},
-        {'nombre': 'Pantalón', 'precio': 6000},
-        {'nombre': 'Vestido', 'precio': 8000},
-        {'nombre': 'Chaqueta', 'precio': 10000},
-        {'nombre': 'Saco', 'precio': 7000},
-        {'nombre': 'Falda', 'precio': 5500},
-        {'nombre': 'Blusa', 'precio': 4500},
-        {'nombre': 'Abrigo', 'precio': 12000},
-        {'nombre': 'Suéter', 'precio': 6500},
-        {'nombre': 'Jeans', 'precio': 7000},
-        {'nombre': 'Corbata', 'precio': 3000},
-        {'nombre': 'Bufanda', 'precio': 3500},
-        {'nombre': 'Sábana', 'precio': 8000},
-        {'nombre': 'Edredón', 'precio': 15000},
-        {'nombre': 'Cortina', 'precio': 12000}
-    ]
     
     clientes = run_query(
         "SELECT id_cliente, nombre FROM cliente ORDER BY nombre",
