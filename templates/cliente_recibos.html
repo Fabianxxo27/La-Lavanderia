@@ -73,7 +73,6 @@
                                     <th><i class="fas fa-box"></i> Pedido</th>
                                     <th><i class="fas fa-calendar"></i> Fecha</th>
                                     <th class="text-end"><i class="fas fa-dollar-sign"></i> Monto</th>
-                                    <th class="text-center">Acción</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -95,11 +94,6 @@
                                         <strong class="text-success fs-5">
                                             ${{ r[2]|int if r[2] else '0' }}
                                         </strong>
-                                    </td>
-                                    <td class="text-center">
-                                        <button class="btn btn-sm btn-outline-primary" disabled title="Función en desarrollo">
-                                            <i class="fas fa-print"></i> Imprimir
-                                        </button>
                                     </td>
                                 </tr>
                                 {% endfor %}
