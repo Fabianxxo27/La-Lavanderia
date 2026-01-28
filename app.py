@@ -90,6 +90,43 @@ def run_query(query, params=None, fetchone=False, fetchall=False, commit=False, 
 
 
 # -----------------------------------------------
+# FUNCIÓN AUXILIAR: Garantizar que existe registro en cliente
+# -----------------------------------------------
+def ensure_cliente_exists(id_usuario):
+    """
+    Garantiza que existe un registro en la tabla cliente para un usuario.
+    Si no existe, lo crea automáticamente.
+    """
+    cliente_exists = run_query(
+        "SELECT id_cliente FROM cliente WHERE id_cliente = :id",
+        {"id": id_usuario},
+        fetchone=True
+    )
+    
+    if not cliente_exists:
+        # Obtener datos del usuario para crear el cliente
+        usuario = run_query(
+            "SELECT nombre, email FROM usuario WHERE id_usuario = :id",
+            {"id": id_usuario},
+            fetchone=True
+        )
+        
+        if usuario:
+            try:
+                run_query(
+                    "INSERT INTO cliente (id_cliente, nombre, email) VALUES (:ic, :n, :e)",
+                    {
+                        "ic": id_usuario,
+                        "n": usuario[0],
+                        "e": usuario[1]
+                    },
+                    commit=True
+                )
+                print(f"✓ Cliente creado automáticamente para id_usuario={id_usuario}")
+            except Exception as e:
+                print(f"✗ Error al crear cliente: {e}")
+
+# -----------------------------------------------
 # RUTA PRINCIPAL
 # -----------------------------------------------
 @app.route('/')
@@ -800,6 +837,9 @@ def agregar_pedido():
                     flash('No se encontró tu usuario en el sistema.', 'danger')
                     return redirect(url_for('cliente_inicio'))
                 id_cliente = cliente_data[0]
+            
+            # Garantizar que existe el cliente antes de crear el pedido
+            ensure_cliente_exists(id_cliente)
             
             # Procesar las prendas del formulario
             tipos = request.form.getlist('tipo[]')
