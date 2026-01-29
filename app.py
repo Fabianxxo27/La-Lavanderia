@@ -5,10 +5,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from io import BytesIO
 import pandas as pd
 import datetime
-import smtplib
 import credentials as cd
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
 import os
 import urllib.parse
 from dotenv import load_dotenv
@@ -136,36 +133,6 @@ def ensure_cliente_exists(id_usuario):
         raise
 
 # -----------------------------------------------
-# FUNCIÓN PARA ENVIAR CORREOS
-# -----------------------------------------------
-def send_email(to_email, subject, body_html):
-    """Envía un correo HTML usando SMTP de Gmail."""
-    try:
-        smtp_server = "smtp.gmail.com"
-        smtp_port = 587
-        sender_email = "lalavanderiabogota@gmail.com"
-        sender_password = "dsjmjtvtwcahqrwy"
-
-        message = MIMEMultipart("alternative")
-        message["From"] = sender_email
-        message["To"] = to_email
-        message["Subject"] = subject
-        
-        # Agregar versión HTML del mensaje
-        part = MIMEText(body_html, "html")
-        message.attach(part)
-
-        with smtplib.SMTP(smtp_server, smtp_port) as server:
-            server.starttls()
-            server.login(sender_email, sender_password)
-            server.sendmail(sender_email, to_email, message.as_string())
-        
-        return True
-    except Exception as e:
-        print(f"Error al enviar correo: {e}")
-        return False
-
-# -----------------------------------------------
 # RUTA PRINCIPAL
 # -----------------------------------------------
 @app.route('/')
@@ -281,35 +248,6 @@ def registro():
                     },
                     commit=True
                 )
-                
-                # Enviar correo de bienvenida
-                html_email = f"""
-                <html>
-                    <body style="font-family: Arial, sans-serif; color: #333;">
-                        <div style="background: linear-gradient(135deg, #a6cc48 0%, #84af1d 100%); padding: 20px; border-radius: 10px; color: white; text-align: center;">
-                            <h1 style="margin: 0;">¡Bienvenido a La Lavandería!</h1>
-                        </div>
-                        <div style="padding: 20px; background: #f9fdf5;">
-                            <p>Hola <strong>{nombre}</strong>,</p>
-                            <p>Gracias por registrarte en <strong>La Lavandería</strong>. Nos complace tenerte como cliente.</p>
-                            <div style="background: white; border-left: 4px solid #a6cc48; padding: 15px; margin: 20px 0; border-radius: 5px;">
-                                <p><strong>Datos de tu cuenta:</strong></p>
-                                <ul style="list-style: none; padding: 0;">
-                                    <li>👤 <strong>Usuario:</strong> {username}</li>
-                                    <li>📧 <strong>Email:</strong> {email}</li>
-                                </ul>
-                            </div>
-                            <p>Ya puedes iniciar sesión en nuestra plataforma y comenzar a crear tus pedidos.</p>
-                            <p style="color: #666; font-size: 14px; margin-top: 30px;">
-                                Si tienes dudas, no dudes en contactarnos.<br>
-                                <strong>La Lavandería</strong><br>
-                                Servicio profesional de lavandería
-                            </p>
-                        </div>
-                    </body>
-                </html>
-                """
-                send_email(email, "¡Bienvenido a La Lavandería!", html_email)
 
             flash("Usuario registrado exitosamente.", "success")
             return redirect(url_for("login"))
@@ -1135,70 +1073,12 @@ def agregar_pedido():
                 commit=True
             )
             
-            # 10. Obtener datos del cliente y prendas para enviar correo
+            # 10. Obtener datos del cliente para el flash
             cliente_data = run_query(
-                "SELECT nombre, email FROM cliente WHERE id_cliente = :id",
+                "SELECT nombre FROM cliente WHERE id_cliente = :id",
                 {"id": id_cliente},
                 fetchone=True
             )
-            
-            # Construir lista de prendas para el correo
-            lista_prendas_html = ""
-            for prenda in prendas_a_insertar:
-                lista_prendas_html += f"<li>{prenda['cantidad']}x {prenda['tipo']}</li>"
-            
-            # Enviar correo de confirmación
-            if cliente_data:
-                nombre_cliente = cliente_data[0]
-                email_cliente = cliente_data[1]
-                
-                html_email = f"""
-                <html>
-                    <body style="font-family: Arial, sans-serif; color: #333;">
-                        <div style="background: linear-gradient(135deg, #a6cc48 0%, #84af1d 100%); padding: 20px; border-radius: 10px; color: white; text-align: center;">
-                            <h1 style="margin: 0;">¡Pedido Confirmado!</h1>
-                        </div>
-                        <div style="padding: 20px; background: #f9fdf5;">
-                            <p>Hola <strong>{nombre_cliente}</strong>,</p>
-                            <p>Tu pedido ha sido registrado correctamente en <strong>La Lavandería</strong>.</p>
-                            
-                            <div style="background: white; border-left: 4px solid #a6cc48; padding: 15px; margin: 20px 0; border-radius: 5px;">
-                                <p><strong>📦 Detalles del Pedido:</strong></p>
-                                <ul style="list-style: none; padding: 0;">
-                                    <li><strong>Número de Pedido:</strong> #{id_pedido}</li>
-                                    <li><strong>Fecha de Ingreso:</strong> {fecha_ingreso}</li>
-                                    <li><strong>Fecha de Entrega:</strong> {fecha_entrega}</li>
-                                </ul>
-                            </div>
-                            
-                            <div style="background: white; border-left: 4px solid #a6cc48; padding: 15px; margin: 20px 0; border-radius: 5px;">
-                                <p><strong>👕 Prendas a Entregar:</strong></p>
-                                <ul style="margin: 10px 0; padding-left: 20px;">
-                                    {lista_prendas_html}
-                                </ul>
-                                <p><strong>Total de prendas:</strong> {prendas_insertadas}</p>
-                            </div>
-                            
-                            <div style="background: white; border-left: 4px solid #a6cc48; padding: 15px; margin: 20px 0; border-radius: 5px;">
-                                <p><strong>💳 Resumen de Pago:</strong></p>
-                                <ul style="list-style: none; padding: 0;">
-                                    <li><strong>Subtotal:</strong> ${total_costo:,.0f}</li>
-                                    {f'<li><strong>Descuento ({descuento_porcentaje}%):</strong> -${monto_descuento:,.0f}</li>' if descuento_porcentaje > 0 else ''}
-                                    <li style="font-size: 16px; color: #a6cc48;"><strong>Total a Pagar:</strong> ${monto_final:,.0f}</li>
-                                </ul>
-                            </div>
-                            
-                            <p style="color: #666; font-size: 14px; margin-top: 30px;">
-                                Tu pedido será procesado en los próximos días. Recibirás una notificación cuando esté listo para entrega.<br>
-                                Si tienes preguntas, contáctanos en <strong>lalavanderiabogota@gmail.com</strong><br><br>
-                                <strong>La Lavandería</strong><br>
-                                Servicio profesional de lavandería
-                            </p>
-                        </div>
-                    </body>
-                </html>
-                """
-                send_email(email_cliente, f"Confirmación de Pedido #{id_pedido} - La Lavandería", html_email)
             
             # Mensaje con descuento aplicado
             msg_descuento = f" (Descuento {descuento_porcentaje}%: -${monto_descuento:,.0f})" if descuento_porcentaje > 0 else ""
