@@ -1511,64 +1511,6 @@ def _get_safe_redirect():
 
 
 # -----------------------------------------------
-# MIGRACIÓN TEMPORAL - ELIMINAR DESPUÉS DE EJECUTAR
-# -----------------------------------------------
-@app.route('/ejecutar_migracion_codigo_barras')
-def ejecutar_migracion():
-    """TEMPORAL: Ejecutar migración de código de barras. ELIMINAR DESPUÉS DE USAR."""
-    if not _admin_only():
-        return "❌ Acceso denegado. Debes ser administrador.", 403
-    
-    try:
-        # 1. Eliminar recibos
-        run_query("DELETE FROM recibo", commit=True)
-        
-        # 2. Eliminar prendas
-        run_query("DELETE FROM prenda", commit=True)
-        
-        # 3. Eliminar pedidos
-        run_query("DELETE FROM pedido", commit=True)
-        
-        # 4. Reiniciar secuencia
-        run_query("ALTER SEQUENCE pedido_id_pedido_seq RESTART WITH 1", commit=True)
-        
-        # 5. Agregar columna codigo_barras
-        run_query("ALTER TABLE pedido ADD COLUMN IF NOT EXISTS codigo_barras VARCHAR(50) UNIQUE", commit=True)
-        
-        # 6. Crear índice
-        run_query("CREATE INDEX IF NOT EXISTS idx_pedido_codigo_barras ON pedido(codigo_barras)", commit=True)
-        
-        return """
-        <html>
-        <body style="font-family: Arial; padding: 50px; text-align: center;">
-            <h1 style="color: green;">✅ Migración ejecutada correctamente</h1>
-            <p><strong>Se ha completado la migración de código de barras.</strong></p>
-            <ul style="list-style: none; padding: 0;">
-                <li>✓ Todos los pedidos, prendas y recibos han sido eliminados</li>
-                <li>✓ Contador de IDs reiniciado a 1</li>
-                <li>✓ Columna codigo_barras agregada</li>
-                <li>✓ Índice creado</li>
-            </ul>
-            <hr>
-            <p style="color: red; font-weight: bold;">⚠️ IMPORTANTE: ELIMINA la función ejecutar_migracion_codigo_barras de app.py ahora</p>
-            <br>
-            <a href="/pedidos" style="background: #1a4e7b; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Ir a Pedidos</a>
-        </body>
-        </html>
-        """
-    except Exception as e:
-        return f"""
-        <html>
-        <body style="font-family: Arial; padding: 50px; text-align: center;">
-            <h1 style="color: red;">❌ Error en la migración</h1>
-            <p><strong>Error:</strong> {str(e)}</p>
-            <a href="/inicio" style="background: #1a4e7b; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Volver</a>
-        </body>
-        </html>
-        """
-
-
-# -----------------------------------------------
 # MAIN
 # -----------------------------------------------
 if __name__ == '__main__':
