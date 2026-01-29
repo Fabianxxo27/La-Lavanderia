@@ -3,130 +3,318 @@
 
 {% block content %}
 <style>
-  body {
-    background: linear-gradient(180deg, #d1e77d 0%, #a6cc48 100%);
-    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen,
-      Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
-    margin: 0;
-    padding: 0;
-    color: #222;
+  .welcome-section {
+    text-align: center;
+    margin-bottom: 3rem;
+    animation: slideUp 0.6s ease;
   }
 
-  h1 {
-    color: #35472e;
+  @keyframes slideUp {
+    from {
+      opacity: 0;
+      transform: translateY(30px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .welcome-title {
+    color: #2c3e50;
     font-weight: 900;
-    text-shadow: 1px 1px 0 #b3be83;
+    font-size: 2.5rem;
+    margin-bottom: 1rem;
+    background: linear-gradient(135deg, #3498db, #2ecc71);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    letter-spacing: -0.5px;
+  }
+
+  .welcome-subtitle {
+    color: #7f8c8d;
+    font-weight: 600;
+    font-size: 1.1rem;
+    line-height: 1.8;
+  }
+
+  .stats-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 3rem;
+  }
+
+  .stat-card {
+    background: linear-gradient(135deg, #fff, #f8f9fa);
+    border-radius: 15px;
+    padding: 2rem;
     text-align: center;
+    border: 2px solid #ecf0f1;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+  }
+
+  .stat-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(52, 152, 219, 0.2);
+    border-color: #3498db;
+  }
+
+  .stat-icon {
+    font-size: 2.5rem;
+    margin-bottom: 1rem;
+    color: #3498db;
+  }
+
+  .stat-label {
+    color: #7f8c8d;
+    font-weight: 600;
+    font-size: 0.95rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .cards-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 2rem;
     margin-bottom: 2rem;
   }
 
-  .lead {
-    color: #272f14;
-    font-weight: 700;
+  .service-card {
+    background: linear-gradient(135deg, #fff, #f8f9fa);
+    border-radius: 15px;
+    padding: 2.5rem;
     text-align: center;
+    border: 2px solid #ecf0f1;
+    transition: all 0.3s ease;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+    height: 100%;
+    display: flex;
+    flex-direction: column;
   }
 
-  .card {
-    background: #fff;
-    border-radius: 1rem;
-    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
-    color: #0d1d2a;
-    font-weight: 700;
-    transition: box-shadow 0.3s ease;
+  .service-card:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15);
+    border-color: #3498db;
+    background: linear-gradient(135deg, #f0f8ff, #fff);
   }
 
-  .card:hover {
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.22);
+  .service-icon {
+    font-size: 3.5rem;
+    margin-bottom: 1.5rem;
+    transition: all 0.3s ease;
+  }
+
+  .service-card:nth-child(1) .service-icon {
+    color: #3498db;
+  }
+
+  .service-card:nth-child(2) .service-icon {
+    color: #2ecc71;
+  }
+
+  .service-card:nth-child(3) .service-icon {
+    color: #f39c12;
+  }
+
+  .service-card:hover .service-icon {
+    transform: scale(1.15) rotate(5deg);
   }
 
   .card-title {
-    color: #0f33b0;
-    font-weight: 900;
-    text-shadow: 2px 2px 0 #c3dc7f;
+    color: #2c3e50;
+    font-weight: 800;
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
   }
 
   .card-text {
-    color: #272f14;
-    font-weight: 700;
+    color: #7f8c8d;
+    font-weight: 500;
+    line-height: 1.7;
+    margin-bottom: 1.5rem;
+    flex-grow: 1;
   }
 
-  .btn-primary {
-    background-color: #1a4e7b;
-    border-color: #1a4e7b;
+  .btn-service {
+    padding: 0.8rem 2rem;
+    border-radius: 10px;
     font-weight: 700;
-    letter-spacing: 0.7px;
+    letter-spacing: 0.5px;
     transition: all 0.3s ease;
+    text-transform: uppercase;
+    font-size: 0.95rem;
+    border: none;
   }
 
-  .btn-primary:hover {
-    background-color: #0d1d2a;
-    border-color: #0d1d2a;
+  .service-card:nth-child(1) .btn-service {
+    background: linear-gradient(45deg, #3498db, #2980b9);
     color: #fff;
   }
 
-  .btn-success {
-    background-color: #a6cc48;
-    border-color: #7dbc30;
-    font-weight: 700;
-    letter-spacing: 0.7px;
-    transition: all 0.3s ease;
+  .service-card:nth-child(1) .btn-service:hover {
+    background: linear-gradient(45deg, #2980b9, #1a5276);
+    box-shadow: 0 6px 20px rgba(52, 152, 219, 0.4);
   }
 
-  .btn-success:hover {
-    background-color: #7dbc30;
-    border-color: #5f8022;
+  .service-card:nth-child(2) .btn-service {
+    background: linear-gradient(45deg, #2ecc71, #27ae60);
     color: #fff;
   }
 
-  .btn-warning {
-    background-color: #84af1d;
-    border-color: #5f8022;
-    font-weight: 700;
-    letter-spacing: 0.7px;
-    transition: all 0.3s ease;
+  .service-card:nth-child(2) .btn-service:hover {
+    background: linear-gradient(45deg, #27ae60, #1e8449);
+    box-shadow: 0 6px 20px rgba(46, 204, 113, 0.4);
   }
 
-  .btn-warning:hover {
-    background-color: #5f8022;
-    border-color: #35472e;
+  .service-card:nth-child(3) .btn-service {
+    background: linear-gradient(45deg, #f39c12, #d68910);
     color: #fff;
   }
 
-  .row {
-    justify-content: center;
+  .service-card:nth-child(3) .btn-service:hover {
+    background: linear-gradient(45deg, #d68910, #b8860b);
+    box-shadow: 0 6px 20px rgba(243, 156, 18, 0.4);
   }
 
-  .col-md-3 {
-    margin-bottom: 2rem;
+  .info-section {
+    background: linear-gradient(135deg, #ecf0f1, #bdc3c7);
+    border-radius: 15px;
+    padding: 2rem;
+    margin-top: 2rem;
+    border-left: 5px solid #3498db;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+  }
+
+  .info-section h4 {
+    color: #2c3e50;
+    font-weight: 800;
+    margin-bottom: 1rem;
+  }
+
+  .info-section p {
+    color: #34495e;
+    font-weight: 500;
+    line-height: 1.8;
+  }
+
+  .info-list {
+    list-style: none;
+    padding: 0;
+  }
+
+  .info-list li {
+    padding: 0.5rem 0;
+    color: #34495e;
+    font-weight: 500;
+  }
+
+  .info-list li:before {
+    content: "✓ ";
+    color: #2ecc71;
+    font-weight: 800;
+    margin-right: 0.8rem;
+  }
+
+  @media (max-width: 768px) {
+    .welcome-title {
+      font-size: 2rem;
+    }
+
+    .cards-container {
+      grid-template-columns: 1fr;
+    }
+
+    .service-card {
+      padding: 2rem;
+    }
   }
 </style>
 
-<div class="d-flex flex-column align-items-center justify-content-center text-center">
-  <h1 class="mb-4">¡Bienvenido, {{ session.get('username') }}!</h1>
-  <p class="lead mb-5">Desde aquí puedes consultar tus pedidos, ver recibos y aprovechar nuestras promociones.</p>
+<div class="welcome-section">
+  <h1 class="welcome-title">
+    <i class="fas fa-wave-hand"></i> ¡Bienvenido, {{ session.get('username') }}!
+  </h1>
+  <p class="welcome-subtitle">
+    Accede a tus pedidos, recibos y promociones especiales
+  </p>
+</div>
 
-  <div class="row g-4 justify-content-center">
-    <div class="col-md-3">
-      <div class="card p-4 shadow-sm h-100">
-        <h5 class="card-title">Pedidos</h5>
-        <p class="card-text">Consulta tus pedidos actuales y su estado.</p>
-        <a href="{{ url_for('cliente_pedidos', username=session.get('username')) }}" class="btn btn-primary w-100">Ver Pedidos</a>
-      </div>
+<div class="stats-container">
+  <div class="stat-card">
+    <div class="stat-icon">
+      <i class="fas fa-box"></i>
     </div>
-    <div class="col-md-3">
-      <div class="card p-4 shadow-sm h-100">
-        <h5 class="card-title">Recibos</h5>
-        <p class="card-text">Revisa tus recibos y comprobantes de pago.</p>
-        <a href="{{ url_for('cliente_recibos', username=session.get('username')) }}" class="btn btn-success w-100">Ver Recibos</a>
-      </div>
+    <div class="stat-label">Gestión de Pedidos</div>
+    <p style="color: #3498db; font-size: 1.3rem; font-weight: 800; margin: 0.5rem 0 0 0;">Fácil y Rápido</p>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon">
+      <i class="fas fa-receipt"></i>
     </div>
-    <div class="col-md-3">
-      <div class="card p-4 shadow-sm h-100">
-        <h5 class="card-title">Promociones</h5>
-        <p class="card-text">Descubre nuestras promociones vigentes y aprovecha descuentos.</p>
-        <a href="{{ url_for('cliente_promociones', username=session.get('username')) }}" class="btn btn-warning text-white w-100">Ver Promociones</a>
-      </div>
+    <div class="stat-label">Tus Recibos</div>
+    <p style="color: #2ecc71; font-size: 1.3rem; font-weight: 800; margin: 0.5rem 0 0 0;">Siempre Disponibles</p>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon">
+      <i class="fas fa-gift"></i>
     </div>
+    <div class="stat-label">Promociones</div>
+    <p style="color: #f39c12; font-size: 1.3rem; font-weight: 800; margin: 0.5rem 0 0 0;">Descuentos Exclusivos</p>
   </div>
 </div>
+
+<div class="cards-container">
+  <div class="service-card">
+    <div class="service-icon">
+      <i class="fas fa-box-open"></i>
+    </div>
+    <h5 class="card-title">Mis Pedidos</h5>
+    <p class="card-text">Crea nuevos pedidos, revisa el estado de tus encargos actuales y consulta el historial completo de tu lavandería.</p>
+    <a href="{{ url_for('cliente_pedidos', username=session.get('username')) }}" class="btn btn-service">
+      <i class="fas fa-arrow-right"></i> Ver Pedidos
+    </a>
+  </div>
+
+  <div class="service-card">
+    <div class="service-icon">
+      <i class="fas fa-file-invoice"></i>
+    </div>
+    <h5 class="card-title">Mis Recibos</h5>
+    <p class="card-text">Descarga y revisa todos tus comprobantes de pago, montos pagados y fechas de transacciones históricas.</p>
+    <a href="{{ url_for('cliente_recibos', username=session.get('username')) }}" class="btn btn-service">
+      <i class="fas fa-arrow-right"></i> Ver Recibos
+    </a>
+  </div>
+
+  <div class="service-card">
+    <div class="service-icon">
+      <i class="fas fa-star"></i>
+    </div>
+    <h5 class="card-title">Promociones</h5>
+    <p class="card-text">Descubre nuestras promociones vigentes y gana descuentos automáticos según tus compras. ¡Más pedidos, más descuentos!</p>
+    <a href="{{ url_for('cliente_promociones', username=session.get('username')) }}" class="btn btn-service">
+      <i class="fas fa-arrow-right"></i> Ver Promociones
+    </a>
+  </div>
+</div>
+
+<div class="info-section">
+  <h4>
+    <i class="fas fa-info-circle"></i> Sobre Nuestro Programa de Lealtad
+  </h4>
+  <p>Obtén descuentos automáticos en cada pedido según tu historial de compras:</p>
+  <ul class="info-list">
+    <li>Primer pedido a tercer pedido: <strong>Sin descuento (Nivel Bronce)</strong></li>
+    <li>Del cuarto al quinto pedido: <strong>5% de descuento (Nivel Plata)</strong></li>
+    <li>Del sexto al noveno pedido: <strong>10% de descuento (Nivel Oro)</strong></li>
+    <li>Décimo pedido en adelante: <strong>15% de descuento (Nivel Diamante)</strong></li>
+  </ul>
+  <p style="margin-top: 1rem; font-style: italic;">¡Los descuentos se aplican automáticamente! No necesitas hacer nada especial. Simplemente continúa usando nuestro servicio.</p>
+</div>
+
 {% endblock %}
