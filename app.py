@@ -396,7 +396,8 @@ def cliente_recibos():
     
     recibos = run_query("""
         SELECT r.id_recibo, r.id_pedido, r.monto, r.fecha,
-               ROW_NUMBER() OVER (PARTITION BY r.id_cliente ORDER BY p.fecha_ingreso ASC) as numero_pedido_cliente
+               ROW_NUMBER() OVER (PARTITION BY r.id_cliente ORDER BY p.fecha_ingreso ASC) as numero_pedido_cliente,
+               p.codigo_barras
         FROM recibo r
         LEFT JOIN usuario u ON r.id_cliente = u.id_usuario
         LEFT JOIN pedido p ON r.id_pedido = p.id_pedido
@@ -609,7 +610,7 @@ def pedidos():
     
     # Construir query base
     query = """
-        SELECT p.id_pedido, p.fecha_ingreso, p.fecha_entrega, p.estado, c.nombre
+        SELECT p.id_pedido, p.fecha_ingreso, p.fecha_entrega, p.estado, c.nombre, p.codigo_barras
         FROM pedido p
         LEFT JOIN cliente c ON p.id_cliente = c.id_cliente
         WHERE 1=1
@@ -1214,9 +1215,9 @@ def agregar_pedido():
                 fetchone=True
             )
             
-            # Mensaje con descuento aplicado
+            # Mensaje con descuento aplicado y código de barras
             msg_descuento = f" (Descuento {descuento_porcentaje}%: -${monto_descuento:,.0f})" if descuento_porcentaje > 0 else ""
-            flash(f'¡Pedido #{id_pedido} creado! {prendas_insertadas} prendas. Total: ${monto_final:,.0f}{msg_descuento}. Entrega: {fecha_entrega}', 'success')
+            flash(f'¡Pedido #{id_pedido} creado! Código: {codigo_barras} | {prendas_insertadas} prendas. Total: ${monto_final:,.0f}{msg_descuento}. Entrega: {fecha_entrega}', 'success')
             
             # Redirigir según el rol
             if rol == 'administrador':
@@ -1246,7 +1247,7 @@ def agregar_pedido():
 def pedido_detalles(id_pedido):
     """Ver detalles de un pedido."""
     pedido = run_query(
-        "SELECT id_pedido, fecha_ingreso, fecha_entrega, estado, id_cliente FROM pedido WHERE id_pedido = :id",
+        "SELECT id_pedido, fecha_ingreso, fecha_entrega, estado, id_cliente, codigo_barras FROM pedido WHERE id_pedido = :id",
         {"id": id_pedido},
         fetchone=True
     )
