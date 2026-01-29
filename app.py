@@ -1152,12 +1152,27 @@ def actualizar_pedido(id_pedido):
 # -----------------------------------------------
 @app.route('/eliminar_pedido/<int:id_pedido>', methods=['POST'])
 def eliminar_pedido(id_pedido):
-    """Eliminar un pedido."""
+    """Eliminar un pedido y sus datos asociados (recibos y prendas)."""
     if not _admin_only():
         flash('Acceso denegado.', 'danger')
         return redirect(url_for('index'))
     
     try:
+        # 1. Eliminar recibos asociados al pedido
+        run_query(
+            "DELETE FROM recibo WHERE id_pedido = :id",
+            {"id": id_pedido},
+            commit=True
+        )
+        
+        # 2. Eliminar prendas asociadas al pedido
+        run_query(
+            "DELETE FROM prenda WHERE id_pedido = :id",
+            {"id": id_pedido},
+            commit=True
+        )
+        
+        # 3. Eliminar el pedido
         run_query(
             "DELETE FROM pedido WHERE id_pedido = :id",
             {"id": id_pedido},
