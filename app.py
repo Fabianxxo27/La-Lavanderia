@@ -1138,15 +1138,14 @@ def agregar_pedido():
                     continue
                 
                 # Procesar cantidad con validación robusta
-                cantidad_str = cantidades[i] if i < len(cantidades) else '1'
+                cantidad_str = cantidades[i] if i < len(cantidades) else '0'
                 try:
-                    cantidad = int(cantidad_str) if cantidad_str and cantidad_str.strip() else 1
-                    # Asegurar que la cantidad sea al menos 1
-                    if cantidad < 1:
-                        cantidad = 1
+                    cantidad = int(cantidad_str) if cantidad_str and cantidad_str.strip() else 0
+                    # Si la cantidad es 0 o negativa, saltar esta prenda
+                    if cantidad <= 0:
+                        continue
                 except (ValueError, AttributeError):
-                    cantidad = 1
-                    print(f"WARNING: Cantidad inválida '{cantidad_str}' en índice {i}, usando 1")
+                    continue
                 
                 descripcion = descripciones[i] if i < len(descripciones) else ''
                 
@@ -1165,6 +1164,11 @@ def agregar_pedido():
                 })
                 
                 total_costo += precio * cantidad
+            
+            # Validar que haya al menos una prenda
+            if not prendas_a_insertar or total_costo == 0:
+                flash('Debes agregar al menos una prenda con cantidad mayor a 0.', 'warning')
+                return redirect(url_for('agregar_pedido'))
             
             # 7. Insertar prendas en la base de datos
             prendas_insertadas = 0

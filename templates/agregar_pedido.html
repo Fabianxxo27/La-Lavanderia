@@ -114,45 +114,53 @@
                         {% endif %}
 
                         <!-- Prendas -->
-                        <h5 class="mb-3 fw-bold"><i class="fas fa-tshirt"></i> Prendas</h5>
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5 class="mb-0 fw-bold"><i class="fas fa-tshirt"></i> Prendas del Pedido</h5>
+                            <button type="button" class="btn btn-success btn-sm" onclick="agregarFila()" title="Agregar otra prenda">
+                                <i class="fas fa-plus"></i> Agregar Prenda
+                            </button>
+                        </div>
+                        
+                        <div class="alert alert-info small mb-3">
+                            <i class="fas fa-info-circle"></i> Puedes agregar <strong>múltiples tipos de prendas</strong> en un mismo pedido. Usa el botón "+ Agregar Prenda" para añadir más filas.
+                        </div>
+                        
                         <div class="table-responsive mb-4">
-                            <table class="table table-sm">
+                            <table class="table table-sm table-hover">
                                 <thead class="table-light">
                                     <tr>
-                                        <th>Tipo</th>
+                                        <th>Tipo de Prenda</th>
                                         <th width="12%">Cantidad</th>
-                                        <th>Descripción</th>
-                                        <th class="text-center" width="12%">Precio</th>
-                                        <th width="8%">
-                                            <button type="button" class="btn btn-sm btn-success" onclick="agregarFila()" title="Agregar fila">
-                                                <i class="fas fa-plus"></i>
-                                            </button>
+                                        <th>Descripción (Opcional)</th>
+                                        <th class="text-center" width="12%">Subtotal</th>
+                                        <th width="8%" class="text-center">
+                                            <i class="fas fa-cog"></i>
                                         </th>
                                     </tr>
                                 </thead>
                                 <tbody id="cuerpoTabla">
                                     <tr class="prenda-row">
                                         <td>
-                                            <select class="form-select form-select-sm tipo-select" name="tipo[]" required onchange="actualizarPrecio(this)">
-                                                <option value="">-- Selecciona --</option>
+                                            <select class="form-select form-select-sm tipo-select" name="tipo[]" onchange="actualizarPrecio(this)">
+                                                <option value="">-- Selecciona un tipo --</option>
                                                 {% for prenda in prendas_default %}
                                                     <option value="{{ prenda.nombre }}" data-precio="{{ prenda.precio }}">
-                                                        {{ prenda.nombre }}
+                                                        {{ prenda.nombre }} - ${{ "{:,}".format(prenda.precio) }}
                                                     </option>
                                                 {% endfor %}
                                             </select>
                                         </td>
                                         <td>
-                                            <input type="number" class="form-control form-control-sm cantidad-input" name="cantidad[]" min="1" value="1" required onchange="calcularTotal()" oninput="calcularTotal()">
+                                            <input type="number" class="form-control form-control-sm cantidad-input" name="cantidad[]" min="0" value="0" onchange="calcularTotal()" oninput="calcularTotal()">
                                         </td>
                                         <td>
-                                            <input type="text" class="form-control form-control-sm" name="descripcion[]" placeholder="Color, talla...">
+                                            <input type="text" class="form-control form-control-sm" name="descripcion[]" placeholder="Ej: Azul talla M">
                                         </td>
                                         <td class="text-center">
-                                            <span class="precio-fila">$0</span>
+                                            <span class="precio-fila badge bg-secondary">$0</span>
                                         </td>
-                                        <td>
-                                            <button type="button" class="btn btn-sm btn-danger" onclick="eliminarFila(this)" disabled>
+                                        <td class="text-center">
+                                            <button type="button" class="btn btn-sm btn-outline-danger" onclick="eliminarFila(this)">
                                                 <i class="fas fa-trash"></i>
                                             </button>
                                         </td>
@@ -236,10 +244,10 @@
                 </div>
                 <div class="card-body small">
                     <ul class="mb-0">
-                        <li>El precio se actualiza automáticamente</li>
-                        <li>Agrega descripción (color, talla) para mayor claridad</li>
-                        <li>Puedes agregar múltiples prendas del mismo tipo</li>
-                        <li>Usa el botón + para agregar más filas</li>
+                        <li><strong>Agrega múltiples tipos</strong> de prendas en un solo pedido</li>
+                        <li>El precio se actualiza automáticamente al seleccionar</li>
+                        <li>Indica cantidad 0 si no deseas ese tipo de prenda</li>
+                        <li>La descripción es opcional pero útil (color, talla, etc.)</li>
                     </ul>
                 </div>
             </div>
@@ -265,15 +273,16 @@ function agregarFila() {
     nuevaFila.classList.add('prenda-row');
     nuevaFila.querySelector('select[name="tipo[]"]').value = '';
     nuevaFila.querySelector('select[name="tipo[]"]').onchange = function() { actualizarPrecio(this); };
-    nuevaFila.querySelector('input[name="cantidad[]"]').value = '1';
+    nuevaFila.querySelector('input[name="cantidad[]"]').value = '0';
     nuevaFila.querySelector('input[name="cantidad[]"]').onchange = function() { calcularTotal(); };
     nuevaFila.querySelector('input[name="cantidad[]"]').oninput = function() { calcularTotal(); };
     nuevaFila.querySelector('input[name="descripcion[]"]').value = '';
+    nuevaFila.querySelector('.precio-fila').textContent = '$0';
     const botonEliminar = nuevaFila.querySelector('button[onclick*="eliminarFila"]');
-    botonEliminar.disabled = false;
     botonEliminar.onclick = function() { eliminarFila(this); };
     
     cuerpo.appendChild(nuevaFila);
+    calcularTotal();
 }
 
 function actualizarPrecio(selectElement) {
@@ -293,13 +302,13 @@ function actualizarPrecio(selectElement) {
 }
 
 function eliminarFila(boton) {
-    boton.closest('tr').remove();
-    // Reactivar el botón de la primera fila si queda una sola
     const filas = document.querySelectorAll('#cuerpoTabla tr');
-    if (filas.length === 1) {
-        filas[0].querySelector('button').disabled = true;
+    if (filas.length > 1) {
+        boton.closest('tr').remove();
+        calcularTotal();
+    } else {
+        alert('Debe haber al menos una fila para agregar prendas');
     }
-    calcularTotal();
 }
 
 function calcularTotal() {
@@ -385,6 +394,9 @@ function calcularFechaEntrega(totalPrendas) {
 
 // Inicializar
 document.addEventListener('DOMContentLoaded', function() {
+    // Agregar 2 filas adicionales al inicio para mostrar que se pueden agregar múltiples prendas
+    agregarFila();
+    agregarFila();
     calcularTotal();
 });
 </script>
