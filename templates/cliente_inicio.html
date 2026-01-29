@@ -5,267 +5,174 @@
 <style>
   .welcome-section {
     text-align: center;
-    margin-bottom: 3rem;
-    animation: slideUp 0.6s ease;
-  }
-
-  @keyframes slideUp {
-    from {
-      opacity: 0;
-      transform: translateY(30px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
+    margin-bottom: 2rem;
   }
 
   .welcome-title {
-    color: #2c3e50;
+    color: #35472e;
     font-weight: 900;
-    font-size: 2.5rem;
-    margin-bottom: 1rem;
-    background: linear-gradient(135deg, #3498db, #2ecc71);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    letter-spacing: -0.5px;
+    font-size: 2.2rem;
+    margin-bottom: 0.8rem;
+    text-shadow: 1px 1px 0 #b3be83;
   }
 
   .welcome-subtitle {
-    color: #7f8c8d;
+    color: #272f14;
     font-weight: 600;
-    font-size: 1.1rem;
-    line-height: 1.8;
-  }
-
-  .stats-container {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 1.5rem;
-    margin-bottom: 3rem;
-  }
-
-  .stat-card {
-    background: linear-gradient(135deg, #fff, #f8f9fa);
-    border-radius: 15px;
-    padding: 2rem;
-    text-align: center;
-    border: 2px solid #ecf0f1;
-    transition: all 0.3s ease;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
-  }
-
-  .stat-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 8px 25px rgba(52, 152, 219, 0.2);
-    border-color: #3498db;
-  }
-
-  .stat-icon {
-    font-size: 2.5rem;
-    margin-bottom: 1rem;
-    color: #3498db;
-  }
-
-  .stat-label {
-    color: #7f8c8d;
-    font-weight: 600;
-    font-size: 0.95rem;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
+    font-size: 1rem;
+    margin-bottom: 2rem;
   }
 
   .cards-container {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-    gap: 2rem;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.5rem;
     margin-bottom: 2rem;
   }
 
   .service-card {
-    background: linear-gradient(135deg, #fff, #f8f9fa);
-    border-radius: 15px;
-    padding: 2.5rem;
+    background: #fff;
+    border-radius: 12px;
+    padding: 2rem;
     text-align: center;
-    border: 2px solid #ecf0f1;
-    transition: all 0.3s ease;
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+    border: 2px solid #e8f0d4;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    transition: all 0.2s ease;
     height: 100%;
     display: flex;
     flex-direction: column;
   }
 
   .service-card:hover {
-    transform: translateY(-10px);
-    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15);
-    border-color: #3498db;
-    background: linear-gradient(135deg, #f0f8ff, #fff);
+    border-color: #a6cc48;
+    box-shadow: 0 6px 16px rgba(166, 204, 72, 0.15);
+    transform: translateY(-3px);
   }
 
   .service-icon {
-    font-size: 3.5rem;
-    margin-bottom: 1.5rem;
-    transition: all 0.3s ease;
+    font-size: 2.5rem;
+    margin-bottom: 1rem;
   }
 
   .service-card:nth-child(1) .service-icon {
-    color: #3498db;
+    color: #1a4e7b;
   }
 
   .service-card:nth-child(2) .service-icon {
-    color: #2ecc71;
+    color: #84af1d;
   }
 
   .service-card:nth-child(3) .service-icon {
-    color: #f39c12;
-  }
-
-  .service-card:hover .service-icon {
-    transform: scale(1.15) rotate(5deg);
+    color: #d4af37;
   }
 
   .card-title {
-    color: #2c3e50;
+    color: #1a4e7b;
     font-weight: 800;
-    font-size: 1.5rem;
-    margin-bottom: 1rem;
+    font-size: 1.3rem;
+    margin-bottom: 0.8rem;
   }
 
   .card-text {
-    color: #7f8c8d;
+    color: #272f14;
     font-weight: 500;
-    line-height: 1.7;
+    line-height: 1.6;
     margin-bottom: 1.5rem;
     flex-grow: 1;
+    font-size: 0.95rem;
   }
 
   .btn-service {
-    padding: 0.8rem 2rem;
-    border-radius: 10px;
+    padding: 0.7rem 1.5rem;
+    border-radius: 8px;
     font-weight: 700;
-    letter-spacing: 0.5px;
-    transition: all 0.3s ease;
-    text-transform: uppercase;
-    font-size: 0.95rem;
     border: none;
+    text-decoration: none;
+    display: inline-block;
+    transition: all 0.2s ease;
+    align-self: center;
   }
 
   .service-card:nth-child(1) .btn-service {
-    background: linear-gradient(45deg, #3498db, #2980b9);
-    color: #fff;
+    background: #1a4e7b;
+    color: white;
   }
 
   .service-card:nth-child(1) .btn-service:hover {
-    background: linear-gradient(45deg, #2980b9, #1a5276);
-    box-shadow: 0 6px 20px rgba(52, 152, 219, 0.4);
+    background: #0d1d2a;
   }
 
   .service-card:nth-child(2) .btn-service {
-    background: linear-gradient(45deg, #2ecc71, #27ae60);
-    color: #fff;
+    background: #84af1d;
+    color: white;
   }
 
   .service-card:nth-child(2) .btn-service:hover {
-    background: linear-gradient(45deg, #27ae60, #1e8449);
-    box-shadow: 0 6px 20px rgba(46, 204, 113, 0.4);
+    background: #5f8022;
   }
 
   .service-card:nth-child(3) .btn-service {
-    background: linear-gradient(45deg, #f39c12, #d68910);
-    color: #fff;
+    background: #a6cc48;
+    color: #1a4e7b;
   }
 
   .service-card:nth-child(3) .btn-service:hover {
-    background: linear-gradient(45deg, #d68910, #b8860b);
-    box-shadow: 0 6px 20px rgba(243, 156, 18, 0.4);
+    background: #7dbc30;
   }
 
-  .info-section {
-    background: linear-gradient(135deg, #ecf0f1, #bdc3c7);
-    border-radius: 15px;
-    padding: 2rem;
+  .info-box {
+    background: #e8f0d4;
+    border-left: 5px solid #84af1d;
+    padding: 1.5rem;
+    border-radius: 8px;
     margin-top: 2rem;
-    border-left: 5px solid #3498db;
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
   }
 
-  .info-section h4 {
-    color: #2c3e50;
+  .info-box h5 {
+    color: #35472e;
     font-weight: 800;
     margin-bottom: 1rem;
   }
 
-  .info-section p {
-    color: #34495e;
+  .info-box p {
+    color: #272f14;
     font-weight: 500;
-    line-height: 1.8;
+    margin: 0;
   }
 
   .info-list {
     list-style: none;
     padding: 0;
+    margin: 1rem 0 0 0;
   }
 
   .info-list li {
     padding: 0.5rem 0;
-    color: #34495e;
+    color: #272f14;
     font-weight: 500;
   }
 
   .info-list li:before {
     content: "✓ ";
-    color: #2ecc71;
-    font-weight: 800;
-    margin-right: 0.8rem;
+    color: #84af1d;
+    font-weight: 900;
+    margin-right: 0.6rem;
   }
 
   @media (max-width: 768px) {
     .welcome-title {
-      font-size: 2rem;
+      font-size: 1.8rem;
     }
 
     .cards-container {
       grid-template-columns: 1fr;
     }
-
-    .service-card {
-      padding: 2rem;
-    }
   }
 </style>
 
 <div class="welcome-section">
-  <h1 class="welcome-title">
-    <i class="fas fa-wave-hand"></i> ¡Bienvenido, {{ session.get('username') }}!
-  </h1>
-  <p class="welcome-subtitle">
-    Accede a tus pedidos, recibos y promociones especiales
-  </p>
-</div>
-
-<div class="stats-container">
-  <div class="stat-card">
-    <div class="stat-icon">
-      <i class="fas fa-box"></i>
-    </div>
-    <div class="stat-label">Gestión de Pedidos</div>
-    <p style="color: #3498db; font-size: 1.3rem; font-weight: 800; margin: 0.5rem 0 0 0;">Fácil y Rápido</p>
-  </div>
-  <div class="stat-card">
-    <div class="stat-icon">
-      <i class="fas fa-receipt"></i>
-    </div>
-    <div class="stat-label">Tus Recibos</div>
-    <p style="color: #2ecc71; font-size: 1.3rem; font-weight: 800; margin: 0.5rem 0 0 0;">Siempre Disponibles</p>
-  </div>
-  <div class="stat-card">
-    <div class="stat-icon">
-      <i class="fas fa-gift"></i>
-    </div>
-    <div class="stat-label">Promociones</div>
-    <p style="color: #f39c12; font-size: 1.3rem; font-weight: 800; margin: 0.5rem 0 0 0;">Descuentos Exclusivos</p>
-  </div>
+  <h1 class="welcome-title">¡Bienvenido, {{ session.get('username') }}!</h1>
+  <p class="welcome-subtitle">Accede a tus pedidos, recibos y promociones especiales</p>
 </div>
 
 <div class="cards-container">
@@ -274,10 +181,8 @@
       <i class="fas fa-box-open"></i>
     </div>
     <h5 class="card-title">Mis Pedidos</h5>
-    <p class="card-text">Crea nuevos pedidos, revisa el estado de tus encargos actuales y consulta el historial completo de tu lavandería.</p>
-    <a href="{{ url_for('cliente_pedidos', username=session.get('username')) }}" class="btn btn-service">
-      <i class="fas fa-arrow-right"></i> Ver Pedidos
-    </a>
+    <p class="card-text">Crea nuevos pedidos, revisa el estado de tus encargos y consulta el historial.</p>
+    <a href="{{ url_for('cliente_pedidos', username=session.get('username')) }}" class="btn-service">Ver Pedidos</a>
   </div>
 
   <div class="service-card">
@@ -285,36 +190,30 @@
       <i class="fas fa-file-invoice"></i>
     </div>
     <h5 class="card-title">Mis Recibos</h5>
-    <p class="card-text">Descarga y revisa todos tus comprobantes de pago, montos pagados y fechas de transacciones históricas.</p>
-    <a href="{{ url_for('cliente_recibos', username=session.get('username')) }}" class="btn btn-service">
-      <i class="fas fa-arrow-right"></i> Ver Recibos
-    </a>
+    <p class="card-text">Descarga y revisa todos tus comprobantes de pago y montos.</p>
+    <a href="{{ url_for('cliente_recibos', username=session.get('username')) }}" class="btn-service">Ver Recibos</a>
   </div>
 
   <div class="service-card">
     <div class="service-icon">
-      <i class="fas fa-star"></i>
+      <i class="fas fa-gift"></i>
     </div>
     <h5 class="card-title">Promociones</h5>
-    <p class="card-text">Descubre nuestras promociones vigentes y gana descuentos automáticos según tus compras. ¡Más pedidos, más descuentos!</p>
-    <a href="{{ url_for('cliente_promociones', username=session.get('username')) }}" class="btn btn-service">
-      <i class="fas fa-arrow-right"></i> Ver Promociones
-    </a>
+    <p class="card-text">Descuentos automáticos según tu historial de compras.</p>
+    <a href="{{ url_for('cliente_promociones', username=session.get('username')) }}" class="btn-service">Ver Promociones</a>
   </div>
 </div>
 
-<div class="info-section">
-  <h4>
-    <i class="fas fa-info-circle"></i> Sobre Nuestro Programa de Lealtad
-  </h4>
-  <p>Obtén descuentos automáticos en cada pedido según tu historial de compras:</p>
+<div class="info-box">
+  <h5><i class="fas fa-star"></i> Programa de Lealtad</h5>
+  <p>Obtén descuentos automáticos en cada pedido según tu historial:</p>
   <ul class="info-list">
-    <li>Primer pedido a tercer pedido: <strong>Sin descuento (Nivel Bronce)</strong></li>
-    <li>Del cuarto al quinto pedido: <strong>5% de descuento (Nivel Plata)</strong></li>
-    <li>Del sexto al noveno pedido: <strong>10% de descuento (Nivel Oro)</strong></li>
-    <li>Décimo pedido en adelante: <strong>15% de descuento (Nivel Diamante)</strong></li>
+    <li>Pedidos 1-2: Sin descuento (Bronce)</li>
+    <li>Pedidos 3-5: 5% descuento (Plata)</li>
+    <li>Pedidos 6-9: 10% descuento (Oro)</li>
+    <li>Pedidos 10+: 15% descuento (Diamante)</li>
   </ul>
-  <p style="margin-top: 1rem; font-style: italic;">¡Los descuentos se aplican automáticamente! No necesitas hacer nada especial. Simplemente continúa usando nuestro servicio.</p>
+  <p style="margin-top: 1rem; font-size: 0.9rem; color: #7f8c8d;">Los descuentos se aplican automáticamente en cada pedido.</p>
 </div>
 
 {% endblock %}
