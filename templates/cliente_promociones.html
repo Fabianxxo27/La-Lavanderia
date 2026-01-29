@@ -2,15 +2,37 @@
 {% block title %}Promociones y Recompensas - La Lavandería{% endblock %}
 
 {% block content %}
+<style>
+    .promo-card {
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .promo-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 16px rgba(0,0,0,0.15);
+    }
+    .table-active {
+        background-color: rgba(26, 78, 123, 0.1);
+        font-weight: bold;
+    }
+    .card {
+        border-radius: 12px;
+        overflow: hidden;
+    }
+    .header-gradient {
+        background: linear-gradient(135deg, #1a4e7b 0%, #2d5f8d 100%);
+    }
+    .lealtad-gradient {
+        background: linear-gradient(135deg, #a6cc48 0%, #84af1d 100%);
+    }
+</style>
+
 <div class="container-fluid py-4">
     <!-- Header -->
     <div class="row mb-4">
         <div class="col-12">
-            <div class="card shadow-lg border-0" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);">
+            <div class="card shadow-lg border-0 header-gradient">
                 <div class="card-body text-white py-4">
-                    <h1 class="mb-2">
-                        <i class="fas fa-gift"></i> Promociones y Recompensas
-                    </h1>
+                    <h1 class="mb-2">Promociones y Recompensas</h1>
                     <p class="mb-0 opacity-75">¡Gana descuentos por tu lealtad!</p>
                 </div>
             </div>
@@ -21,8 +43,7 @@
     <div class="row mb-4">
         <div class="col-12">
             <div class="card shadow-lg border-0">
-                <div class="card-header text-white text-center py-3" 
-                     style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                <div class="card-header text-white text-center py-3 lealtad-gradient">
                     <h4 class="mb-0">
                         {{ icono }} Programa de Lealtad - Nivel {{ nivel }}
                     </h4>
@@ -64,35 +85,33 @@
                     <div class="mb-3">
                         <div class="d-flex justify-content-between mb-2">
                             <span class="fw-bold">Progreso al siguiente nivel: {{ siguiente_nivel }}</span>
-                            <span class="text-muted">{{ progreso }}%</span>
+                            <span class="text-muted">{{ "%.0f"|format(progreso) }}%</span>
                         </div>
                         <div class="progress" style="height: 25px;">
                             <div class="progress-bar bg-success progress-bar-striped progress-bar-animated" 
                                  role="progressbar" 
+                                 style="width: {{ progreso }}%"
                                  aria-valuenow="{{ progreso }}" 
                                  aria-valuemin="0" 
                                  aria-valuemax="100">
+                                {{ "%.0f"|format(progreso) }}%
                             </div>
                         </div>
                         <small class="text-muted mt-2 d-block">
-                            <i class="fas fa-info-circle"></i> 
                             Te faltan <strong>{{ pedidos_faltantes }} pedido{{ 's' if pedidos_faltantes != 1 else '' }}</strong> 
                             para alcanzar el nivel {{ siguiente_nivel }}
                         </small>
                     </div>
                     {% else %}
                     <div class="alert alert-success mb-3">
-                        <i class="fas fa-trophy"></i> 
                         <strong>¡Felicidades!</strong> Has alcanzado el nivel máximo de lealtad
                     </div>
                     {% endif %}
 
                     <!-- Tabla de Niveles -->
                     <div class="card mt-4">
-                        <div class="card-header bg-dark text-white">
-                            <h6 class="mb-0">
-                                <i class="fas fa-layer-group"></i> Niveles de Lealtad
-                            </h6>
+                        <div class="card-header text-white lealtad-gradient">
+                            <h6 class="mb-0">Niveles de Lealtad</h6>
                         </div>
                         <div class="card-body p-0">
                             <div class="table-responsive">
@@ -174,10 +193,8 @@
             <div class="card shadow-sm">
                 <div class="card-header bg-success text-white">
                     <h5 class="mb-0">
-                        <i class="fas fa-tags"></i> Promociones Activas
-                    </h5>
-                </div>
-                <div class="card-body">
+                        <i class="fas fatext-white lealtad-gradient">
+                    <h5 class="mb-0">Promociones Activas class="card-body">
                     {% if promociones %}
                     <div class="row">
                         {% for promo in promociones %}
@@ -216,47 +233,4 @@
     </div>
 
     <!-- Call to Action -->
-    <div class="row mt-4">
-        <div class="col-12">
-            <div class="alert alert-info shadow">
-                <div class="d-flex align-items-center">
-                    <div class="me-3">
-                        <i class="fas fa-lightbulb fa-3x"></i>
-                    </div>
-                    <div class="flex-grow-1">
-                        <h5 class="mb-1">💡 Consejo</h5>
-                        <p class="mb-0">
-                            ¡Crea más pedidos para subir de nivel y obtener descuentos mayores! 
-                            Tu descuento de lealtad se aplicará automáticamente en tu próximo pedido.
-                        </p>
-                    </div>
-                    <div>
-                        <a href="{{ url_for('agregar_pedido') }}" class="btn btn-primary">
-                            <i class="fas fa-plus"></i> Crear Pedido
-                        </a>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<style>
-    .promo-card {
-        transition: transform 0.3s ease, box-shadow 0.3s ease;
-    }
-    .promo-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 8px 16px rgba(0,0,0,0.15);
-    }
-    .table-active {
-        background-color: rgba(102, 126, 234, 0.1);
-        font-weight: bold;
-    }
-    .card {
-        border-radius: 12px;
-        overflow: hidden;
-    }
-</style>
-
-{% endblock %}
+</divlock %}
