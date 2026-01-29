@@ -637,7 +637,7 @@ def pedidos():
         query += " AND DATE(p.fecha_ingreso) <= :hasta"
         params['hasta'] = fecha_hasta
     
-    query += " ORDER BY p.fecha_ingreso DESC"
+    query += " ORDER BY p.id_pedido ASC"
     
     pedidos = run_query(query, params, fetchall=True)
     
@@ -1084,6 +1084,11 @@ def agregar_pedido():
             cantidades = request.form.getlist('cantidad[]')
             descripciones = request.form.getlist('descripcion[]')
             
+            # Debug: verificar que las listas tengan el mismo tamaño
+            print(f"DEBUG: tipos={len(tipos)}, cantidades={len(cantidades)}, descripciones={len(descripciones)}")
+            print(f"DEBUG: cantidades={cantidades}")
+            print(f"DEBUG: descripciones={descripciones}")
+            
             if not tipos or len(tipos) == 0:
                 flash('Debes agregar al menos una prenda.', 'warning')
                 return redirect(url_for('agregar_pedido'))
@@ -1116,8 +1121,18 @@ def agregar_pedido():
                 tipo = tipos[i]
                 if not tipo or tipo.strip() == '':
                     continue
-                    
-                cantidad = int(cantidades[i]) if i < len(cantidades) and cantidades[i] else 1
+                
+                # Procesar cantidad con validación robusta
+                cantidad_str = cantidades[i] if i < len(cantidades) else '1'
+                try:
+                    cantidad = int(cantidad_str) if cantidad_str and cantidad_str.strip() else 1
+                    # Asegurar que la cantidad sea al menos 1
+                    if cantidad < 1:
+                        cantidad = 1
+                except (ValueError, AttributeError):
+                    cantidad = 1
+                    print(f"WARNING: Cantidad inválida '{cantidad_str}' en índice {i}, usando 1")
+                
                 descripcion = descripciones[i] if i < len(descripciones) else ''
                 
                 # Buscar precio
