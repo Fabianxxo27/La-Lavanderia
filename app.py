@@ -890,10 +890,13 @@ def agregar_pedido():
             fecha_ingreso = datetime.now().strftime('%Y-%m-%d')
             fecha_entrega = (datetime.now() + timedelta(days=dias_entrega)).strftime('%Y-%m-%d')
             
-            print(f"[DEBUG] Fechas - ingreso: {fecha_ingreso}, entrega: {fecha_entrega}")
+            print(f"[DEBUG] Fechas - ingreso: {fecha_ingreso}, entrega: {fecha_entrega}", flush=True)
+            sys.stdout.flush()
             
             # 5. Crear pedido
-            print(f"[DEBUG] Insertando pedido...")
+            print(f"[DEBUG] Insertando pedido...", flush=True)
+            sys.stdout.flush()
+            
             result = run_query(
                 "INSERT INTO pedido (fecha_ingreso, fecha_entrega, estado, id_cliente) VALUES (:fi, :fe, :e, :ic) RETURNING id_pedido",
                 {"fi": fecha_ingreso, "fe": fecha_entrega, "e": "Pendiente", "ic": id_cliente},
@@ -901,25 +904,29 @@ def agregar_pedido():
                 fetchone=True
             )
             
-            print(f"[DEBUG] Result del INSERT pedido: {result}")
+            print(f"[DEBUG] Result del INSERT pedido: {result}", flush=True)
+            sys.stdout.flush()
             
             if not result or len(result) == 0:
-                print(f"[ERROR] No se recibió id_pedido")
+                print(f"[ERROR] No se recibió id_pedido", flush=True)
+                sys.stdout.flush()
                 flash('Error al crear el pedido.', 'danger')
                 return redirect(url_for('agregar_pedido'))
             
             id_pedido = result[0]
-            print(f"[DEBUG] ✓ Pedido creado con ID: {id_pedido}")
+            print(f"[DEBUG] ✓ Pedido creado con ID: {id_pedido}", flush=True)
+            sys.stdout.flush()
             
             # 6. Procesar y calcular costo primero
-            print(f"[DEBUG] Procesando prendas del formulario...")
+            print(f"[DEBUG] Procesando prendas del formulario...", flush=True)
+            sys.stdout.flush()
             prendas_a_insertar = []
             total_costo = 0
             
             for i in range(len(tipos)):
                 tipo = tipos[i]
                 if not tipo or tipo.strip() == '':
-                    print(f"[DEBUG] Saltando tipo vacío en posición {i}")
+                    print(f"[DEBUG] Saltando tipo vacío en posición {i}", flush=True)
                     continue
                     
                 cantidad = int(cantidades[i]) if i < len(cantidades) and cantidades[i] else 1
@@ -932,7 +939,7 @@ def agregar_pedido():
                         precio = prenda_def['precio']
                         break
                 
-                print(f"[DEBUG] Prenda procesada: tipo='{tipo}', cantidad={cantidad}, precio={precio}")
+                print(f"[DEBUG] Prenda procesada: tipo='{tipo}', cantidad={cantidad}, precio={precio}", flush=True)
                 
                 prendas_a_insertar.append({
                     'tipo': tipo,
@@ -943,7 +950,8 @@ def agregar_pedido():
                 
                 total_costo += precio * cantidad
             
-            print(f"[DEBUG] Total prendas a insertar: {len(prendas_a_insertar)}, Costo total: {total_costo}")
+            print(f"[DEBUG] Total prendas a insertar: {len(prendas_a_insertar)}, Costo total: {total_costo}", flush=True)
+            sys.stdout.flush()
             
             # 7. Insertar prendas en la base de datos
             prendas_insertadas = 0
@@ -953,11 +961,13 @@ def agregar_pedido():
                 cantidad = prenda['cantidad']
                 descripcion = prenda['descripcion']
                 
-                print(f"[DEBUG] Insertando {cantidad} unidad(es) de '{tipo}'...")
+                print(f"[DEBUG] Insertando {cantidad} unidad(es) de '{tipo}'...", flush=True)
+                sys.stdout.flush()
                 
                 for unidad in range(cantidad):
                     try:
-                        print(f"[DEBUG]   -> Insertando unidad {unidad+1}/{cantidad}: tipo='{tipo}', desc='{descripcion}', id_pedido={id_pedido}")
+                        print(f"[DEBUG]   -> Insertando unidad {unidad+1}/{cantidad}: tipo='{tipo}', desc='{descripcion}', id_pedido={id_pedido}", flush=True)
+                        sys.stdout.flush()
                         
                         run_query(
                             "INSERT INTO prenda (tipo, descripcion, observaciones, id_pedido) VALUES (:tipo, :desc, :obs, :id_ped)",
@@ -966,30 +976,38 @@ def agregar_pedido():
                         )
                         
                         prendas_insertadas += 1
-                        print(f"[DEBUG]   ✓ Unidad insertada exitosamente (total: {prendas_insertadas})")
+                        print(f"[DEBUG]   ✓ Unidad insertada exitosamente (total: {prendas_insertadas})", flush=True)
+                        sys.stdout.flush()
                         
                     except Exception as e_prenda:
-                        print(f"[ERROR] Error insertando unidad {unidad+1} de '{tipo}': {type(e_prenda).__name__}: {str(e_prenda)}")
+                        print(f"[ERROR] Error insertando unidad {unidad+1} de '{tipo}': {type(e_prenda).__name__}: {str(e_prenda)}", flush=True)
                         import traceback
-                        print(f"[TRACEBACK PRENDA] {traceback.format_exc()}")
+                        print(f"[TRACEBACK PRENDA] {traceback.format_exc()}", flush=True)
+                        sys.stdout.flush()
             
-            print(f"[DEBUG] ✓ Total prendas insertadas en DB: {prendas_insertadas}")
+            print(f"[DEBUG] ✓ Total prendas insertadas en DB: {prendas_insertadas}", flush=True)
+            sys.stdout.flush()
             
             # 8. Crear recibo
-            print(f"[DEBUG] Insertando recibo - id_pedido={id_pedido}, id_cliente={id_cliente}, monto={total_costo}")
+            print(f"[DEBUG] Insertando recibo - id_pedido={id_pedido}, id_cliente={id_cliente}, monto={total_costo}", flush=True)
+            sys.stdout.flush()
+            
             try:
                 run_query(
                     "INSERT INTO recibo (id_pedido, id_cliente, monto, fecha) VALUES (:ip, :ic, :m, CURRENT_TIMESTAMP)",
                     {"ip": id_pedido, "ic": id_cliente, "m": total_costo},
                     commit=True
                 )
-                print(f"[DEBUG] ✓ Recibo creado exitosamente")
+                print(f"[DEBUG] ✓ Recibo creado exitosamente", flush=True)
+                sys.stdout.flush()
             except Exception as e_recibo:
-                print(f"[ERROR] Error creando recibo: {type(e_recibo).__name__}: {str(e_recibo)}")
+                print(f"[ERROR] Error creando recibo: {type(e_recibo).__name__}: {str(e_recibo)}", flush=True)
                 import traceback
-                print(f"[TRACEBACK RECIBO] {traceback.format_exc()}")
+                print(f"[TRACEBACK RECIBO] {traceback.format_exc()}", flush=True)
+                sys.stdout.flush()
             
-            print(f"[DEBUG] === FIN POST AGREGAR_PEDIDO - EXITOSO ===")
+            print(f"[DEBUG] === FIN POST AGREGAR_PEDIDO - EXITOSO ===", flush=True)
+            sys.stdout.flush()
             
             flash(f'¡Pedido #{id_pedido} creado! {prendas_insertadas} prendas agregadas. Entrega: {fecha_entrega}', 'success')
             
@@ -999,9 +1017,10 @@ def agregar_pedido():
                 return redirect(url_for('cliente_pedidos'))
                 
         except Exception as e:
-            print(f"[ERROR CRÍTICO] {type(e).__name__}: {str(e)}")
+            print(f"[ERROR CRÍTICO] {type(e).__name__}: {str(e)}", flush=True)
             import traceback
-            print(f"[TRACEBACK] {traceback.format_exc()}")
+            print(f"[TRACEBACK] {traceback.format_exc()}", flush=True)
+            sys.stdout.flush()
             flash(f'Error: {str(e)}', 'danger')
             return redirect(url_for('agregar_pedido'))
     
