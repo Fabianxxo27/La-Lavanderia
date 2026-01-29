@@ -2,28 +2,27 @@
 {% block title %}Crear Pedido - La Lavandería{% endblock %}
 
 {% block content %}
-<div class="container py-4">
-    <div class="row justify-content-center">
-        <div class="col-lg-8">
-            <div class="card shadow">
-                <div class="card-header bg-primary text-white">
-                    <h3 class="mb-0"><i class="fas fa-plus-circle"></i> Crear Nuevo Pedido</h3>
+<div class="container py-5">
+    <div class="row">
+        <!-- Formulario -->
+        <div class="col-lg-7">
+            <div class="card shadow-lg border-0 mb-4">
+                <div class="card-header bg-gradient text-white" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                    <h3 class="mb-0"><i class="fas fa-cart-plus"></i> Nuevo Pedido</h3>
                 </div>
                 
-                <div class="card-body">
-                    <form method="POST" action="{{ url_for('agregar_pedido') }}">
+                <div class="card-body p-4">
+                    <form method="POST" action="{{ url_for('agregar_pedido') }}" id="formPedido">
                         
-                        <!-- Selección de Cliente (solo admin) -->
+                        <!-- Cliente (solo admin) -->
                         {% if rol == 'administrador' %}
                         <div class="alert alert-info mb-4">
-                            <i class="fas fa-user-shield"></i> <strong>Modo Administrador:</strong> Selecciona el cliente para este pedido
+                            <i class="fas fa-user-shield"></i> <strong>Modo Administrador</strong>
                         </div>
                         <div class="mb-4">
-                            <label class="form-label fw-bold">
-                                <i class="fas fa-user"></i> Cliente
-                            </label>
+                            <label class="form-label fw-bold">Cliente</label>
                             <select class="form-select form-select-lg" name="id_cliente" required>
-                                <option value="">-- Seleccione un cliente --</option>
+                                <option value="">-- Selecciona un cliente --</option>
                                 {% for c in clientes %}
                                     <option value="{{ c[0] }}">{{ c[1] }}</option>
                                 {% endfor %}
@@ -31,32 +30,21 @@
                         </div>
                         {% else %}
                         <div class="alert alert-success mb-4">
-                            <i class="fas fa-check-circle"></i> El pedido se creará asociado a tu cuenta
+                            <i class="fas fa-check-circle"></i> Pedido para tu cuenta
                         </div>
                         {% endif %}
 
-                        <!-- Tabla de Prendas -->
-                        <h5 class="mb-3"><i class="fas fa-tshirt"></i> Prendas del Pedido</h5>
-                        
-                        {% if prendas_default %}
-                        <div class="alert alert-info">
-                            <small>Hay {{ prendas_default|length }} tipos de prendas disponibles</small>
-                        </div>
-                        {% else %}
-                        <div class="alert alert-danger">
-                            <strong>Error:</strong> No se cargaron las prendas disponibles
-                        </div>
-                        {% endif %}
-                        
+                        <!-- Prendas -->
+                        <h5 class="mb-3"><i class="fas fa-tshirt"></i> Prendas</h5>
                         <div class="table-responsive mb-4">
-                            <table class="table table-bordered" id="tablaPrendas">
+                            <table class="table table-sm">
                                 <thead class="table-light">
                                     <tr>
-                                        <th width="40%">Tipo de Prenda</th>
-                                        <th width="20%">Cantidad</th>
-                                        <th width="30%">Descripción</th>
+                                        <th>Tipo</th>
+                                        <th width="15%">Cant.</th>
+                                        <th>Descripción</th>
                                         <th width="10%">
-                                            <button type="button" class="btn btn-success btn-sm w-100" onclick="agregarFila()">
+                                            <button type="button" class="btn btn-sm btn-success" onclick="agregarFila()" title="Agregar fila">
                                                 <i class="fas fa-plus"></i>
                                             </button>
                                         </th>
@@ -65,21 +53,23 @@
                                 <tbody id="cuerpoTabla">
                                     <tr>
                                         <td>
-                                            <select class="form-select" name="tipo[]" required>
+                                            <select class="form-select form-select-sm" name="tipo[]" required onchange="actualizarResumen()">
                                                 <option value="">-- Selecciona --</option>
                                                 {% for prenda in prendas_default %}
-                                                    <option value="{{ prenda.nombre }}">{{ prenda.nombre }} - ${{ "{:,.0f}".format(prenda.precio) }}</option>
+                                                    <option value="{{ prenda.nombre }}" data-precio="{{ prenda.precio }}">
+                                                        {{ prenda.nombre }} (${{ "{:,.0f}".format(prenda.precio) }})
+                                                    </option>
                                                 {% endfor %}
                                             </select>
                                         </td>
                                         <td>
-                                            <input type="number" class="form-control" name="cantidad[]" min="1" value="1" required>
+                                            <input type="number" class="form-control form-control-sm" name="cantidad[]" min="1" value="1" required onchange="actualizarResumen()">
                                         </td>
                                         <td>
-                                            <input type="text" class="form-control" name="descripcion[]" placeholder="Color, talla, etc.">
+                                            <input type="text" class="form-control form-control-sm" name="descripcion[]" placeholder="Color, talla...">
                                         </td>
                                         <td>
-                                            <button type="button" class="btn btn-danger btn-sm w-100" onclick="eliminarFila(this)" disabled>
+                                            <button type="button" class="btn btn-sm btn-danger" onclick="eliminarFila(this)" disabled>
                                                 <i class="fas fa-trash"></i>
                                             </button>
                                         </td>
@@ -88,13 +78,12 @@
                             </table>
                         </div>
 
-                        <!-- Botones de Acción -->
+                        <!-- Botones -->
                         <div class="d-flex gap-2 justify-content-end">
-                            <a href="{{ url_for('pedidos') if rol == 'administrador' else url_for('cliente_pedidos') }}" 
-                               class="btn btn-secondary">
+                            <a href="{{ url_for('pedidos') if rol == 'administrador' else url_for('cliente_pedidos') }}" class="btn btn-secondary">
                                 <i class="fas fa-times"></i> Cancelar
                             </a>
-                            <button type="submit" class="btn btn-primary">
+                            <button type="submit" class="btn btn-primary btn-lg">
                                 <i class="fas fa-check-circle"></i> Crear Pedido
                             </button>
                         </div>
@@ -102,8 +91,56 @@
                 </div>
             </div>
         </div>
+
+        <!-- Resumen (Lado derecho) -->
+        <div class="col-lg-5">
+            <div class="card shadow-lg border-0 sticky-top" style="top: 20px;">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="fas fa-receipt"></i> Resumen del Pedido</h5>
+                </div>
+                
+                <div class="card-body">
+                    <div class="mb-3">
+                        <small class="text-muted">Total de Prendas</small>
+                        <h3 class="text-primary" id="totalPrendas">0</h3>
+                    </div>
+
+                    <div class="mb-3">
+                        <small class="text-muted">Tiempo de Entrega</small>
+                        <h4 class="text-warning" id="diasEntrega">-</h4>
+                    </div>
+
+                    <hr>
+
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span>Subtotal:</span>
+                            <strong id="subtotal">$0</strong>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between align-items-center" id="descuentoDiv" style="display: none;">
+                            <span>Descuento <span id="descuentoPorcentaje">(0%)</span>:</span>
+                            <strong class="text-success" id="descuentoMonto">-$0</strong>
+                        </div>
+                    </div>
+
+                    <div class="bg-light p-3 rounded">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">Total a Pagar:</h5>
+                            <h4 class="mb-0 text-success" id="costoTotal">$0</h4>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-info mt-3 small">
+                        <i class="fas fa-info-circle"></i>
+                        <strong>Entrega:</strong> 3 días (1-5 prendas), 5 días (6-15), 7 días (16+)
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
+
 {% endblock %}
 
 {% block scripts %}
@@ -112,43 +149,77 @@ function agregarFila() {
     const cuerpo = document.getElementById('cuerpoTabla');
     const nuevaFila = cuerpo.rows[0].cloneNode(true);
     
-    // Limpiar valores
     nuevaFila.querySelector('select[name="tipo[]"]').value = '';
     nuevaFila.querySelector('input[name="cantidad[]"]').value = '1';
     nuevaFila.querySelector('input[name="descripcion[]"]').value = '';
-    
-    // Habilitar botón eliminar
     nuevaFila.querySelector('button').disabled = false;
     
+    // Agregar listeners
+    nuevaFila.querySelector('select[name="tipo[]"]').onchange = actualizarResumen;
+    nuevaFila.querySelector('input[name="cantidad[]"]').onchange = actualizarResumen;
+    
     cuerpo.appendChild(nuevaFila);
-    console.log('Fila agregada. Total filas:', cuerpo.rows.length);
 }
 
 function eliminarFila(boton) {
-    const fila = boton.closest('tr');
-    fila.remove();
-    console.log('Fila eliminada. Total filas:', document.getElementById('cuerpoTabla').rows.length);
+    boton.closest('tr').remove();
+    actualizarResumen();
 }
 
-// Validar antes de enviar
-document.querySelector('form').addEventListener('submit', function(e) {
-    const tipos = document.querySelectorAll('select[name="tipo[]"]');
-    let validos = 0;
-    
-    tipos.forEach(function(select) {
-        if (select.value) validos++;
-    });
-    
-    console.log('Enviando formulario. Prendas válidas:', validos);
-    
-    if (validos === 0) {
-        e.preventDefault();
-        alert('Debes seleccionar al menos un tipo de prenda');
-        return false;
+function obtenerPrecio(nombrePrenda) {
+    const opciones = document.querySelectorAll('select[name="tipo[]"] option');
+    for (let opt of opciones) {
+        if (opt.value === nombrePrenda) {
+            return parseInt(opt.getAttribute('data-precio')) || 5000;
+        }
     }
-});
+    return 5000;
+}
 
-// Debug: Mostrar info al cargar
-console.log('Página cargada. Opciones de prendas:', document.querySelectorAll('select[name="tipo[]"] option').length);
+function actualizarResumen() {
+    const filas = document.querySelectorAll('#cuerpoTabla tr');
+    let totalPrendas = 0;
+    let subtotal = 0;
+
+    filas.forEach(fila => {
+        const tipo = fila.querySelector('select[name="tipo[]"]').value;
+        const cantidad = parseInt(fila.querySelector('input[name="cantidad[]"]').value) || 0;
+        
+        if (tipo && cantidad > 0) {
+            const precio = obtenerPrecio(tipo);
+            totalPrendas += cantidad;
+            subtotal += precio * cantidad;
+        }
+    });
+
+    // Calcular descuento (será recalculado en el servidor)
+    let descuento = 0;
+    let descuentoPorcentaje = 0;
+    
+    // Para ahora, mostrar 0. El servidor calculará el descuento real
+    // Esto es solo una referencia visual
+
+    const total = subtotal - descuento;
+    let diasEntrega = 3;
+    if (totalPrendas > 15) diasEntrega = 7;
+    else if (totalPrendas > 5) diasEntrega = 5;
+
+    // Actualizar UI
+    document.getElementById('totalPrendas').textContent = totalPrendas;
+    document.getElementById('diasEntrega').textContent = totalPrendas > 0 ? `${diasEntrega} días` : '-';
+    document.getElementById('subtotal').textContent = `$${subtotal.toLocaleString('es-CO')}`;
+    document.getElementById('costoTotal').textContent = `$${total.toLocaleString('es-CO')}`;
+    
+    if (descuento > 0) {
+        document.getElementById('descuentoDiv').style.display = 'flex';
+        document.getElementById('descuentoPorcentaje').textContent = `(${descuentoPorcentaje}%)`;
+        document.getElementById('descuentoMonto').textContent = `-$${descuento.toLocaleString('es-CO')}`;
+    } else {
+        document.getElementById('descuentoDiv').style.display = 'none';
+    }
+}
+
+// Inicializar
+document.addEventListener('DOMContentLoaded', actualizarResumen);
 </script>
 {% endblock %}

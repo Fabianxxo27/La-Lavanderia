@@ -999,17 +999,59 @@ def agregar_pedido():
             print(f"[DEBUG] ✓ Total prendas insertadas en DB: {prendas_insertadas}", flush=True)
             sys.stdout.flush()
             
-            # 8. Crear recibo
-            print(f"[DEBUG] Insertando recibo - id_pedido={id_pedido}, id_cliente={id_cliente}, monto={total_costo}", flush=True)
+            # 8. Calcular descuento según la cantidad de pedidos del cliente
+            print(f"[DEBUG] Calculando descuento para cliente {id_cliente}...", flush=True)
+            sys.stdout.flush()
+            
+            pedidos_count = run_query(
+                "SELECT COUNT(*) FROM pedido WHERE id_cliente = :id",
+                {"id": id_cliente},
+                fetchone=True
+            )[0] or 0
+            
+            print(f"[DEBUG] Cliente tiene {pedidos_count} pedidos totales", flush=True)
+            sys.stdout.flush()
+            
+            # Determinar nivel y descuento
+            descuento_porcentaje = 0
+            nivel_cliente = 'Bronce'
+            
+            if pedidos_count >= 10:
+                descuento_porcentaje = 15
+                nivel_cliente = 'Diamante'
+            elif pedidos_count >= 6:
+                descuento_porcentaje = 10
+                nivel_cliente = 'Oro'
+            elif pedidos_count >= 3:
+                descuento_porcentaje = 5
+                nivel_cliente = 'Plata'
+            else:
+                descuento_porcentaje = 0
+                nivel_cliente = 'Bronce'
+            
+            print(f"[DEBUG] Nivel: {nivel_cliente}, Descuento: {descuento_porcentaje}%", flush=True)
+            sys.stdout.flush()
+            
+            # Calcular monto con descuento
+            monto_descuento = (total_costo * descuento_porcentaje) / 100
+            monto_final = total_costo - monto_descuento
+            
+            print(f"[DEBUG] Subtotal: {total_costo}, Descuento: {monto_descuento}, Final: {monto_final}", flush=True)
+            sys.stdout.flush()
+            
+            # 9. Crear recibo con descuento
+            print(f"[DEBUG] Insertando recibo - id_pedido={id_pedido}, id_cliente={id_cliente}, monto={monto_final}, descuento_porcentaje={descuento_porcentaje}", flush=True)
             sys.stdout.flush()
             
             try:
+                # Insertar recibo con los campos de descuento
                 run_query(
-                    "INSERT INTO recibo (id_pedido, id_cliente, monto, fecha) VALUES (:ip, :ic, :m, CURRENT_TIMESTAMP)",
-                    {"ip": id_pedido, "ic": id_cliente, "m": total_costo},
+                    """INSERT INTO recibo (id_pedido, id_cliente, monto, fecha) 
+                       VALUES (:ip, :ic, :m, CURRENT_TIMESTAMP)""",
+                    {"ip": id_pedido, "ic": id_cliente, "m": monto_final},
                     commit=True
                 )
-                print(f"[DEBUG] ✓ Recibo creado exitosamente", flush=True)
+                print(f"[DEBUG] ✓ Recibo creado exitosamente (monto final con descuento: {monto_final})", flush=True)
                 sys.stdout.flush()
             except Exception as e_recibo:
                 print(f"[ERROR] Error creando recibo: {type(e_recibo).__name__}: {str(e_recibo)}", flush=True)
@@ -1020,7 +1062,9 @@ def agregar_pedido():
             print(f"[DEBUG] === FIN POST AGREGAR_PEDIDO - EXITOSO ===", flush=True)
             sys.stdout.flush()
             
-            flash(f'¡Pedido #{id_pedido} creado! {prendas_insertadas} prendas agregadas. Entrega: {fecha_entrega}', 'success')
+            # Mensaje con descuento aplicado
+            msg_descuento = f" (Descuento {descuento_porcentaje}%: -${monto_descuento:,.0f})" if descuento_porcentaje > 0 else ""
+            flash(f'¡Pedido #{id_pedido} creado! {prendas_insertadas} prendas. Total: ${monto_final:,.0f}{msg_descuento}. Entrega: {fecha_entrega}', 'success')
             
             if rol == 'administrador':
                 return redirect(url_for('pedidos'))
