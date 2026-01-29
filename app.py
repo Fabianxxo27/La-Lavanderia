@@ -146,11 +146,11 @@ def index():
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
-        username = request.form.get('username', '').strip()
+username = request.form.get('username', '').strip().lower()
         password = request.form.get('password', '').strip()
-
+        
         user = run_query(
-            "SELECT username, password, rol FROM usuario WHERE username = :u",
+            "SELECT username, password, rol FROM usuario WHERE LOWER(username) = :u",
             {"u": username},
             fetchone=True
         )
@@ -185,8 +185,8 @@ def login():
 def registro():
     if request.method == "POST":
         nombre = request.form.get("nombre")
-        username = request.form.get("username")
-        email = request.form.get("email")
+        username = request.form.get("username").strip().lower()
+        email = request.form.get("email").strip().lower()
         password = request.form.get("password")
         password2 = request.form.get("password2")
 
@@ -202,15 +202,15 @@ def registro():
         hashed_password = generate_password_hash(password)
 
         try:
-            # Verificar si el username ya 
+            # Verificar si el username ya existe (case-insensitive)
             existing_user = run_query(
-                "SELECT id_usuario FROM usuario WHERE username = :u",
+                "SELECT id_usuario FROM usuario WHERE LOWER(username) = :u",
                 {"u": username},
                 fetchone=True
             )
-            # Verificar que el email no esté ya registrado en usuario
+            # Verificar que el email no esté ya registrado en usuario (case-insensitive)
             existing_email = run_query(
-                "SELECT id_usuario FROM usuario WHERE email = :e",
+                "SELECT id_usuario FROM usuario WHERE LOWER(email) = :e",
                 {"e": email},
                 fetchone=True
             )
@@ -286,10 +286,10 @@ def cliente_inicio():
     if not username:
         return redirect(url_for('login'))
     
-    # Obtener id_usuario
+    # Obtener id_usuario (case-insensitive)
     usuario = run_query(
-        "SELECT id_usuario FROM usuario WHERE username = :u",
-        {"u": username},
+        "SELECT id_usuario FROM usuario WHERE LOWER(username) = :u",
+        {"u": username.lower()},
         fetchone=True
     )
     if not usuario:
@@ -400,9 +400,9 @@ def cliente_recibos():
         FROM recibo r
         LEFT JOIN usuario u ON r.id_cliente = u.id_usuario
         LEFT JOIN pedido p ON r.id_pedido = p.id_pedido
-        WHERE u.username = :u
+        WHERE LOWER(u.username) = :u
         ORDER BY r.fecha DESC
-    """, {"u": username}, fetchall=True)
+    """, {"u": username.lower()}, fetchall=True)
     
     # Calcular estadísticas
     total_gastado = sum(float(r[2]) if r[2] else 0 for r in recibos)
@@ -426,10 +426,10 @@ def cliente_promociones():
         flash("No se pudo identificar al usuario.", "danger")
         return redirect(url_for('login'))
     
-    # Obtener id_usuario del cliente
+    # Obtener id_usuario del cliente (case-insensitive)
     usuario = run_query(
-        "SELECT id_usuario FROM usuario WHERE username = :u",
-        {"u": username},
+        "SELECT id_usuario FROM usuario WHERE LOWER(username) = :u",
+        {"u": username.lower()},
         fetchone=True
     )
     
@@ -510,10 +510,10 @@ def cliente_pedidos():
         flash("No se pudo identificar al usuario.", "danger")
         return redirect(url_for('login'))
     
-    # Obtener id_usuario
+    # Obtener id_usuario (case-insensitive)
     usuario = run_query(
-        "SELECT id_usuario FROM usuario WHERE username = :u",
-        {"u": username},
+        "SELECT id_usuario FROM usuario WHERE LOWER(username) = :u",
+        {"u": username.lower()},
         fetchone=True
     )
     
@@ -1032,8 +1032,8 @@ def agregar_pedido():
     
     # Obtener rol del usuario
     usuario = run_query(
-        "SELECT rol FROM usuario WHERE username = :u",
-        {"u": username},
+        "SELECT rol FROM usuario WHERE LOWER(username) = :u",
+        {"u": username.lower()},
         fetchone=True
     )
     rol = usuario[0].strip().lower() if usuario else 'cliente'
@@ -1066,8 +1066,8 @@ def agregar_pedido():
                 id_cliente = request.form.get('id_cliente')
             else:
                 usuario_data = run_query(
-                    "SELECT id_usuario FROM usuario WHERE username = :u",
-                    {"u": username},
+                    "SELECT id_usuario FROM usuario WHERE LOWER(username) = :u",
+                    {"u": username.lower()},
                     fetchone=True
                 )
                 id_cliente = usuario_data[0] if usuario_data else None
@@ -1345,8 +1345,8 @@ def ver_prendas_pedido(id_pedido):
     # Verificar permisos (cliente solo ve sus propios pedidos, admin ve todos)
     if rol != 'administrador':
         usuario = run_query(
-            "SELECT id_usuario FROM usuario WHERE username = :u",
-            {"u": username},
+            "SELECT id_usuario FROM usuario WHERE LOWER(username) = :u",
+            {"u": username.lower()},
             fetchone=True
         )
         if usuario[0] != pedido[1]:
@@ -1428,8 +1428,8 @@ def api_prendas_pedido(id_pedido):
     
     if rol != 'administrador':
         usuario = run_query(
-            "SELECT id_usuario FROM usuario WHERE username = :u",
-            {"u": username},
+            "SELECT id_usuario FROM usuario WHERE LOWER(username) = :u",
+            {"u": username.lower()},
             fetchone=True
         )
         if usuario[0] != pedido[0]:
