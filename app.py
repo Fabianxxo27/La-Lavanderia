@@ -618,7 +618,7 @@ def pedidos():
     
     # Agregar filtros dinámicamente
     if cliente_filter:
-        query += " AND (c.nombre LIKE :cliente OR c.id_cliente = :cliente_id)"
+        query += " AND (LOWER(c.nombre) LIKE LOWER(:cliente) OR c.id_cliente = :cliente_id)"
         params['cliente'] = f"%{cliente_filter}%"
         try:
             params['cliente_id'] = int(cliente_filter)
