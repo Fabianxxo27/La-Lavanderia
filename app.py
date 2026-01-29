@@ -897,12 +897,30 @@ def reportes():
             c.id_cliente, 
             c.nombre,
             COUNT(DISTINCT p.id_pedido) as cantidad_pedidos,
-            COUNT(DISTINCT pr.id_prenda) as total_prendas,
-            COALESCE(SUM(r.monto), 0)::numeric as gasto_total
+            COUNT(pr.id_prenda) as total_prendas,
+            COALESCE(SUM(
+                CASE pr.tipo
+                    WHEN 'Camisa' THEN 5000
+                    WHEN 'Pantalón' THEN 6000
+                    WHEN 'Vestido' THEN 8000
+                    WHEN 'Chaqueta' THEN 10000
+                    WHEN 'Saco' THEN 7000
+                    WHEN 'Falda' THEN 5500
+                    WHEN 'Blusa' THEN 4500
+                    WHEN 'Abrigo' THEN 12000
+                    WHEN 'Suéter' THEN 6500
+                    WHEN 'Jeans' THEN 7000
+                    WHEN 'Corbata' THEN 3000
+                    WHEN 'Bufanda' THEN 3500
+                    WHEN 'Sábana' THEN 8000
+                    WHEN 'Edredón' THEN 15000
+                    WHEN 'Cortina' THEN 12000
+                    ELSE 5000
+                END
+            ), 0)::numeric as gasto_total
         FROM cliente c
         LEFT JOIN pedido p ON c.id_cliente = p.id_cliente
         LEFT JOIN prenda pr ON p.id_pedido = pr.id_pedido
-        LEFT JOIN recibo r ON p.id_pedido = r.id_pedido
         GROUP BY c.id_cliente, c.nombre
         ORDER BY cantidad_pedidos DESC
         LIMIT 15
@@ -918,10 +936,29 @@ def reportes():
     promedio_gasto = run_query("""
         SELECT AVG(gasto)
         FROM (
-            SELECT COALESCE(SUM(r.monto), 0) as gasto
+            SELECT COALESCE(SUM(
+                CASE pr.tipo
+                    WHEN 'Camisa' THEN 5000
+                    WHEN 'Pantalón' THEN 6000
+                    WHEN 'Vestido' THEN 8000
+                    WHEN 'Chaqueta' THEN 10000
+                    WHEN 'Saco' THEN 7000
+                    WHEN 'Falda' THEN 5500
+                    WHEN 'Blusa' THEN 4500
+                    WHEN 'Abrigo' THEN 12000
+                    WHEN 'Suéter' THEN 6500
+                    WHEN 'Jeans' THEN 7000
+                    WHEN 'Corbata' THEN 3000
+                    WHEN 'Bufanda' THEN 3500
+                    WHEN 'Sábana' THEN 8000
+                    WHEN 'Edredón' THEN 15000
+                    WHEN 'Cortina' THEN 12000
+                    ELSE 5000
+                END
+            ), 0) as gasto
             FROM cliente c
             LEFT JOIN pedido p ON c.id_cliente = p.id_cliente
-            LEFT JOIN recibo r ON p.id_pedido = r.id_pedido
+            LEFT JOIN prenda pr ON p.id_pedido = pr.id_pedido
             GROUP BY c.id_cliente
         ) subq
     """, fetchone=True)[0] or 0
