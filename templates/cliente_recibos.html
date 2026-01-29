@@ -87,9 +87,9 @@
                                             <i class="fas fa-box"></i> Mi Pedido #{{ r[4] }}
                                         </span>
                                     </td>
-                                    <td>
+                                    <td style="text-align: center;">
                                         {% if r[5] %}
-                                        <code style="background-color: #f8f9fa; padding: 4px 8px; border-radius: 4px; font-size: 0.85rem;">{{ r[5] }}</code>
+                                        <img src="{{ url_for('generar_barcode', codigo=r[5]) }}" alt="{{ r[5] }}" style="max-width: 200px; height: auto;">
                                         {% else %}
                                         <span class="text-muted">-</span>
                                         {% endif %}

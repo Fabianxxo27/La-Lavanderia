@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, send_file, session
+from flask import Flask, render_template, request, redirect, url_for, flash, send_file, session, Response
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import text
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -9,6 +9,8 @@ import credentials as cd
 import os
 import urllib.parse
 from dotenv import load_dotenv
+import barcode
+from barcode.writer import ImageWriter
 
 # Cargar variables de entorno desde .env (si existe)
 load_dotenv()
@@ -1509,6 +1511,33 @@ def _get_safe_redirect():
         return url_for('pedidos')
     else:
         return url_for('cliente_pedidos')
+
+
+@app.route('/barcode/<codigo>')
+def generar_barcode(codigo):
+    """Genera una imagen de código de barras en formato Code128."""
+    try:
+        # Crear el código de barras Code128
+        code128 = barcode.get_barcode_class('code128')
+        barcode_instance = code128(codigo, writer=ImageWriter())
+        
+        # Generar la imagen en memoria
+        buffer = BytesIO()
+        barcode_instance.write(buffer, options={
+            'module_width': 0.3,
+            'module_height': 10.0,
+            'quiet_zone': 2.0,
+            'font_size': 10,
+            'text_distance': 3.0,
+            'write_text': True
+        })
+        buffer.seek(0)
+        
+        # Retornar la imagen
+        return Response(buffer.getvalue(), mimetype='image/png')
+    except Exception as e:
+        print(f"Error generando código de barras: {e}")
+        return "Error generando código de barras", 500
 
 
 # -----------------------------------------------

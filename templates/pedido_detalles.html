@@ -311,9 +311,9 @@
 <div class="pedido-header">
   <div class="pedido-title">Pedido #{{ pedido[0] }}</div>
   {% if pedido[5] %}
-  <div style="background: rgba(255,255,255,0.2); padding: 0.8rem; border-radius: 8px; margin: 1rem 0; text-align: center;">
-    <div style="font-size: 0.9rem; opacity: 0.9; margin-bottom: 0.3rem;">Código de Barras</div>
-    <div style="font-family: 'Courier New', monospace; font-size: 1.3rem; font-weight: 700; letter-spacing: 2px;">{{ pedido[5] }}</div>
+  <div style="background: rgba(255,255,255,0.95); padding: 1rem; border-radius: 8px; margin: 1rem 0; text-align: center;">
+    <div style="font-size: 0.9rem; color: #333; margin-bottom: 0.5rem; font-weight: 600;">Código de Barras</div>
+    <img src="{{ url_for('generar_barcode', codigo=pedido[5]) }}" alt="Código de barras {{ pedido[5] }}" style="max-width: 100%; height: auto;">
   </div>
   {% endif %}
   <div class="info-grid">

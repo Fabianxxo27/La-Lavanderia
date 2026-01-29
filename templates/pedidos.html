@@ -356,7 +356,13 @@
       {% for p in pedidos %}
       <tr>
         <td><span class="pedido-id">#{{ p[0] }}</span></td>
-        <td><code style="font-size: 0.85rem; background: #f0f0f0; padding: 0.3rem 0.5rem; border-radius: 4px;">{{ p[5] or 'N/A' }}</code></td>
+        <td style="text-align: center;">
+          {% if p[5] %}
+          <img src="{{ url_for('generar_barcode', codigo=p[5]) }}" alt="{{ p[5] }}" style="max-width: 200px; height: auto;">
+          {% else %}
+          <span class="text-muted">-</span>
+          {% endif %}
+        </td>
         <td>{{ p[1] | default('N/A') }}</td>
         <td>
           {% if p[2] %}
