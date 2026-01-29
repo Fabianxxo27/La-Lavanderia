@@ -762,7 +762,7 @@ def actualizar_cliente(id_cliente):
                 commit=True
             )
             flash('Cliente actualizado correctamente.', 'success')
-            return redirect(url_for('clientes'))
+            return redirect(_get_safe_redirect())
         except Exception as e:
             flash(f'Error al actualizar cliente: {e}', 'danger')
     
@@ -789,7 +789,7 @@ def eliminar_cliente(id_cliente):
     except Exception as e:
         flash(f'Error al eliminar cliente: {e}', 'danger')
     
-    return redirect(url_for('clientes'))
+    return redirect(_get_safe_redirect())
 
 
 # -----------------------------------------------
@@ -1193,6 +1193,7 @@ def agregar_pedido():
             msg_descuento = f" (Descuento {descuento_porcentaje}%: -${monto_descuento:,.0f})" if descuento_porcentaje > 0 else ""
             flash(f'¡Pedido #{id_pedido} creado! {prendas_insertadas} prendas. Total: ${monto_final:,.0f}{msg_descuento}. Entrega: {fecha_entrega}', 'success')
             
+            # Redirigir según el rol
             if rol == 'administrador':
                 return redirect(url_for('pedidos'))
             else:
@@ -1298,7 +1299,7 @@ def eliminar_pedido(id_pedido):
     except Exception as e:
         flash(f'Error al eliminar: {e}', 'danger')
     
-    return redirect(url_for('pedidos'))
+    return redirect(_get_safe_redirect())
 
 
 # -----------------------------------------------
@@ -1430,6 +1431,19 @@ def _admin_only():
     if not rol:
         return False
     return str(rol).strip().lower() == 'administrador'
+
+def _get_safe_redirect():
+    """Obtiene una URL segura para redireccionar, priorizando el referrer."""
+    referrer = request.referrer
+    # Verificar que el referrer sea de la misma aplicación
+    if referrer and request.host_url in referrer:
+        return referrer
+    # Fallback basado en el rol
+    rol = session.get('rol', '').strip().lower()
+    if rol == 'administrador':
+        return url_for('pedidos')
+    else:
+        return url_for('cliente_pedidos')
 
 
 # -----------------------------------------------
