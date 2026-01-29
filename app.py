@@ -841,53 +841,52 @@ def agregar_pedido():
         try:
             from datetime import datetime, timedelta
             
-            print(f"[DEBUG] POST recibido para agregar_pedido")
-            print(f"[DEBUG] Rol del usuario: {rol}")
+            print(f"[DEBUG] === INICIO POST AGREGAR_PEDIDO ===")
             
-            # Determinar id_cliente según el rol
+            # 1. Determinar id_cliente
             if rol == 'administrador':
                 id_cliente = request.form.get('id_cliente')
-                print(f"[DEBUG] Admin seleccionó id_cliente: {id_cliente}")
-                if not id_cliente:
-                    flash('Debes seleccionar un cliente.', 'warning')
-                    return redirect(url_for('agregar_pedido'))
+                print(f"[DEBUG] Admin - id_cliente: {id_cliente}")
             else:
-                # Cliente logueado
                 usuario_data = run_query(
                     "SELECT id_usuario FROM usuario WHERE username = :u",
                     {"u": username},
                     fetchone=True
                 )
-                if not usuario_data:
-                    flash('Error al identificar tu usuario.', 'danger')
-                    return redirect(url_for('cliente_inicio'))
-                id_cliente = usuario_data[0]
-                print(f"[DEBUG] Cliente logueado id_cliente: {id_cliente}")
+                id_cliente = usuario_data[0] if usuario_data else None
+                print(f"[DEBUG] Cliente - id_cliente: {id_cliente}")
             
-            # Asegurar que existe el registro en la tabla cliente
-            print(f"[DEBUG] Asegurando que existe cliente con id: {id_cliente}")
+            if not id_cliente:
+                flash('Error al identificar el cliente.', 'danger')
+                return redirect(url_for('agregar_pedido'))
+            
+            # 2. Asegurar que existe en tabla cliente
             ensure_cliente_exists(id_cliente)
+            print(f"[DEBUG] Cliente verificado: {id_cliente}")
             
-            # Obtener prendas del formulario
+            # 3. Obtener prendas
             tipos = request.form.getlist('tipo[]')
             cantidades = request.form.getlist('cantidad[]')
             descripciones = request.form.getlist('descripcion[]')
             
-            print(f"[DEBUG] Prendas recibidas - tipos: {tipos}, cantidades: {cantidades}")
+            print(f"[DEBUG] Form data - tipos: {tipos}")
+            print(f"[DEBUG] Form data - cantidades: {cantidades}")
+            print(f"[DEBUG] Form data - descripciones: {descripciones}")
             
-            if not tipos or not cantidades:
+            if not tipos or len(tipos) == 0:
                 flash('Debes agregar al menos una prenda.', 'warning')
                 return redirect(url_for('agregar_pedido'))
             
-            # Calcular fechas
+            # 4. Calcular fechas
             total_prendas = sum(int(c) for c in cantidades if c)
             dias_entrega = 3 if total_prendas <= 5 else (5 if total_prendas <= 15 else 7)
             fecha_ingreso = datetime.now().strftime('%Y-%m-%d')
             fecha_entrega = (datetime.now() + timedelta(days=dias_entrega)).strftime('%Y-%m-%d')
             
-            print(f"[DEBUG] Creando pedido - fecha_ingreso: {fecha_ingreso}, fecha_entrega: {fecha_entrega}")
+            print(f"[DEBUG] Fechas - ingreso: {fecha_ingreso}, entrega: {fecha_entrega}")
             
-            # Crear pedido
+            # 5. Crear pedido
+            print(f"[DEBUG] Insertando pedido...")
             result = run_query(
                 "INSERT INTO pedido (fecha_ingreso, fecha_entrega, estado, id_cliente) VALUES (:fi, :fe, :e, :ic) RETURNING id_pedido",
                 {"fi": fecha_ingreso, "fe": fecha_entrega, "e": "Pendiente", "ic": id_cliente},
@@ -895,51 +894,71 @@ def agregar_pedido():
                 fetchone=True
             )
             
-            if not result:
-                print(f"[ERROR] No se obtuvo id_pedido después del INSERT")
+            print(f"[DEBUG] Result del INSERT pedido: {result}")
+            
+            if not result or len(result) == 0:
+                print(f"[ERROR] No se recibió id_pedido")
                 flash('Error al crear el pedido.', 'danger')
                 return redirect(url_for('agregar_pedido'))
             
             id_pedido = result[0]
-            print(f"[DEBUG] Pedido creado con id: {id_pedido}")
-            total_costo = 0
+            print(f"[DEBUG] ✓ Pedido creado con ID: {id_pedido}")
             
-            # Insertar prendas
-            for i, tipo in enumerate(tipos):
-                if tipo and i < len(cantidades):
-                    cantidad = int(cantidades[i])
-                    descripcion = descripciones[i] if i < len(descripciones) else ''
+            # 6. Insertar prendas UNA POR UNA
+            total_costo = 0
+            prendas_insertadas = 0
+            
+            for i in range(len(tipos)):
+                tipo = tipos[i]
+                if not tipo:
+                    continue
                     
-                    # Calcular costo
-                    precio = 5000
-                    for p in prendas_default:
-                        if p['nombre'] == tipo:
-                            precio = p['precio']
-                            break
-                    total_costo += precio * cantidad
-                    
-                    print(f"[DEBUG] Insertando {cantidad}x {tipo} - precio: {precio}")
-                    
-                    # Insertar cada prenda
-                    for j in range(cantidad):
+                cantidad = int(cantidades[i]) if i < len(cantidades) else 1
+                descripcion = descripciones[i] if i < len(descripciones) else ''
+                
+                # Calcular precio
+                precio = 5000
+                for p in prendas_default:
+                    if p['nombre'] == tipo:
+                        precio = p['precio']
+                        break
+                
+                total_costo += precio * cantidad
+                
+                print(f"[DEBUG] Insertando {cantidad} prenda(s) tipo '{tipo}'...")
+                
+                # Insertar CADA unidad
+                for unidad in range(cantidad):
+                    try:
+                        print(f"[DEBUG]   -> Unidad {unidad+1}/{cantidad} tipo={tipo}, id_pedido={id_pedido}")
                         run_query(
-                            "INSERT INTO prenda (tipo, descripcion, observaciones, id_pedido) VALUES (:t, :d, '', :ip)",
-                            {"t": tipo, "d": descripcion, "ip": id_pedido},
+                            "INSERT INTO prenda (tipo, descripcion, observaciones, id_pedido) VALUES (:tipo, :desc, :obs, :id_ped)",
+                            {"tipo": tipo, "desc": descripcion, "obs": '', "id_ped": id_pedido},
                             commit=True
                         )
+                        prendas_insertadas += 1
+                        print(f"[DEBUG]   ✓ Prenda insertada")
+                    except Exception as e_prenda:
+                        print(f"[ERROR] Error insertando prenda: {e_prenda}")
+                        flash(f'Advertencia: Error al insertar prenda {tipo}', 'warning')
             
-            print(f"[DEBUG] Prendas insertadas. Total costo: {total_costo}")
+            print(f"[DEBUG] Total prendas insertadas: {prendas_insertadas}/{total_prendas}")
             
-            # Crear recibo
-            print(f"[DEBUG] Creando recibo - id_pedido: {id_pedido}, id_cliente: {id_cliente}, monto: {total_costo}")
-            run_query(
-                "INSERT INTO recibo (id_pedido, id_cliente, monto, fecha) VALUES (:ip, :ic, :m, CURRENT_TIMESTAMP)",
-                {"ip": id_pedido, "ic": id_cliente, "m": total_costo},
-                commit=True
-            )
+            # 7. Crear recibo
+            print(f"[DEBUG] Insertando recibo...")
+            try:
+                run_query(
+                    "INSERT INTO recibo (id_pedido, id_cliente, monto, fecha) VALUES (:ip, :ic, :m, CURRENT_TIMESTAMP)",
+                    {"ip": id_pedido, "ic": id_cliente, "m": total_costo},
+                    commit=True
+                )
+                print(f"[DEBUG] ✓ Recibo creado")
+            except Exception as e_recibo:
+                print(f"[ERROR] Error creando recibo: {e_recibo}")
             
-            print(f"[DEBUG] Recibo creado exitosamente")
-            flash(f'¡Pedido creado exitosamente! Entrega estimada: {fecha_entrega}', 'success')
+            print(f"[DEBUG] === FIN POST AGREGAR_PEDIDO - EXITOSO ===")
+            
+            flash(f'¡Pedido #{id_pedido} creado! {prendas_insertadas} prendas agregadas. Entrega: {fecha_entrega}', 'success')
             
             if rol == 'administrador':
                 return redirect(url_for('pedidos'))
@@ -947,10 +966,10 @@ def agregar_pedido():
                 return redirect(url_for('cliente_pedidos'))
                 
         except Exception as e:
-            print(f"[ERROR CRÍTICO] Error al crear pedido: {type(e).__name__}: {str(e)}")
+            print(f"[ERROR CRÍTICO] {type(e).__name__}: {str(e)}")
             import traceback
             print(f"[TRACEBACK] {traceback.format_exc()}")
-            flash(f'Error al crear pedido: {str(e)}', 'danger')
+            flash(f'Error: {str(e)}', 'danger')
             return redirect(url_for('agregar_pedido'))
     
     # GET request
