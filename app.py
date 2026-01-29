@@ -1402,13 +1402,34 @@ def api_prendas_pedido(id_pedido):
         if usuario[0] != pedido[0]:
             return jsonify({'error': 'Acceso denegado'}), 403
     
-    # Obtener prendas con precios
+    # Obtener prendas con precios calculados según tipo
     prendas_data = run_query("""
-        SELECT p.tipo, p.cantidad, p.descripcion, t.precio
+        SELECT 
+            p.tipo, 
+            COUNT(*) as cantidad,
+            p.descripcion,
+            CASE p.tipo
+                WHEN 'Camisa' THEN 5000
+                WHEN 'Pantalón' THEN 6000
+                WHEN 'Vestido' THEN 8000
+                WHEN 'Chaqueta' THEN 10000
+                WHEN 'Saco' THEN 7000
+                WHEN 'Falda' THEN 5500
+                WHEN 'Blusa' THEN 4500
+                WHEN 'Abrigo' THEN 12000
+                WHEN 'Suéter' THEN 6500
+                WHEN 'Jeans' THEN 7000
+                WHEN 'Corbata' THEN 3000
+                WHEN 'Bufanda' THEN 3500
+                WHEN 'Sábana' THEN 8000
+                WHEN 'Edredón' THEN 15000
+                WHEN 'Cortina' THEN 12000
+                ELSE 5000
+            END as precio
         FROM prenda p
-        LEFT JOIN tarifa t ON p.tipo = t.nombre
         WHERE p.id_pedido = :id
-        ORDER BY p.id_prenda
+        GROUP BY p.tipo, p.descripcion
+        ORDER BY p.tipo
     """, {"id": id_pedido}, fetchall=True)
     
     prendas = []
@@ -1417,7 +1438,7 @@ def api_prendas_pedido(id_pedido):
             'tipo': prenda[0],
             'cantidad': int(prenda[1]) if prenda[1] else 0,
             'descripcion': prenda[2] or '',
-            'precio': float(prenda[3]) if prenda[3] else 0
+            'precio': float(prenda[3]) if prenda[3] else 5000
         })
     
     return jsonify({'prendas': prendas})
