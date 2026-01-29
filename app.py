@@ -916,7 +916,7 @@ def agregar_pedido():
             
             # Crear recibo
             run_query(
-                "INSERT INTO recibo (id_pedido, id_cliente, monto, fecha) VALUES (:ip, :ic, :m, NOW())",
+                "INSERT INTO recibo (id_pedido, id_cliente, monto, fecha) VALUES (:ip, :ic, :m, CURRENT_TIMESTAMP)",
                 {"ip": id_pedido, "ic": id_cliente, "m": total_costo},
                 commit=True
             )
