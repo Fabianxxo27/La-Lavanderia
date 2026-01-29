@@ -1,12 +1,81 @@
 # 🚀 Cómo Ejecutar la Migración desde Render.com
 
-## Paso 1: Acceder a la Consola de PostgreSQL en Render
+## Método 1: Usando la Pestaña "Connect" (MÁS COMÚN)
 
 1. Ve a tu dashboard de Render: https://dashboard.render.com/
-2. En el menú lateral, busca y haz clic en **PostgreSQL**
-3. Selecciona tu base de datos (probablemente se llama algo como `lalavanderia-db` o similar)
-4. Una vez dentro, busca el botón **"Shell"** o **"psql"** en la parte superior
-5. Haz clic en él para abrir la consola interactiva de PostgreSQL
+2. En el menú lateral, haz clic en **Databases**
+3. Selecciona tu base de datos PostgreSQL
+4. Busca y haz clic en la pestaña **"Connect"** (arriba, al lado de "Info")
+5. Verás información de conexión, busca la sección **"PSQL Command"**
+6. Copia el comando completo que aparece (algo como):
+   ```bash
+   PGPASSWORD=abc123... psql -h dpg-xxxxx-a.oregon-postgres.render.com -U usuario_abc base_datos
+   ```
+7. Abre una **terminal** en tu computadora (PowerShell, CMD, o Terminal de Mac/Linux)
+8. Pega el comando y presiona Enter
+9. Ahora estás conectado a PostgreSQL, continúa con el **Paso 2** abajo
+
+## Método 2: Usando psql Local (SI TIENES PostgreSQL INSTALADO)
+
+Si tienes PostgreSQL instalado en tu computadora:
+
+1. Ve a Render → Tu Base de Datos → **Connect**
+2. Copia los datos de conexión:
+   - **Host**: dpg-xxxxx-a.oregon-postgres.render.com
+   - **Database**: tu_base_datos
+   - **Username**: tu_usuario
+   - **Password**: (copia la contraseña)
+
+3. Abre tu terminal y ejecuta:
+   ```bash
+   psql -h [HOST] -U [USERNAME] -d [DATABASE]
+   ```
+   Te pedirá la contraseña, pégala y presiona Enter
+
+## Método 3: Usando la Pestaña "Query" (SI ESTÁ DISPONIBLE)
+
+1. Ve a Render → Tu Base de Datos
+2. Busca una pestaña llamada **"Query"** o **"SQL Editor"**
+3. Si la encuentras, puedes copiar y pegar el script directamente ahí
+4. Haz clic en "Run" o "Execute"
+
+## Método 4: Desde tu Aplicación Flask (TEMPORAL)
+
+Si no puedes acceder por ningún método anterior, puedes crear un endpoint temporal:
+
+1. Agrega esto a tu `app.py` (AL FINAL, antes del `if __name__ == '__main__':`):
+
+```python
+@app.route('/ejecutar_migracion_codigo_barras')
+def ejecutar_migracion():
+    """TEMPORAL: Ejecutar migración de código de barras"""
+    if not _admin_only():
+        return "Acceso denegado", 403
+    
+    try:
+        # Eliminar datos
+        run_query("DELETE FROM recibo", commit=True)
+        run_query("DELETE FROM prenda", commit=True)
+        run_query("DELETE FROM pedido", commit=True)
+        
+        # Reiniciar secuencia
+        run_query("ALTER SEQUENCE pedido_id_pedido_seq RESTART WITH 1", commit=True)
+        
+        # Agregar columna
+        run_query("ALTER TABLE pedido ADD COLUMN IF NOT EXISTS codigo_barras VARCHAR(50) UNIQUE", commit=True)
+        
+        # Crear índice
+        run_query("CREATE INDEX IF NOT EXISTS idx_pedido_codigo_barras ON pedido(codigo_barras)", commit=True)
+        
+        return "✅ Migración ejecutada correctamente. ELIMINA esta ruta después."
+    except Exception as e:
+        return f"❌ Error: {str(e)}"
+```
+
+2. Haz commit y push
+3. Espera que Render despliegue
+4. Ve a: `https://tu-app.onrender.com/ejecutar_migracion_codigo_barras`
+5. **IMPORTANTE: Después de ejecutar, ELIMINA esa función y vuelve a hacer push**
 
 ## Paso 2: Copiar el Script de Migración
 
