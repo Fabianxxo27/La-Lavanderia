@@ -17,6 +17,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Precio por prenda (asunción razonable). Cambia este valor si deseas otra tarifa.
+# Sistema de descuentos automáticos por lealtad implementado
 PRICE_PER_PRENDA = 5000.0
 
 # Configuración de la app
