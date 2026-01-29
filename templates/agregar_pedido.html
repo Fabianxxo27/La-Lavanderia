@@ -161,9 +161,9 @@
                                             <span class="precio-fila badge bg-secondary">$0</span>
                                         </td>
                                         <td class="text-center">
-                                            <span onclick="eliminarFila(this.closest('tr'))" style="cursor: pointer; color: #dc3545; font-size: 1.3rem; font-weight: bold;" title="Eliminar fila">
-                                                <i class="fas fa-times-circle"></i>
-                                            </span>
+                                            <button type="button" class="btn btn-sm btn-danger" onclick="eliminarFila(this)" title="Eliminar fila" style="font-size: 1rem; padding: 0.25rem 0.5rem;">
+                                                <i class="fas fa-times"></i>
+                                            </button>
                                         </td>
                                     </tr>
                                 </tbody>
@@ -264,8 +264,8 @@ function agregarFila() {
     nuevaFila.querySelector('input[name="cantidad[]"]').oninput = function() { calcularTotal(); };
     nuevaFila.querySelector('input[name="descripcion[]"]').value = '';
     nuevaFila.querySelector('.precio-fila').textContent = '$0';
-    const iconoEliminar = nuevaFila.querySelector('span[onclick*="eliminarFila"]');
-    iconoEliminar.onclick = function() { eliminarFila(this.closest('tr')); };
+    const botonEliminar = nuevaFila.querySelector('button[onclick*="eliminarFila"]');
+    botonEliminar.onclick = function() { eliminarFila(this); };
     
     cuerpo.appendChild(nuevaFila);
     calcularTotal();
@@ -287,10 +287,10 @@ function actualizarPrecio(selectElement) {
     calcularTotal();
 }
 
-function eliminarFila(fila) {
+function eliminarFila(boton) {
     const filas = document.querySelectorAll('#cuerpoTabla tr');
     if (filas.length > 1) {
-        fila.remove();
+        boton.closest('tr').remove();
         calcularTotal();
     } else {
         alert('Debe haber al menos una fila para agregar prendas');
