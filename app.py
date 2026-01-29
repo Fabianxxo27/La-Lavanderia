@@ -899,25 +899,26 @@ def reportes():
         SELECT 
             c.id_cliente, 
             c.nombre,
-            COUNT(DISTINCT p.id_pedido) as cantidad_pedidos,
+            COUNT(DISTINCT CASE WHEN p.id_pedido IS NOT NULL THEN p.id_pedido END) as cantidad_pedidos,
             COUNT(pr.id_prenda) as total_prendas,
             COALESCE(SUM(
-                CASE pr.tipo
-                    WHEN 'Camisa' THEN 5000
-                    WHEN 'Pantalón' THEN 6000
-                    WHEN 'Vestido' THEN 8000
-                    WHEN 'Chaqueta' THEN 10000
-                    WHEN 'Saco' THEN 7000
-                    WHEN 'Falda' THEN 5500
-                    WHEN 'Blusa' THEN 4500
-                    WHEN 'Abrigo' THEN 12000
-                    WHEN 'Suéter' THEN 6500
-                    WHEN 'Jeans' THEN 7000
-                    WHEN 'Corbata' THEN 3000
-                    WHEN 'Bufanda' THEN 3500
-                    WHEN 'Sábana' THEN 8000
-                    WHEN 'Edredón' THEN 15000
-                    WHEN 'Cortina' THEN 12000
+                CASE 
+                    WHEN pr.tipo IS NULL THEN 0
+                    WHEN pr.tipo = 'Camisa' THEN 5000
+                    WHEN pr.tipo = 'Pantalón' THEN 6000
+                    WHEN pr.tipo = 'Vestido' THEN 8000
+                    WHEN pr.tipo = 'Chaqueta' THEN 10000
+                    WHEN pr.tipo = 'Saco' THEN 7000
+                    WHEN pr.tipo = 'Falda' THEN 5500
+                    WHEN pr.tipo = 'Blusa' THEN 4500
+                    WHEN pr.tipo = 'Abrigo' THEN 12000
+                    WHEN pr.tipo = 'Suéter' THEN 6500
+                    WHEN pr.tipo = 'Jeans' THEN 7000
+                    WHEN pr.tipo = 'Corbata' THEN 3000
+                    WHEN pr.tipo = 'Bufanda' THEN 3500
+                    WHEN pr.tipo = 'Sábana' THEN 8000
+                    WHEN pr.tipo = 'Edredón' THEN 15000
+                    WHEN pr.tipo = 'Cortina' THEN 12000
                     ELSE 5000
                 END
             ), 0)::numeric as gasto_total
@@ -940,22 +941,23 @@ def reportes():
         SELECT AVG(gasto)
         FROM (
             SELECT COALESCE(SUM(
-                CASE pr.tipo
-                    WHEN 'Camisa' THEN 5000
-                    WHEN 'Pantalón' THEN 6000
-                    WHEN 'Vestido' THEN 8000
-                    WHEN 'Chaqueta' THEN 10000
-                    WHEN 'Saco' THEN 7000
-                    WHEN 'Falda' THEN 5500
-                    WHEN 'Blusa' THEN 4500
-                    WHEN 'Abrigo' THEN 12000
-                    WHEN 'Suéter' THEN 6500
-                    WHEN 'Jeans' THEN 7000
-                    WHEN 'Corbata' THEN 3000
-                    WHEN 'Bufanda' THEN 3500
-                    WHEN 'Sábana' THEN 8000
-                    WHEN 'Edredón' THEN 15000
-                    WHEN 'Cortina' THEN 12000
+                CASE 
+                    WHEN pr.tipo IS NULL THEN 0
+                    WHEN pr.tipo = 'Camisa' THEN 5000
+                    WHEN pr.tipo = 'Pantalón' THEN 6000
+                    WHEN pr.tipo = 'Vestido' THEN 8000
+                    WHEN pr.tipo = 'Chaqueta' THEN 10000
+                    WHEN pr.tipo = 'Saco' THEN 7000
+                    WHEN pr.tipo = 'Falda' THEN 5500
+                    WHEN pr.tipo = 'Blusa' THEN 4500
+                    WHEN pr.tipo = 'Abrigo' THEN 12000
+                    WHEN pr.tipo = 'Suéter' THEN 6500
+                    WHEN pr.tipo = 'Jeans' THEN 7000
+                    WHEN pr.tipo = 'Corbata' THEN 3000
+                    WHEN pr.tipo = 'Bufanda' THEN 3500
+                    WHEN pr.tipo = 'Sábana' THEN 8000
+                    WHEN pr.tipo = 'Edredón' THEN 15000
+                    WHEN pr.tipo = 'Cortina' THEN 12000
                     ELSE 5000
                 END
             ), 0) as gasto
