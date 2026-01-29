@@ -896,8 +896,8 @@ def reportes():
         SELECT 
             c.id_cliente, 
             c.nombre,
-            COUNT(p.id_pedido) as cantidad_pedidos,
-            COALESCE(SUM(COUNT(pr.id_prenda)) OVER (PARTITION BY c.id_cliente), 0)::int as total_prendas,
+            COUNT(DISTINCT p.id_pedido) as cantidad_pedidos,
+            COUNT(DISTINCT pr.id_prenda) as total_prendas,
             COALESCE(SUM(r.monto), 0)::numeric as gasto_total,
             u.fecha_registro
         FROM cliente c
@@ -935,7 +935,7 @@ def reportes():
     
     # 15. PROMEDIO DE DÍAS PARA COMPLETAR PEDIDO
     promedio_dias = run_query("""
-        SELECT AVG(EXTRACT(DAY FROM (fecha_entrega - fecha_ingreso)))
+        SELECT AVG((fecha_entrega - fecha_ingreso)::integer)
         FROM pedido
         WHERE estado = 'Completado' AND fecha_entrega IS NOT NULL
     """, fetchone=True)[0] or 0
