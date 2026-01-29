@@ -73,11 +73,22 @@ def run_query(query, params=None, fetchone=False, fetchall=False, commit=False, 
         # Para INSERT, UPDATE, DELETE
         with db.engine.begin() as conn:        # begin() hace commit al salir del bloque
             result = conn.execute(text(query), params or {})
+            
+            # Si piden fetchone, devolver la fila
+            if fetchone:
+                return result.fetchone()
+            
+            # Si piden fetchall, devolver todas las filas
+            if fetchall:
+                return result.fetchall()
+            
+            # Si piden lastrowid, intentar extraerlo
             if get_lastrowid:
                 try:
                     return result.lastrowid
                 except Exception:
                     return None
+            
             return None
     else:
         # Para SELECT
