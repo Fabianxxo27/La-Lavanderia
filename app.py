@@ -26,10 +26,10 @@ app.secret_key = os.getenv('SECRET_KEY', '1379')
 database_url = os.getenv('DATABASE_URL')
 
 if not database_url:
-    # Si no hay DATABASE_URL, usar credenciales locales (desarrollo con MySQL)
-    print("⚠️ DATABASE_URL no encontrado, usando credentials.py (desarrollo local)")
+    # Si no hay DATABASE_URL, usar credenciales locales (desarrollo con PostgreSQL)
+    print("⚠️ DATABASE_URL no encontrado, usando credentials.py (desarrollo local con PostgreSQL)")
     pwd = urllib.parse.quote_plus(cd.password)
-    database_url = f"mysql+pymysql://{cd.user}:{pwd}@{cd.host}/{cd.db}?charset=utf8mb4"
+    database_url = f"postgresql://{cd.user}:{pwd}@{cd.host}/{cd.db}"
 else:
     # Si viene de Render, convertir postgres:// a postgresql://
     if database_url.startswith('postgres://'):
