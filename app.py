@@ -305,9 +305,11 @@ def cliente_recibos():
         return redirect(url_for('login'))
     
     recibos = run_query("""
-        SELECT r.id_recibo, r.id_pedido, r.monto, r.fecha
+        SELECT r.id_recibo, r.id_pedido, r.monto, r.fecha,
+               ROW_NUMBER() OVER (PARTITION BY r.id_cliente ORDER BY p.fecha_ingreso ASC) as numero_pedido_cliente
         FROM recibo r
         LEFT JOIN usuario u ON r.id_cliente = u.id_usuario
+        LEFT JOIN pedido p ON r.id_pedido = p.id_pedido
         WHERE u.username = :u
         ORDER BY r.fecha DESC
     """, {"u": username}, fetchall=True)
@@ -437,7 +439,8 @@ def cliente_pedidos():
             p.fecha_ingreso, 
             p.fecha_entrega, 
             p.estado,
-            COUNT(pr.id_prenda) as total_prendas
+            COUNT(pr.id_prenda) as total_prendas,
+            ROW_NUMBER() OVER (ORDER BY p.fecha_ingreso ASC) as numero_pedido_cliente
         FROM pedido p
         LEFT JOIN prenda pr ON p.id_pedido = pr.id_pedido
         WHERE p.id_cliente = :id
