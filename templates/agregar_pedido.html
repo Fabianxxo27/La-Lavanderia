@@ -37,6 +37,17 @@
 
                         <!-- Tabla de Prendas -->
                         <h5 class="mb-3"><i class="fas fa-tshirt"></i> Prendas del Pedido</h5>
+                        
+                        {% if prendas_default %}
+                        <div class="alert alert-info">
+                            <small>Hay {{ prendas_default|length }} tipos de prendas disponibles</small>
+                        </div>
+                        {% else %}
+                        <div class="alert alert-danger">
+                            <strong>Error:</strong> No se cargaron las prendas disponibles
+                        </div>
+                        {% endif %}
+                        
                         <div class="table-responsive mb-4">
                             <table class="table table-bordered" id="tablaPrendas">
                                 <thead class="table-light">
@@ -110,11 +121,34 @@ function agregarFila() {
     nuevaFila.querySelector('button').disabled = false;
     
     cuerpo.appendChild(nuevaFila);
+    console.log('Fila agregada. Total filas:', cuerpo.rows.length);
 }
 
 function eliminarFila(boton) {
     const fila = boton.closest('tr');
     fila.remove();
+    console.log('Fila eliminada. Total filas:', document.getElementById('cuerpoTabla').rows.length);
 }
+
+// Validar antes de enviar
+document.querySelector('form').addEventListener('submit', function(e) {
+    const tipos = document.querySelectorAll('select[name="tipo[]"]');
+    let validos = 0;
+    
+    tipos.forEach(function(select) {
+        if (select.value) validos++;
+    });
+    
+    console.log('Enviando formulario. Prendas válidas:', validos);
+    
+    if (validos === 0) {
+        e.preventDefault();
+        alert('Debes seleccionar al menos un tipo de prenda');
+        return false;
+    }
+});
+
+// Debug: Mostrar info al cargar
+console.log('Página cargada. Opciones de prendas:', document.querySelectorAll('select[name="tipo[]"] option').length);
 </script>
 {% endblock %}

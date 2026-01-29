@@ -954,10 +954,16 @@ def agregar_pedido():
             return redirect(url_for('agregar_pedido'))
     
     # GET request
+    print(f"[DEBUG] GET request - Cargando formulario agregar_pedido")
+    print(f"[DEBUG] Rol: {rol}, prendas_default count: {len(prendas_default)}")
+    
     clientes = run_query(
         "SELECT id_usuario, nombre FROM usuario WHERE rol = 'cliente' ORDER BY nombre",
         fetchall=True
     )
+    
+    print(f"[DEBUG] Clientes encontrados: {len(clientes) if clientes else 0}")
+    print(f"[DEBUG] Renderizando template con prendas_default")
     
     return render_template('agregar_pedido.html', 
                          clientes=clientes, 
