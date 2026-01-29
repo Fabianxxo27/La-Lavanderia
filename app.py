@@ -873,6 +873,73 @@ def reportes():
         ) subq
     """, fetchone=True)[0] or 0
     
+    # ====== NUEVAS MÉTRICAS ======
+    
+    # 9. ESTADO DE PEDIDOS CON CONTEO
+    estado_pedidos_conteo = run_query("""
+        SELECT estado, COUNT(*) as cantidad
+        FROM pedido
+        GROUP BY estado
+    """, fetchall=True) or []
+    
+    # 10. TOP 5 PRENDAS MÁS SOLICITADAS
+    prendas_top = run_query("""
+        SELECT tipo, COUNT(*) as cantidad
+        FROM prenda
+        GROUP BY tipo
+        ORDER BY cantidad DESC
+        LIMIT 5
+    """, fetchall=True) or []
+    
+    # 11. CLIENTES MÁS ACTIVOS CON ESTADÍSTICAS
+    clientes_activos = run_query("""
+        SELECT 
+            c.id_cliente, 
+            c.nombre,
+            COUNT(p.id_pedido) as cantidad_pedidos,
+            COALESCE(SUM(COUNT(pr.id_prenda)) OVER (PARTITION BY c.id_cliente), 0)::int as total_prendas,
+            COALESCE(SUM(r.monto), 0)::numeric as gasto_total,
+            u.fecha_registro
+        FROM cliente c
+        LEFT JOIN usuario u ON c.id_cliente = u.id_usuario
+        LEFT JOIN pedido p ON c.id_cliente = p.id_cliente
+        LEFT JOIN prenda pr ON p.id_pedido = pr.id_pedido
+        LEFT JOIN recibo r ON p.id_pedido = r.id_pedido
+        GROUP BY c.id_cliente, c.nombre, u.fecha_registro
+        ORDER BY cantidad_pedidos DESC
+        LIMIT 15
+    """, fetchall=True) or []
+    
+    # 12. TASA DE COMPLETACIÓN
+    completados = run_query("""
+        SELECT COUNT(*) FROM pedido WHERE estado = 'Completado'
+    """, fetchone=True)[0] or 0
+    tasa_completacion = (completados / total_pedidos * 100) if total_pedidos > 0 else 0
+    
+    # 13. PROMEDIO DE GASTO POR CLIENTE
+    promedio_gasto = run_query("""
+        SELECT AVG(gasto)
+        FROM (
+            SELECT COALESCE(SUM(r.monto), 0) as gasto
+            FROM cliente c
+            LEFT JOIN pedido p ON c.id_cliente = p.id_cliente
+            LEFT JOIN recibo r ON p.id_pedido = r.id_pedido
+            GROUP BY c.id_cliente
+        ) subq
+    """, fetchone=True)[0] or 0
+    
+    # 14. PEDIDOS PENDIENTES
+    pedidos_pendientes = run_query("""
+        SELECT COUNT(*) FROM pedido WHERE estado IN ('Pendiente', 'En proceso')
+    """, fetchone=True)[0] or 0
+    
+    # 15. PROMEDIO DE DÍAS PARA COMPLETAR PEDIDO
+    promedio_dias = run_query("""
+        SELECT AVG(EXTRACT(DAY FROM (fecha_entrega - fecha_ingreso)))
+        FROM pedido
+        WHERE estado = 'Completado' AND fecha_entrega IS NOT NULL
+    """, fetchone=True)[0] or 0
+    
     # Preparar datos para gráficos (formato JSON)
     graficos = {
         'clientes_nuevos': {
@@ -907,7 +974,14 @@ def reportes():
                          total_pedidos=total_pedidos,
                          total_ingresos=float(total_ingresos),
                          total_prendas=total_prendas,
-                         promedio_prendas=round(float(promedio_prendas), 2))
+                         promedio_prendas=round(float(promedio_prendas), 2),
+                         estado_pedidos=estado_pedidos_conteo,
+                         prendas_top=prendas_top,
+                         clientes_activos=clientes_activos,
+                         tasa_completacion=round(tasa_completacion, 2),
+                         promedio_gasto=round(float(promedio_gasto), 0),
+                         pedidos_pendientes=pedidos_pendientes,
+                         promedio_dias=round(float(promedio_dias), 1))
 
 
 # -----------------------------------------------
@@ -1190,6 +1264,127 @@ def eliminar_pedido(id_pedido):
         flash(f'Error al eliminar: {e}', 'danger')
     
     return redirect(url_for('pedidos'))
+
+
+# -----------------------------------------------
+# VER PRENDAS DEL PEDIDO (CLIENTE Y ADMIN)
+# -----------------------------------------------
+@app.route('/pedido/<int:id_pedido>/prendas')
+def ver_prendas_pedido(id_pedido):
+    """Ver las prendas detalladas de un pedido (para cliente y admin)."""
+    username = session.get('username')
+    rol = session.get('rol')
+    
+    if not username:
+        flash("No autorizado.", "danger")
+        return redirect(url_for('login'))
+    
+    # Obtener datos del pedido
+    pedido = run_query("""
+        SELECT p.id_pedido, p.id_cliente, p.fecha_ingreso, p.fecha_entrega, p.estado, c.nombre
+        FROM pedido p
+        LEFT JOIN cliente c ON p.id_cliente = c.id_cliente
+        WHERE p.id_pedido = :id
+    """, {"id": id_pedido}, fetchone=True)
+    
+    if not pedido:
+        flash("Pedido no encontrado.", "danger")
+        return redirect(url_for('cliente_pedidos' if rol != 'administrador' else 'pedidos'))
+    
+    # Verificar permisos (cliente solo ve sus propios pedidos, admin ve todos)
+    if rol != 'administrador':
+        usuario = run_query(
+            "SELECT id_usuario FROM usuario WHERE username = :u",
+            {"u": username},
+            fetchone=True
+        )
+        if usuario[0] != pedido[1]:
+            flash("No tienes acceso a este pedido.", "danger")
+            return redirect(url_for('cliente_pedidos'))
+    
+    # Obtener prendas del pedido
+    prendas = run_query("""
+        SELECT id_prenda, tipo, cantidad, descripcion
+        FROM prenda
+        WHERE id_pedido = :id
+        ORDER BY id_prenda
+    """, {"id": id_pedido}, fetchall=True)
+    
+    # Obtener precio de cada tipo de prenda y calcular total
+    precio_dict = {}
+    total_costo = 0
+    for prenda in prendas:
+        precio = run_query(
+            "SELECT precio FROM tarifa WHERE nombre = :n",
+            {"n": prenda[1]},
+            fetchone=True
+        )
+        if precio:
+            precio_dict[prenda[1]] = float(precio[0])
+            total_costo += float(precio[0]) * prenda[2]
+        else:
+            precio_dict[prenda[1]] = 0
+    
+    return render_template('pedido_prendas.html',
+                         pedido=pedido,
+                         prendas=prendas,
+                         precio_dict=precio_dict,
+                         total_costo=total_costo,
+                         rol=rol)
+
+
+# -----------------------------------------------
+# API: OBTENER PRENDAS DE UN PEDIDO (JSON)
+# -----------------------------------------------
+@app.route('/api/prendas_pedido/<int:id_pedido>')
+def api_prendas_pedido(id_pedido):
+    """API para obtener prendas de un pedido en JSON (para cargas dinámicas)."""
+    from flask import jsonify
+    
+    username = session.get('username')
+    rol = session.get('rol')
+    
+    if not username:
+        return jsonify({'error': 'No autorizado'}), 401
+    
+    # Verificar permisos
+    pedido = run_query(
+        "SELECT id_cliente FROM pedido WHERE id_pedido = :id",
+        {"id": id_pedido},
+        fetchone=True
+    )
+    
+    if not pedido:
+        return jsonify({'error': 'Pedido no encontrado'}), 404
+    
+    if rol != 'administrador':
+        usuario = run_query(
+            "SELECT id_usuario FROM usuario WHERE username = :u",
+            {"u": username},
+            fetchone=True
+        )
+        if usuario[0] != pedido[0]:
+            return jsonify({'error': 'Acceso denegado'}), 403
+    
+    # Obtener prendas con precios
+    prendas_data = run_query("""
+        SELECT p.tipo, p.cantidad, p.descripcion, t.precio
+        FROM prenda p
+        LEFT JOIN tarifa t ON p.tipo = t.nombre
+        WHERE p.id_pedido = :id
+        ORDER BY p.id_prenda
+    """, {"id": id_pedido}, fetchall=True)
+    
+    prendas = []
+    for prenda in prendas_data:
+        prendas.append({
+            'tipo': prenda[0],
+            'cantidad': int(prenda[1]) if prenda[1] else 0,
+            'descripcion': prenda[2] or '',
+            'precio': float(prenda[3]) if prenda[3] else 0
+        })
+    
+    return jsonify({'prendas': prendas})
 
 
 # -----------------------------------------------

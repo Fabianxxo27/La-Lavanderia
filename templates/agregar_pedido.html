@@ -49,96 +49,200 @@
     border-radius: 8px;
     border: none;
   }
+  
+  /* Estilos para interactividad */
+  .prenda-row {
+    transition: background-color 0.2s ease;
+  }
+  
+  .prenda-row:hover {
+    background-color: #f0f7ff;
+  }
+  
+  .resumen-card {
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    border: 1px solid #ddd;
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-top: 2rem;
+  }
+  
+  .resumen-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.5rem 0;
+  }
+  
+  .entrega-info {
+    background: #e8f4f8;
+    border-left: 4px solid #3498db;
+    padding: 1rem;
+    border-radius: 4px;
+  }
 </style>
 
 <div class="container py-4">
-    <div class="card">
-        <div class="card-header">
-            <h3 class="mb-0"><i class="fas fa-cart-plus"></i> Nuevo Pedido</h3>
-        </div>
-        
-        <div class="card-body">
-            <form method="POST" action="{{ url_for('agregar_pedido') }}" id="formPedido">
+    <div class="row">
+        <!-- Formulario principal -->
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="mb-0"><i class="fas fa-cart-plus"></i> Nuevo Pedido</h3>
+                </div>
                 
-                <!-- Cliente (solo admin) -->
-                {% if rol == 'administrador' %}
-                <div class="alert alert-info mb-4">
-                    <i class="fas fa-user-shield"></i> <strong>Modo Administrador</strong>
-                </div>
-                <div class="mb-4">
-                    <label class="form-label fw-bold">Cliente</label>
-                    <select class="form-select" name="id_cliente" required>
-                        <option value="">-- Selecciona un cliente --</option>
-                        {% for c in clientes %}
-                            <option value="{{ c[0] }}">{{ c[1] }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                {% else %}
-                <div class="alert alert-success mb-4">
-                    <i class="fas fa-check-circle"></i> Pedido para tu cuenta
-                </div>
-                {% endif %}
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('agregar_pedido') }}" id="formPedido">
+                        
+                        <!-- Cliente (solo admin) -->
+                        {% if rol == 'administrador' %}
+                        <div class="alert alert-info mb-4">
+                            <i class="fas fa-user-shield"></i> <strong>Modo Administrador</strong>
+                        </div>
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">Cliente</label>
+                            <select class="form-select" name="id_cliente" id="selectCliente" required>
+                                <option value="">-- Selecciona un cliente --</option>
+                                {% for c in clientes %}
+                                    <option value="{{ c[0] }}">{{ c[1] }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        {% else %}
+                        <div class="alert alert-success mb-4">
+                            <i class="fas fa-check-circle"></i> Pedido para tu cuenta
+                        </div>
+                        {% endif %}
 
-                <!-- Prendas -->
-                <h5 class="mb-3 fw-bold"><i class="fas fa-tshirt"></i> Prendas</h5>
-                <div class="table-responsive mb-4">
-                    <table class="table table-sm">
-                        <thead class="table-light">
-                            <tr>
-                                <th>Tipo</th>
-                                <th width="12%">Cantidad</th>
-                                <th>Descripción</th>
-                                <th width="8%">
-                                    <button type="button" class="btn btn-sm btn-success" onclick="agregarFila()" title="Agregar fila">
-                                        <i class="fas fa-plus"></i>
-                                    </button>
-                                </th>
-                            </tr>
-                        </thead>
-                        <tbody id="cuerpoTabla">
-                            <tr>
-                                <td>
-                                    <select class="form-select form-select-sm" name="tipo[]" required>
-                                        <option value="">-- Selecciona --</option>
-                                        {% for prenda in prendas_default %}
-                                            <option value="{{ prenda.nombre }}">
-                                                {{ prenda.nombre }} (${{ "{:,.0f}".format(prenda.precio) }})
-                                            </option>
-                                        {% endfor %}
-                                    </select>
-                                </td>
-                                <td>
-                                    <input type="number" class="form-control form-control-sm" name="cantidad[]" min="1" value="1" required>
-                                </td>
-                                <td>
-                                    <input type="text" class="form-control form-control-sm" name="descripcion[]" placeholder="Color, talla...">
-                                </td>
-                                <td>
-                                    <button type="button" class="btn btn-sm btn-danger" onclick="eliminarFila(this)" disabled>
-                                        <i class="fas fa-trash"></i>
-                                    </button>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
+                        <!-- Prendas -->
+                        <h5 class="mb-3 fw-bold"><i class="fas fa-tshirt"></i> Prendas</h5>
+                        <div class="table-responsive mb-4">
+                            <table class="table table-sm">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Tipo</th>
+                                        <th width="12%">Cantidad</th>
+                                        <th>Descripción</th>
+                                        <th class="text-center" width="12%">Precio</th>
+                                        <th width="8%">
+                                            <button type="button" class="btn btn-sm btn-success" onclick="agregarFila()" title="Agregar fila">
+                                                <i class="fas fa-plus"></i>
+                                            </button>
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody id="cuerpoTabla">
+                                    <tr class="prenda-row">
+                                        <td>
+                                            <select class="form-select form-select-sm tipo-select" name="tipo[]" required onchange="actualizarPrecio(this)">
+                                                <option value="">-- Selecciona --</option>
+                                                {% for prenda in prendas_default %}
+                                                    <option value="{{ prenda.nombre }}" data-precio="{{ prenda.precio }}">
+                                                        {{ prenda.nombre }}
+                                                    </option>
+                                                {% endfor %}
+                                            </select>
+                                        </td>
+                                        <td>
+                                            <input type="number" class="form-control form-control-sm cantidad-input" name="cantidad[]" min="1" value="1" required onchange="calcularTotal()" oninput="calcularTotal()">
+                                        </td>
+                                        <td>
+                                            <input type="text" class="form-control form-control-sm" name="descripcion[]" placeholder="Color, talla...">
+                                        </td>
+                                        <td class="text-center">
+                                            <span class="precio-fila">$0</span>
+                                        </td>
+                                        <td>
+                                            <button type="button" class="btn btn-sm btn-danger" onclick="eliminarFila(this)" disabled>
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
 
-                <div class="alert alert-info small">
-                    <i class="fas fa-info-circle"></i>
-                    <strong>Entrega:</strong> 3 días (1-5 prendas) | 5 días (6-15) | 7 días (16+)
-                </div>
+                        <!-- Info de entrega -->
+                        <div class="entrega-info mb-4">
+                            <div class="mb-2"><i class="fas fa-truck"></i> <strong>Tiempos de Entrega</strong></div>
+                            <small>
+                                <div class="mb-1"><strong>1-5 prendas:</strong> 3 días</div>
+                                <div class="mb-1"><strong>6-15 prendas:</strong> 5 días</div>
+                                <div><strong>16+ prendas:</strong> 7 días</div>
+                            </small>
+                        </div>
 
-                <!-- Botones -->
-                <div class="d-flex gap-2 justify-content-end mt-4">
-                    <a href="{{ url_for('pedidos') if rol == 'administrador' else url_for('cliente_pedidos') }}" class="btn btn-secondary">
-                        <i class="fas fa-times"></i> Cancelar
-                    </a>
-                    <button type="submit" class="btn btn-primary">
-                        <i class="fas fa-check-circle"></i> Crear Pedido
-                    </button>
+                        <!-- Botones -->
+                        <div class="d-flex gap-2 justify-content-end mt-4">
+                            <a href="{{ url_for('pedidos') if rol == 'administrador' else url_for('cliente_pedidos') }}" class="btn btn-secondary">
+                                <i class="fas fa-times"></i> Cancelar
+                            </a>
+                            <button type="submit" class="btn btn-primary" id="btnCrear">
+                                <i class="fas fa-check-circle"></i> Crear Pedido
+                            </button>
+                        </div>
+                    </form>
                 </div>
-            </form>
+            </div>
+        </div>
+
+        <!-- Panel de resumen (lateral) -->
+        <div class="col-lg-4">
+            <div class="card shadow-lg">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0"><i class="fas fa-calculator"></i> Resumen</h5>
+                </div>
+                <div class="card-body">
+                    <div class="resumen-item">
+                        <span>Total de prendas:</span>
+                        <strong id="totalPrendas">0</strong>
+                    </div>
+                    <div class="resumen-item">
+                        <span>Prendas con cantidad:</span>
+                        <strong id="prendasConCantidad">0</strong>
+                    </div>
+                    <hr>
+                    <div class="resumen-item" style="font-size: 1.1rem; color: #27ae60;">
+                        <span><strong>Costo Total:</strong></span>
+                        <strong id="costoTotal">$0</strong>
+                    </div>
+                    <hr>
+                    
+                    <!-- Detalles de entrega -->
+                    <div style="margin-top: 1.5rem; padding: 1rem; background: #f8f9fa; border-radius: 8px;">
+                        <div class="mb-2"><strong><i class="fas fa-calendar"></i> Fecha de Entrega</strong></div>
+                        <div id="fechaEntrega" style="color: #2980b9; font-size: 0.95rem;">
+                            Selecciona prendas para calcular
+                        </div>
+                    </div>
+
+                    <!-- Badges de información -->
+                    <div style="margin-top: 1rem;">
+                        <div id="alertaCalidad" style="display: none;">
+                            <div class="alert alert-success small mb-2">
+                                <i class="fas fa-check-circle"></i> Información completa
+                            </div>
+                        </div>
+                        <div id="alertaPedidos" class="alert alert-info small">
+                            <i class="fas fa-info-circle"></i> Mínimo 1 prenda para crear pedido
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tips y ayuda -->
+            <div class="card mt-3">
+                <div class="card-header bg-info text-white">
+                    <h6 class="mb-0"><i class="fas fa-lightbulb"></i> Tips</h6>
+                </div>
+                <div class="card-body small">
+                    <ul class="mb-0">
+                        <li>El precio se actualiza automáticamente</li>
+                        <li>Agrega descripción (color, talla) para mayor claridad</li>
+                        <li>Puedes agregar múltiples prendas del mismo tipo</li>
+                        <li>Usa el botón + para agregar más filas</li>
+                    </ul>
+                </div>
+            </div>
         </div>
     </div>
 </div>
@@ -147,20 +251,141 @@
 
 {% block scripts %}
 <script>
+// Datos de precios
+const preciosData = {
+    {% for prenda in prendas_default %}
+        '{{ prenda.nombre }}': {{ prenda.precio }},
+    {% endfor %}
+};
+
 function agregarFila() {
     const cuerpo = document.getElementById('cuerpoTabla');
     const nuevaFila = cuerpo.rows[0].cloneNode(true);
     
+    nuevaFila.classList.add('prenda-row');
     nuevaFila.querySelector('select[name="tipo[]"]').value = '';
+    nuevaFila.querySelector('select[name="tipo[]"]').onchange = function() { actualizarPrecio(this); };
     nuevaFila.querySelector('input[name="cantidad[]"]').value = '1';
+    nuevaFila.querySelector('input[name="cantidad[]"]').onchange = function() { calcularTotal(); };
+    nuevaFila.querySelector('input[name="cantidad[]"]').oninput = function() { calcularTotal(); };
     nuevaFila.querySelector('input[name="descripcion[]"]').value = '';
-    nuevaFila.querySelector('button').disabled = false;
+    const botonEliminar = nuevaFila.querySelector('button[onclick*="eliminarFila"]');
+    botonEliminar.disabled = false;
+    botonEliminar.onclick = function() { eliminarFila(this); };
     
     cuerpo.appendChild(nuevaFila);
 }
 
+function actualizarPrecio(selectElement) {
+    const fila = selectElement.closest('tr');
+    const tipoPrenda = selectElement.value;
+    const precio = preciosData[tipoPrenda] || 0;
+    const cantidad = parseInt(fila.querySelector('input[name="cantidad[]"]').value) || 1;
+    const precioSpan = fila.querySelector('.precio-fila');
+    
+    if (tipoPrenda) {
+        precioSpan.textContent = '$' + (precio * cantidad).toLocaleString('es-CO');
+    } else {
+        precioSpan.textContent = '$0';
+    }
+    
+    calcularTotal();
+}
+
 function eliminarFila(boton) {
     boton.closest('tr').remove();
+    // Reactivar el botón de la primera fila si queda una sola
+    const filas = document.querySelectorAll('#cuerpoTabla tr');
+    if (filas.length === 1) {
+        filas[0].querySelector('button').disabled = true;
+    }
+    calcularTotal();
 }
+
+function calcularTotal() {
+    const filas = document.querySelectorAll('#cuerpoTabla tr');
+    let costoTotal = 0;
+    let totalPrendas = 0;
+    let prendasConCantidad = 0;
+    
+    filas.forEach(fila => {
+        const selectTipo = fila.querySelector('select[name="tipo[]"]');
+        const inputCantidad = fila.querySelector('input[name="cantidad[]"]');
+        const precioSpan = fila.querySelector('.precio-fila');
+        
+        const tipoPrenda = selectTipo.value;
+        const cantidad = parseInt(inputCantidad.value) || 0;
+        const precio = preciosData[tipoPrenda] || 0;
+        
+        const subtotal = precio * cantidad;
+        costoTotal += subtotal;
+        totalPrendas += cantidad;
+        
+        if (tipoPrenda && cantidad > 0) {
+            prendasConCantidad++;
+            precioSpan.textContent = '$' + subtotal.toLocaleString('es-CO');
+        } else {
+            precioSpan.textContent = '$0';
+        }
+    });
+    
+    // Actualizar resumen
+    document.getElementById('totalPrendas').textContent = totalPrendas;
+    document.getElementById('prendasConCantidad').textContent = prendasConCantidad;
+    document.getElementById('costoTotal').textContent = '$' + costoTotal.toLocaleString('es-CO');
+    
+    // Calcular fecha de entrega
+    calcularFechaEntrega(totalPrendas);
+    
+    // Validar formulario
+    const btnCrear = document.getElementById('btnCrear');
+    const alertaCalidad = document.getElementById('alertaCalidad');
+    const alertaPedidos = document.getElementById('alertaPedidos');
+    
+    if (prendasConCantidad > 0 && totalPrendas > 0) {
+        alertaCalidad.style.display = 'block';
+        alertaPedidos.style.display = 'none';
+        btnCrear.disabled = false;
+    } else {
+        alertaCalidad.style.display = 'none';
+        alertaPedidos.style.display = 'block';
+        btnCrear.disabled = true;
+    }
+}
+
+function calcularFechaEntrega(totalPrendas) {
+    const hoy = new Date();
+    let dias = 3; // por defecto
+    
+    if (totalPrendas >= 16) {
+        dias = 7;
+    } else if (totalPrendas >= 6) {
+        dias = 5;
+    }
+    
+    const fechaEntrega = new Date(hoy);
+    fechaEntrega.setDate(fechaEntrega.getDate() + dias);
+    
+    const opciones = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+    const fechaTexto = fechaEntrega.toLocaleDateString('es-CO', opciones);
+    
+    let mensajeEntrega = `📦 <strong>${dias} días</strong><br>`;
+    if (totalPrendas === 0) {
+        mensajeEntrega = '<em>Selecciona prendas para calcular</em>';
+    } else if (totalPrendas <= 5) {
+        mensajeEntrega += `<small>Entrega aprox: ${fechaTexto}</small>`;
+    } else if (totalPrendas <= 15) {
+        mensajeEntrega += `<small>Entrega aprox: ${fechaTexto}</small>`;
+    } else {
+        mensajeEntrega += `<small>Entrega aprox: ${fechaTexto}</small>`;
+    }
+    
+    document.getElementById('fechaEntrega').innerHTML = mensajeEntrega;
+}
+
+// Inicializar
+document.addEventListener('DOMContentLoaded', function() {
+    calcularTotal();
+});
 </script>
 {% endblock %}

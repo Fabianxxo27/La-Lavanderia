@@ -134,6 +134,182 @@
         </div>
     </div>
 
+    <!-- NUEVAS SECCIONES DE REPORTES -->
+    <hr class="my-5">
+    <h3 class="mb-4"><i class="fas fa-chart-line"></i> Análisis Adicionales</h3>
+
+    <!-- Tabla: Pedidos por Estado -->
+    <div class="row mb-5">
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0"><i class="fas fa-list-check"></i> Resumen por Estado</h5>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-sm mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Estado</th>
+                                <th class="text-center">Cantidad</th>
+                                <th class="text-right">Porcentaje</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% if estado_pedidos %}
+                                {% set total_estados = estado_pedidos|length %}
+                                {% for estado in estado_pedidos %}
+                                <tr>
+                                    <td>
+                                        {% if estado[0] == 'Completado' %}
+                                            <span class="badge bg-success">{{ estado[0] }}</span>
+                                        {% elif estado[0] == 'En proceso' %}
+                                            <span class="badge bg-info">{{ estado[0] }}</span>
+                                        {% else %}
+                                            <span class="badge bg-warning">{{ estado[0] }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-center"><strong>{{ estado[1] }}</strong></td>
+                                    <td class="text-right">{{ "%.1f"|format((estado[1] / total_pedidos * 100) if total_pedidos > 0 else 0) }}%</td>
+                                </tr>
+                                {% endfor %}
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Top 5 Prendas Más Solicitadas -->
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0"><i class="fas fa-star"></i> Top 5 Prendas Más Solicitadas</h5>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-sm mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Prenda</th>
+                                <th class="text-center">Cantidad</th>
+                                <th class="text-right">%</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% if prendas_top %}
+                                {% set total_prendas_top = prendas_top|map(attribute=1)|sum %}
+                                {% for prenda, cantidad in prendas_top[:5] %}
+                                <tr>
+                                    <td>{{ prenda }}</td>
+                                    <td class="text-center"><strong>{{ cantidad }}</strong></td>
+                                    <td class="text-right">{{ "%.1f"|format((cantidad / total_prendas_top * 100) if total_prendas_top > 0 else 0) }}%</td>
+                                </tr>
+                                {% endfor %}
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Clientes con Más Pedidos -->
+    <div class="row mb-5">
+        <div class="col-lg-12">
+            <div class="card">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0"><i class="fas fa-users"></i> Clientes Más Activos (Top 10)</h5>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>#</th>
+                                <th>Cliente</th>
+                                <th class="text-center">Pedidos</th>
+                                <th class="text-center">Prendas Totales</th>
+                                <th class="text-right">Gasto Total</th>
+                                <th class="text-center">Registro</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% if clientes_activos %}
+                                {% for cliente in clientes_activos[:10] %}
+                                <tr>
+                                    <td><strong>{{ loop.index }}</strong></td>
+                                    <td>{{ cliente[1] }}</td>
+                                    <td class="text-center"><span class="badge bg-primary">{{ cliente[2] }}</span></td>
+                                    <td class="text-center"><strong>{{ cliente[3] }}</strong></td>
+                                    <td class="text-right">${{ "{:,.0f}".format(cliente[4]) }}</td>
+                                    <td class="text-center"><small>{{ cliente[5][:10] }}</small></td>
+                                </tr>
+                                {% endfor %}
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- KPIs Adicionales -->
+    <div class="row mb-5">
+        <div class="col-md-3 mb-3">
+            <div class="card border-left-primary">
+                <div class="card-body">
+                    <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                        <i class="fas fa-check-circle"></i> Tasa de Completación
+                    </div>
+                    <div class="h3 mb-0">
+                        {{ "%.1f"|format(tasa_completacion) }}%
+                    </div>
+                    <small class="text-muted">De pedidos completados</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3 mb-3">
+            <div class="card border-left-success">
+                <div class="card-body">
+                    <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                        <i class="fas fa-shopping-bag"></i> Promedio de Gasto
+                    </div>
+                    <div class="h3 mb-0">
+                        ${{ "{:,.0f}".format(promedio_gasto) }}
+                    </div>
+                    <small class="text-muted">Por cliente</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3 mb-3">
+            <div class="card border-left-warning">
+                <div class="card-body">
+                    <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                        <i class="fas fa-hourglass-half"></i> Pendientes
+                    </div>
+                    <div class="h3 mb-0">
+                        {{ pedidos_pendientes }}
+                    </div>
+                    <small class="text-muted">Pedidos sin completar</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3 mb-3">
+            <div class="card border-left-info">
+                <div class="card-body">
+                    <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                        <i class="fas fa-calendar-alt"></i> Promedio de Días
+                    </div>
+                    <div class="h3 mb-0">
+                        {{ "%.1f"|format(promedio_dias) }} días
+                    </div>
+                    <small class="text-muted">Desde ingreso a entrega</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
 </div>
 
 <!-- Chart.js -->
@@ -283,12 +459,40 @@
     .card {
         box-shadow: 0 2px 8px rgba(0,0,0,0.1);
         transition: transform 0.3s;
+        border-radius: 12px;
+        border: none;
     }
     .card:hover {
         transform: translateY(-5px);
     }
     .card-header {
         border-bottom: 2px solid rgba(0,0,0,0.1);
+        border-radius: 12px 12px 0 0;
+    }
+    .card.border-left-primary {
+        border-left: 4px solid #4CAF50;
+    }
+    .card.border-left-success {
+        border-left: 4px solid #2196F3;
+    }
+    .card.border-left-warning {
+        border-left: 4px solid #FF9800;
+    }
+    .card.border-left-info {
+        border-left: 4px solid #00BCD4;
+    }
+    .text-xs {
+        font-size: 0.75rem;
+    }
+    .font-weight-bold {
+        font-weight: 600;
+    }
+    .text-uppercase {
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    .table-hover tbody tr:hover {
+        background-color: #f5f5f5;
     }
 </style>
 

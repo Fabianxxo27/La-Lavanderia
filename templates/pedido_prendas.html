@@ -1,0 +1,194 @@
+{% extends "cliente_base.html" if rol != 'administrador' else "base.html" %}
+{% block title %}Detalles de Prendas - Pedido #{{ pedido[0] }}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Encabezado -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-lg border-0" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                <div class="card-body text-white py-4">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h1 class="mb-2">
+                                <i class="fas fa-box-open"></i> Detalles del Pedido #{{ pedido[0] }}
+                            </h1>
+                            <p class="mb-0 opacity-75">Cliente: <strong>{{ pedido[5] }}</strong></p>
+                        </div>
+                        <div class="text-right">
+                            {% if pedido[4] == 'Completado' %}
+                                <span class="badge bg-light text-success fs-5 p-2">
+                                    <i class="fas fa-check-circle"></i> Completado
+                                </span>
+                            {% elif pedido[4] == 'En proceso' %}
+                                <span class="badge bg-light text-info fs-5 p-2">
+                                    <i class="fas fa-spinner"></i> En Proceso
+                                </span>
+                            {% else %}
+                                <span class="badge bg-light text-warning text-dark fs-5 p-2">
+                                    <i class="fas fa-clock"></i> Pendiente
+                                </span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Información del pedido -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card h-100 shadow-sm">
+                <div class="card-body text-center">
+                    <div class="mb-2"><i class="fas fa-calendar-plus fa-2x text-primary"></i></div>
+                    <small class="text-muted d-block">Fecha de Ingreso</small>
+                    <strong class="fs-6">{{ pedido[2] }}</strong>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card h-100 shadow-sm">
+                <div class="card-body text-center">
+                    <div class="mb-2"><i class="fas fa-calendar-check fa-2x text-success"></i></div>
+                    <small class="text-muted d-block">Fecha de Entrega</small>
+                    <strong class="fs-6">{{ pedido[3] if pedido[3] else 'Por confirmar' }}</strong>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card h-100 shadow-sm">
+                <div class="card-body text-center">
+                    <div class="mb-2"><i class="fas fa-tshirt fa-2x text-warning"></i></div>
+                    <small class="text-muted d-block">Total Prendas</small>
+                    <strong class="fs-6">{{ prendas|length }}</strong>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card h-100 shadow-sm">
+                <div class="card-body text-center">
+                    <div class="mb-2"><i class="fas fa-money-bill fa-2x text-info"></i></div>
+                    <small class="text-muted d-block">Costo Total</small>
+                    <strong class="fs-6">${{ "{:,.0f}".format(total_costo) }}</strong>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabla de prendas -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0"><i class="fas fa-list"></i> Prendas en este Pedido</h5>
+                </div>
+                <div class="card-body">
+                    {% if prendas %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>#</th>
+                                    <th>Tipo de Prenda</th>
+                                    <th>Descripción</th>
+                                    <th class="text-center">Cantidad</th>
+                                    <th class="text-right">Precio Unitario</th>
+                                    <th class="text-right">Subtotal</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% set total = 0 %}
+                                {% for prenda in prendas %}
+                                <tr>
+                                    <td><strong>{{ loop.index }}</strong></td>
+                                    <td>
+                                        <strong>{{ prenda[1] }}</strong>
+                                    </td>
+                                    <td>
+                                        {% if prenda[3] %}
+                                            <small class="text-muted">{{ prenda[3] }}</small>
+                                        {% else %}
+                                            <small class="text-muted text-secondary">-</small>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="badge bg-primary">{{ prenda[2] }}x</span>
+                                    </td>
+                                    <td class="text-right">
+                                        {% if prenda[1] in precio_dict %}
+                                            ${{ "{:,.0f}".format(precio_dict[prenda[1]]) }}
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-right">
+                                        <strong class="text-success">
+                                            ${{ "{:,.0f}".format(prenda[2] * precio_dict.get(prenda[1], 0)) }}
+                                        </strong>
+                                        {% set total = total + (prenda[2] * precio_dict.get(prenda[1], 0)) %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- Resumen de costos -->
+                    <div class="row mt-4">
+                        <div class="col-md-6 ms-auto">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between mb-2">
+                                        <span>Subtotal:</span>
+                                        <strong>${{ "{:,.0f}".format(total) }}</strong>
+                                    </div>
+                                    <hr>
+                                    <div class="d-flex justify-content-between" style="font-size: 1.2rem;">
+                                        <span>Total Pedido:</span>
+                                        <strong class="text-success">${{ "{:,.0f}".format(total_costo) }}</strong>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-info text-center">
+                        <i class="fas fa-info-circle"></i> No hay prendas registradas en este pedido
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Botones de acción -->
+    <div class="row">
+        <div class="col-12">
+            <a href="{{ url_for('cliente_pedidos') if rol != 'administrador' else url_for('pedidos') }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Volver
+            </a>
+            {% if rol == 'administrador' %}
+            <a href="{{ url_for('pedido_detalles', id_pedido=pedido[0]) }}" class="btn btn-primary">
+                <i class="fas fa-edit"></i> Editar Pedido
+            </a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+    .table-hover tbody tr:hover {
+        background-color: #f8f9fa;
+    }
+    .card {
+        border-radius: 12px;
+    }
+</style>
+
+<script>
+// Obtener el total del costo
+let totalCosto = {{ total_costo }};
+console.log('Total del pedido: $' + totalCosto.toLocaleString('es-CO'));
+</script>
+{% endblock %}
