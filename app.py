@@ -839,14 +839,17 @@ def agregar_pedido():
     
     if request.method == 'POST':
         try:
+            import sys
             from datetime import datetime, timedelta
             
-            print(f"[DEBUG] === INICIO POST AGREGAR_PEDIDO ===")
+            sys.stdout.flush()
+            print(f"[DEBUG] === INICIO POST AGREGAR_PEDIDO ===", flush=True)
+            sys.stdout.flush()
             
             # 1. Determinar id_cliente
             if rol == 'administrador':
                 id_cliente = request.form.get('id_cliente')
-                print(f"[DEBUG] Admin - id_cliente: {id_cliente}")
+                print(f"[DEBUG] Admin - id_cliente: {id_cliente}", flush=True)
             else:
                 usuario_data = run_query(
                     "SELECT id_usuario FROM usuario WHERE username = :u",
@@ -854,7 +857,9 @@ def agregar_pedido():
                     fetchone=True
                 )
                 id_cliente = usuario_data[0] if usuario_data else None
-                print(f"[DEBUG] Cliente - id_cliente: {id_cliente}")
+                print(f"[DEBUG] Cliente - id_cliente: {id_cliente}", flush=True)
+            
+            sys.stdout.flush()
             
             if not id_cliente:
                 flash('Error al identificar el cliente.', 'danger')
@@ -862,16 +867,18 @@ def agregar_pedido():
             
             # 2. Asegurar que existe en tabla cliente
             ensure_cliente_exists(id_cliente)
-            print(f"[DEBUG] Cliente verificado: {id_cliente}")
+            print(f"[DEBUG] Cliente verificado: {id_cliente}", flush=True)
             
             # 3. Obtener prendas
             tipos = request.form.getlist('tipo[]')
             cantidades = request.form.getlist('cantidad[]')
             descripciones = request.form.getlist('descripcion[]')
             
-            print(f"[DEBUG] Form data - tipos: {tipos}")
-            print(f"[DEBUG] Form data - cantidades: {cantidades}")
-            print(f"[DEBUG] Form data - descripciones: {descripciones}")
+            print(f"[DEBUG] Form data - tipos: {tipos}", flush=True)
+            print(f"[DEBUG] Form data - cantidades: {cantidades}", flush=True)
+            print(f"[DEBUG] Form data - descripciones: {descripciones}", flush=True)
+            
+            sys.stdout.flush()
             
             if not tipos or len(tipos) == 0:
                 flash('Debes agregar al menos una prenda.', 'warning')
