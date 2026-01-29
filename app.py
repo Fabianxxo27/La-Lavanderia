@@ -1099,7 +1099,7 @@ def agregar_pedido():
             fecha_ingreso = datetime.now().strftime('%Y-%m-%d')
             fecha_entrega = (datetime.now() + timedelta(days=dias_entrega)).strftime('%Y-%m-%d')
             
-            # 5. Crear pedido
+            # 5. Crear pedido con código de barras
             result = run_query(
                 "INSERT INTO pedido (fecha_ingreso, fecha_entrega, estado, id_cliente) VALUES (:fi, :fe, :e, :ic) RETURNING id_pedido",
                 {"fi": fecha_ingreso, "fe": fecha_entrega, "e": "Pendiente", "ic": id_cliente},
@@ -1112,6 +1112,16 @@ def agregar_pedido():
                 return redirect(url_for('agregar_pedido'))
             
             id_pedido = result[0]
+            
+            # 5.1. Generar código de barras único (formato: LAV-YYYYMMDD-000001)
+            codigo_barras = f"LAV-{datetime.now().strftime('%Y%m%d')}-{id_pedido:06d}"
+            
+            # 5.2. Actualizar pedido con código de barras
+            run_query(
+                "UPDATE pedido SET codigo_barras = :cb WHERE id_pedido = :id",
+                {"cb": codigo_barras, "id": id_pedido},
+                commit=True
+            )
             
             # 6. Procesar y calcular costo primero
             prendas_a_insertar = []
