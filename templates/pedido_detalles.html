@@ -323,30 +323,6 @@
     <p>No hay prendas en este pedido aún.</p>
   </div>
   {% endif %}
-
-  <!-- Agregar prenda -->
-  <div class="form-section">
-    <div class="form-title">➕ Agregar Nueva Prenda</div>
-    <form method="post" action="{{ url_for('agregar_prenda', id_pedido=pedido[0]) }}">
-      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
-        <div class="form-group">
-          <label class="form-label">Tipo de Prenda *</label>
-          <input class="form-control" name="tipo" required placeholder="Ej: Camisa, Pantalón...">
-        </div>
-        <div class="form-group">
-          <label class="form-label">Descripción</label>
-          <input class="form-control" name="descripcion" placeholder="Ej: Color azul, talla M...">
-        </div>
-        <div class="form-group">
-          <label class="form-label">Observaciones</label>
-          <input class="form-control" name="observaciones" placeholder="Ej: Mancha en la manga...">
-        </div>
-      </div>
-      <div class="form-buttons">
-        <button type="submit" class="btn btn-primary">✅ Agregar Prenda</button>
-      </div>
-    </form>
-  </div>
 </div>
 
 <!-- Edición de estado (Solo Admin) -->
