@@ -2,86 +2,283 @@
 {% block title %}Clientes - La Lavandería{% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-3">
-  <h2>Clientes</h2>
-  <a href="{{ url_for('agregar_cliente') }}" class="btn btn-success">Agregar Cliente</a>
-</div>
-
-<form method="post" class="mb-3">
-  <div class="input-group">
-    <input type="text" name="q" class="form-control" placeholder="Buscar por nombre o email">
-    <button class="btn btn-outline-secondary" type="submit">Buscar</button>
-  </div>
-</form>
-
-<table class="table table-striped">
-  <thead>
-    <tr>
-      <th>ID</th>
-      <th>Nombre</th>
-      <th>Username</th>
-      <th>Email</th>
-      <th>Acciones</th>
-    </tr>
-  </thead>
-  <tbody>
-    {% for c in clients %}
-    <tr>
-      <td>{{ c[0] }}</td>
-      <td>{{ c[1] }}</td>
-      <td>{{ c[2] }}</td>
-      <td>{{ c[3] }}</td>
-      <td>
-        <a href="{{ url_for('actualizar_cliente', id_cliente=c[0]) }}" class="btn btn-sm btn-accion btn-editar">Editar</a>
-        <form action="{{ url_for('eliminar_cliente', id_cliente=c[0]) }}" method="post" style="display:inline-block; background:none; border:none; padding:0; margin:0;">
-          <button class="btn btn-sm btn-accion btn-eliminar">Eliminar</button>
-        </form>
-      </td>
-    </tr>
-    {% else %}
-    <tr><td colspan="5">No hay clientes.</td></tr>
-    {% endfor %}
-  </tbody>
-</table>
-
 <style>
-  /* --- Estilo uniforme para botones --- */
+  .clientes-container {
+    padding: 2rem 0;
+  }
+
+  .header-section {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+
+  .page-title {
+    color: #1a4e7b;
+    font-weight: 800;
+    font-size: 2rem;
+    margin: 0;
+  }
+
+  .btn-agregar {
+    background: linear-gradient(135deg, #a6cc48 0%, #84af1d 100%);
+    color: white;
+    padding: 0.8rem 1.8rem;
+    border: none;
+    border-radius: 8px;
+    font-weight: 700;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .btn-agregar:hover {
+    background: linear-gradient(135deg, #84af1d 0%, #6a8f17 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(166, 204, 72, 0.3);
+    text-decoration: none;
+    color: white;
+  }
+
+  .search-section {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    border: 2px solid #e8f0d4;
+    margin-bottom: 2rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  }
+
+  .search-input-group {
+    display: flex;
+    gap: 0.8rem;
+    align-items: stretch;
+  }
+
+  .search-input {
+    flex: 1;
+    padding: 0.8rem 1rem;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    transition: all 0.2s ease;
+  }
+
+  .search-input:focus {
+    outline: none;
+    border-color: #a6cc48;
+    box-shadow: 0 0 0 3px rgba(166, 204, 72, 0.1);
+  }
+
+  .btn-buscar {
+    background: #1a4e7b;
+    color: white;
+    padding: 0.8rem 1.5rem;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .btn-buscar:hover {
+    background: #0d1d2a;
+  }
+
+  .clientes-table {
+    background: white;
+    border-radius: 12px;
+    border: 2px solid #e8f0d4;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  }
+
+  .clientes-table table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 0;
+  }
+
+  .clientes-table thead {
+    background: #f9fdf5;
+    border-bottom: 2px solid #a6cc48;
+  }
+
+  .clientes-table th {
+    color: #1a4e7b;
+    font-weight: 700;
+    padding: 1rem;
+    text-align: left;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .clientes-table tbody tr {
+    border-bottom: 1px solid #e8f0d4;
+    transition: all 0.2s ease;
+  }
+
+  .clientes-table tbody tr:hover {
+    background: #f9fdf5;
+  }
+
+  .clientes-table td {
+    padding: 1rem;
+    font-size: 0.95rem;
+  }
+
+  .cliente-id {
+    color: #1a4e7b;
+    font-weight: 700;
+  }
+
+  .action-buttons {
+    display: flex;
+    gap: 0.5rem;
+  }
+
   .btn-accion {
     color: #fff !important;
     border: none !important;
     border-radius: 6px;
-    padding: 6px 12px;
-    font-size: 14px;
-    transition: background-color 0.3s, transform 0.2s;
-  }
-
-  .btn-accion:hover {
-    transform: scale(1.05);
+    padding: 8px 16px;
+    font-size: 0.85rem;
+    transition: all 0.2s ease;
+    text-decoration: none;
+    cursor: pointer;
+    font-weight: 600;
+    white-space: nowrap;
   }
 
   .btn-editar {
-    background-color: #1a4e7b !important;
+    background: linear-gradient(135deg, #1a4e7b 0%, #2d5f8d 100%) !important;
   }
 
   .btn-editar:hover {
-    background-color: #163e62 !important;
+    background: linear-gradient(135deg, #0d1d2a 0%, #1a4e7b 100%) !important;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(26, 78, 123, 0.3);
   }
 
   .btn-eliminar {
-    background-color: #a6cc48 !important;
+    background: linear-gradient(135deg, #d32f2f 0%, #e53935 100%) !important;
   }
 
   .btn-eliminar:hover {
-    background-color: #8db53f !important;
+    background: linear-gradient(135deg, #b71c1c 0%, #d32f2f 100%) !important;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(211, 47, 47, 0.3);
   }
 
-  td form {
-    display: inline-block;
-    background: transparent !important;
+  .empty-state {
+    text-align: center;
+    padding: 3rem;
+    color: #999;
   }
 
-  td form button {
-    background: none;
+  .empty-icon {
+    width: 80px;
+    height: 80px;
+    margin: 0 auto 1rem;
+    background: #f0f0f0;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .empty-icon::before {
+    content: '';
+    width: 40px;
+    height: 40px;
+    background: #ddd;
+    border-radius: 4px;
+  }
+
+  @media (max-width: 768px) {
+    .header-section {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .search-input-group {
+      flex-direction: column;
+    }
+
+    .clientes-table {
+      overflow-x: auto;
+    }
+
+    .action-buttons {
+      flex-direction: column;
+    }
   }
 </style>
+
+<div class="clientes-container">
+  <div class="header-section">
+    <h1 class="page-title">Clientes</h1>
+    <a href="{{ url_for('agregar_cliente') }}" class="btn-agregar">
+      <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+        <path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4z"/>
+      </svg>
+      Agregar Cliente
+    </a>
+  </div>
+
+  <div class="search-section">
+    <form method="post">
+      <div class="search-input-group">
+        <input type="text" name="q" class="search-input" placeholder="Buscar por nombre o email...">
+        <button class="btn-buscar" type="submit">Buscar</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="clientes-table">
+    {% if clients %}
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Nombre</th>
+          <th>Username</th>
+          <th>Email</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for c in clients %}
+        <tr>
+          <td><span class="cliente-id">#{{ c[0] }}</span></td>
+          <td>{{ c[1] }}</td>
+          <td>{{ c[2] }}</td>
+          <td>{{ c[3] }}</td>
+          <td>
+            <div class="action-buttons">
+              <a href="{{ url_for('actualizar_cliente', id_cliente=c[0]) }}" class="btn-accion btn-editar">Editar</a>
+              <form action="{{ url_for('eliminar_cliente', id_cliente=c[0]) }}" method="post" style="display:inline; margin:0;">
+                <button type="submit" class="btn-accion btn-eliminar" onclick="return confirm('¿Estás seguro de eliminar este cliente?')">Eliminar</button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state">
+      <div class="empty-icon"></div>
+      <h4 style="color: #666; margin-bottom: 0.5rem;">No hay clientes</h4>
+      <p>No se encontraron clientes con los criterios de búsqueda.</p>
+    </div>
+    {% endif %}
+  </div>
+</div>
 {% endblock %}
