@@ -105,23 +105,14 @@ CREATE TABLE `pedido` (
   `fecha_ingreso` date NOT NULL,
   `fecha_entrega` date DEFAULT NULL,
   `estado` varchar(50) NOT NULL,
-  `id_cliente` int(11) NOT NULL
+  `id_cliente` int(11) NOT NULL,
+  `codigo_barras` varchar(50) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `pedido`
+-- Tabla vacía después de migración
 --
-
-INSERT INTO `pedido` (`id_pedido`, `fecha_ingreso`, `fecha_entrega`, `estado`, `id_cliente`) VALUES
-(1, '2025-10-27', '2025-10-30', 'Pendiente', 1),
-(2, '2025-11-07', '2025-11-10', 'Pendiente', 2),
-(3, '2025-11-07', '2025-11-10', 'Pendiente', 1),
-(4, '2025-11-11', '2025-11-14', 'Pendiente', 3),
-(5, '2025-11-11', '2025-11-14', 'Pendiente', 3),
-(6, '2025-11-11', '2025-11-14', 'Pendiente', 3),
-(7, '2025-11-22', '2025-11-24', 'En proceso', 4);
-
--- --------------------------------------------------------
 
 --
 -- Table structure for table `prenda`
@@ -270,6 +261,7 @@ ALTER TABLE `imagen`
 --
 ALTER TABLE `pedido`
   ADD PRIMARY KEY (`id_pedido`),
+  ADD UNIQUE KEY `codigo_barras` (`codigo_barras`),
   ADD KEY `fk_pedido_cliente` (`id_cliente`);
 
 --
