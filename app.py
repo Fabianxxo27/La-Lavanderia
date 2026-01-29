@@ -904,57 +904,83 @@ def agregar_pedido():
             id_pedido = result[0]
             print(f"[DEBUG] ✓ Pedido creado con ID: {id_pedido}")
             
-            # 6. Insertar prendas UNA POR UNA
+            # 6. Procesar y calcular costo primero
+            print(f"[DEBUG] Procesando prendas del formulario...")
+            prendas_a_insertar = []
             total_costo = 0
-            prendas_insertadas = 0
             
             for i in range(len(tipos)):
                 tipo = tipos[i]
-                if not tipo:
+                if not tipo or tipo.strip() == '':
+                    print(f"[DEBUG] Saltando tipo vacío en posición {i}")
                     continue
                     
-                cantidad = int(cantidades[i]) if i < len(cantidades) else 1
+                cantidad = int(cantidades[i]) if i < len(cantidades) and cantidades[i] else 1
                 descripcion = descripciones[i] if i < len(descripciones) else ''
                 
-                # Calcular precio
-                precio = 5000
-                for p in prendas_default:
-                    if p['nombre'] == tipo:
-                        precio = p['precio']
+                # Buscar precio
+                precio = 5000  # default
+                for prenda_def in prendas_default:
+                    if prenda_def['nombre'] == tipo:
+                        precio = prenda_def['precio']
                         break
                 
+                print(f"[DEBUG] Prenda procesada: tipo='{tipo}', cantidad={cantidad}, precio={precio}")
+                
+                prendas_a_insertar.append({
+                    'tipo': tipo,
+                    'cantidad': cantidad,
+                    'descripcion': descripcion,
+                    'precio': precio
+                })
+                
                 total_costo += precio * cantidad
+            
+            print(f"[DEBUG] Total prendas a insertar: {len(prendas_a_insertar)}, Costo total: {total_costo}")
+            
+            # 7. Insertar prendas en la base de datos
+            prendas_insertadas = 0
+            
+            for prenda in prendas_a_insertar:
+                tipo = prenda['tipo']
+                cantidad = prenda['cantidad']
+                descripcion = prenda['descripcion']
                 
-                print(f"[DEBUG] Insertando {cantidad} prenda(s) tipo '{tipo}'...")
+                print(f"[DEBUG] Insertando {cantidad} unidad(es) de '{tipo}'...")
                 
-                # Insertar CADA unidad
                 for unidad in range(cantidad):
                     try:
-                        print(f"[DEBUG]   -> Unidad {unidad+1}/{cantidad} tipo={tipo}, id_pedido={id_pedido}")
+                        print(f"[DEBUG]   -> Insertando unidad {unidad+1}/{cantidad}: tipo='{tipo}', desc='{descripcion}', id_pedido={id_pedido}")
+                        
                         run_query(
                             "INSERT INTO prenda (tipo, descripcion, observaciones, id_pedido) VALUES (:tipo, :desc, :obs, :id_ped)",
                             {"tipo": tipo, "desc": descripcion, "obs": '', "id_ped": id_pedido},
                             commit=True
                         )
+                        
                         prendas_insertadas += 1
-                        print(f"[DEBUG]   ✓ Prenda insertada")
+                        print(f"[DEBUG]   ✓ Unidad insertada exitosamente (total: {prendas_insertadas})")
+                        
                     except Exception as e_prenda:
-                        print(f"[ERROR] Error insertando prenda: {e_prenda}")
-                        flash(f'Advertencia: Error al insertar prenda {tipo}', 'warning')
+                        print(f"[ERROR] Error insertando unidad {unidad+1} de '{tipo}': {type(e_prenda).__name__}: {str(e_prenda)}")
+                        import traceback
+                        print(f"[TRACEBACK PRENDA] {traceback.format_exc()}")
             
-            print(f"[DEBUG] Total prendas insertadas: {prendas_insertadas}/{total_prendas}")
+            print(f"[DEBUG] ✓ Total prendas insertadas en DB: {prendas_insertadas}")
             
-            # 7. Crear recibo
-            print(f"[DEBUG] Insertando recibo...")
+            # 8. Crear recibo
+            print(f"[DEBUG] Insertando recibo - id_pedido={id_pedido}, id_cliente={id_cliente}, monto={total_costo}")
             try:
                 run_query(
                     "INSERT INTO recibo (id_pedido, id_cliente, monto, fecha) VALUES (:ip, :ic, :m, CURRENT_TIMESTAMP)",
                     {"ip": id_pedido, "ic": id_cliente, "m": total_costo},
                     commit=True
                 )
-                print(f"[DEBUG] ✓ Recibo creado")
+                print(f"[DEBUG] ✓ Recibo creado exitosamente")
             except Exception as e_recibo:
-                print(f"[ERROR] Error creando recibo: {e_recibo}")
+                print(f"[ERROR] Error creando recibo: {type(e_recibo).__name__}: {str(e_recibo)}")
+                import traceback
+                print(f"[TRACEBACK RECIBO] {traceback.format_exc()}")
             
             print(f"[DEBUG] === FIN POST AGREGAR_PEDIDO - EXITOSO ===")
             
