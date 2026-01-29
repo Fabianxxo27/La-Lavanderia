@@ -228,7 +228,6 @@
                                 <th class="text-center">Pedidos</th>
                                 <th class="text-center">Prendas Totales</th>
                                 <th class="text-right">Gasto Total</th>
-                                <th class="text-center">Registro</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -240,7 +239,6 @@
                                     <td class="text-center"><span class="badge bg-primary">{{ cliente[2] }}</span></td>
                                     <td class="text-center"><strong>{{ cliente[3] }}</strong></td>
                                     <td class="text-right">${{ "{:,.0f}".format(cliente[4]) }}</td>
-                                    <td class="text-center"><small>{{ cliente[5][:10] if cliente[5] else 'N/A' }}</small></td>
                                 </tr>
                                 {% endfor %}
                             {% endif %}

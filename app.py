@@ -898,14 +898,12 @@ def reportes():
             c.nombre,
             COUNT(DISTINCT p.id_pedido) as cantidad_pedidos,
             COUNT(DISTINCT pr.id_prenda) as total_prendas,
-            COALESCE(SUM(r.monto), 0)::numeric as gasto_total,
-            u.fecha_registro
+            COALESCE(SUM(r.monto), 0)::numeric as gasto_total
         FROM cliente c
-        LEFT JOIN usuario u ON c.id_cliente = u.id_usuario
         LEFT JOIN pedido p ON c.id_cliente = p.id_cliente
         LEFT JOIN prenda pr ON p.id_pedido = pr.id_pedido
         LEFT JOIN recibo r ON p.id_pedido = r.id_pedido
-        GROUP BY c.id_cliente, c.nombre, u.fecha_registro
+        GROUP BY c.id_cliente, c.nombre
         ORDER BY cantidad_pedidos DESC
         LIMIT 15
     """, fetchall=True) or []
