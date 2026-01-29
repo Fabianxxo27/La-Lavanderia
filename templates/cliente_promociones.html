@@ -90,10 +90,11 @@
                         <div class="progress" style="height: 25px;">
                             <div class="progress-bar bg-success progress-bar-striped progress-bar-animated" 
                                  role="progressbar" 
-                                 style="width: {{ progreso }}%"
                                  aria-valuenow="{{ progreso }}" 
                                  aria-valuemin="0" 
-                                 aria-valuemax="100">
+                                 aria-valuemax="100"
+                                 {# Estilo dinámico para el ancho de la barra #}
+                                 style="width: {{ progreso }}%;">
                                 {{ "%.0f"|format(progreso) }}%
                             </div>
                         </div>
@@ -191,10 +192,10 @@
     <div class="row">
         <div class="col-12">
             <div class="card shadow-sm">
-                <div class="card-header bg-success text-white">
-                    <h5 class="mb-0">
-                        <i class="fas fatext-white lealtad-gradient">
-                    <h5 class="mb-0">Promociones Activas class="card-body">
+                <div class="card-header text-white lealtad-gradient">
+                    <h5 class="mb-0">Promociones Activas</h5>
+                </div>
+                <div class="card-body">
                     {% if promociones %}
                     <div class="row">
                         {% for promo in promociones %}
@@ -231,6 +232,6 @@
             </div>
         </div>
     </div>
+</div>
 
-    <!-- Call to Action -->
-</divlock %}
+{% endblock %}

@@ -168,15 +168,14 @@
     box-shadow: 0 0 0 3px rgba(166, 204, 72, 0.1);
   }
 
-  .form-buttons linear-gradient(135deg, #a6cc48 0%, #84af1d 100%);
-    color: white;
+  .form-buttons {
+    display: flex;
+    gap: 0.8rem;
+    flex-wrap: wrap;
+    margin-top: 1rem;
   }
 
-  .btn-primary:hover {
-    background: linear-gradient(135deg, #84af1d 0%, #6a8f17 100%);
-    color: white;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(166, 204, 72, 0.3
+  .btn {
     padding: 0.7rem 1.5rem;
     border: none;
     border-radius: 6px;
@@ -188,16 +187,15 @@
   }
 
   .btn-primary {
-    background: linear-gradient(135deg, #1a4e7b 0%, #2d5f8d 100%);
+    background: linear-gradient(135deg, #a6cc48 0%, #84af1d 100%);
     color: white;
   }
 
-  .btn-back:hover {
-    background: linear-gradient(135deg, #0d1d2a 0%, #1a4e7b 100%);
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(26, 78, 123, 0.3);
+  .btn-primary:hover {
+    background: linear-gradient(135deg, #84af1d 0%, #6a8f17 100%);
     color: white;
-    transform: translateY(-1px);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(166, 204, 72, 0.3);
   }
 
   .btn-secondary {
@@ -210,12 +208,14 @@
   }
 
   .btn-back {
-    background: #1a4e7b;
+    background: linear-gradient(135deg, #1a4e7b 0%, #2d5f8d 100%);
     color: white;
   }
 
   .btn-back:hover {
-    background: #0d1d2a;
+    background: linear-gradient(135deg, #0d1d2a 0%, #1a4e7b 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(26, 78, 123, 0.3);
   }
 
   .estado-select {
@@ -244,10 +244,14 @@
     display: none;
   }
 
-  .estado-option input[type="radio"]:checked + label {
+  .estado-option input[type="radio"]:checked + span {
     color: white !important;
+  }
+
+  .estado-option:has(input[type="radio"]:checked) {
     background: #a6cc48 !important;
     border-color: #a6cc48 !important;
+    color: white !important;
   }
 
   .estado-pendiente {
@@ -306,7 +310,29 @@
 <!-- Header del Pedido -->
 <div class="pedido-header">
   <div class="pedido-title">Pedido #{{ pedido[0] }}</div>
-  <div class="info-grid">Prendas del Pedido</h3>
+  <div class="info-grid">
+    <div class="info-item">
+      <div class="info-label">Cliente</div>
+      <div class="info-value">{{ pedido[4] if pedido|length > 4 else 'N/A' }}</div>
+    </div>
+    <div class="info-item">
+      <div class="info-label">Fecha Ingreso</div>
+      <div class="info-value">{{ pedido[1] | default('N/A') }}</div>
+    </div>
+    <div class="info-item">
+      <div class="info-label">Fecha Entrega</div>
+      <div class="info-value">{{ pedido[2] or 'Por definir' }}</div>
+    </div>
+    <div class="info-item">
+      <div class="info-label">Estado Actual</div>
+      <div class="info-value">{{ pedido[3] }}</div>
+    </div>
+  </div>
+</div>
+
+<!-- Prendas -->
+<div class="section">
+  <h3 class="section-title">Prendas del Pedido</h3>
   {% if prendas %}
   <table class="prendas-table">
     <thead>
@@ -375,29 +401,7 @@
 <div style="display: flex; gap: 0.8rem; margin-top: 2rem; flex-wrap: wrap;">
   <button class="btn btn-back" onclick="history.back()">Volver Atrás</button>
   <a href="{{ url_for('pedidos') if session.get('rol') and session.get('rol')|lower in ['administrador','admin'] else url_for('cliente_pedidos') }}" class="btn btn-secondary">
-     </label>
-        <label class="estado-option estado-completado">
-          <input type="radio" name="estado" value="Completado" {% if pedido[3] == 'Completado' %}checked{% endif %}>
-          <span>✅ Completado</span>
-        </label>
-        <label class="estado-option estado-cancelado">
-          <input type="radio" name="estado" value="Cancelado" {% if pedido[3] == 'Cancelado' %}checked{% endif %}>
-          <span>❌ Cancelado</span>
-        </label>
-      </div>
-    </div>
-    <div class="form-buttons">
-      <button type="submit" class="btn btn-primary">💾 Actualizar Estado</button>
-    </div>
-  </form>
-</div>
-{% endif %}
-
-<!-- Botones de navegación -->
-<div style="display: flex; gap: 0.8rem; margin-top: 2rem; flex-wrap: wrap;">
-  <button class="btn btn-back" onclick="history.back()">← Volver Atrás</button>
-  <a href="{{ url_for('pedidos') if session.get('rol') and session.get('rol')|lower in ['administrador','admin'] else url_for('cliente_pedidos') }}" class="btn btn-secondary">
-    📋 Volver a la Lista
+    Volver a la Lista
   </a>
 </div>
 
