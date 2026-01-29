@@ -11,7 +11,7 @@
   }
 
   .card-header {
-    background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+    background: linear-gradient(135deg, #1a4e7b 0%, #0d2a42 100%);
     border-radius: 12px 12px 0 0;
     padding: 1.5rem;
     color: white;
@@ -22,13 +22,14 @@
   }
 
   .btn-primary {
-    background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+    background: linear-gradient(135deg, #a6cc48 0%, #8fb933 100%);
     border: none;
     font-weight: 600;
+    color: #1a4e7b;
   }
 
   .btn-primary:hover {
-    background: linear-gradient(135deg, #2980b9 0%, #1a5276 100%);
+    background: linear-gradient(135deg, #8fb933 0%, #7a9e2b 100%);
   }
 
   .table {
@@ -41,8 +42,8 @@
   }
 
   .form-select:focus, .form-control:focus {
-    border-color: #3498db;
-    box-shadow: 0 0 0 0.2rem rgba(52, 152, 219, 0.25);
+    border-color: #a6cc48;
+    box-shadow: 0 0 0 0.2rem rgba(166, 204, 72, 0.25);
   }
 
   .alert {
@@ -56,7 +57,7 @@
   }
   
   .prenda-row:hover {
-    background-color: #f0f7ff;
+    background-color: #f8fdf0;
   }
   
   .resumen-card {
@@ -74,8 +75,8 @@
   }
   
   .entrega-info {
-    background: #e8f4f8;
-    border-left: 4px solid #3498db;
+    background: #f0f7e8;
+    border-left: 4px solid #a6cc48;
     padding: 1rem;
     border-radius: 4px;
   }
@@ -218,7 +219,7 @@
                     <!-- Detalles de entrega -->
                     <div style="margin-top: 1.5rem; padding: 1rem; background: #f8f9fa; border-radius: 8px;">
                         <div class="mb-2"><strong><i class="fas fa-calendar"></i> Fecha de Entrega</strong></div>
-                        <div id="fechaEntrega" style="color: #2980b9; font-size: 0.95rem;">
+                        <div id="fechaEntrega" style="color: #1a4e7b; font-size: 0.95rem;">
                             Selecciona prendas para calcular
                         </div>
                     </div>
@@ -234,21 +235,6 @@
                             <i class="fas fa-info-circle"></i> Mínimo 1 prenda para crear pedido
                         </div>
                     </div>
-                </div>
-            </div>
-
-            <!-- Tips y ayuda -->
-            <div class="card mt-3">
-                <div class="card-header bg-info text-white">
-                    <h6 class="mb-0"><i class="fas fa-lightbulb"></i> Tips</h6>
-                </div>
-                <div class="card-body small">
-                    <ul class="mb-0">
-                        <li><strong>Agrega múltiples tipos</strong> de prendas en un solo pedido</li>
-                        <li>El precio se actualiza automáticamente al seleccionar</li>
-                        <li>Indica cantidad 0 si no deseas ese tipo de prenda</li>
-                        <li>La descripción es opcional pero útil (color, talla, etc.)</li>
-                    </ul>
                 </div>
             </div>
         </div>
@@ -394,9 +380,7 @@ function calcularFechaEntrega(totalPrendas) {
 
 // Inicializar
 document.addEventListener('DOMContentLoaded', function() {
-    // Agregar 2 filas adicionales al inicio para mostrar que se pueden agregar múltiples prendas
-    agregarFila();
-    agregarFila();
+    // Solo una fila por defecto
     calcularTotal();
 });
 </script>
