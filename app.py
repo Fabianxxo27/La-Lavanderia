@@ -1338,28 +1338,46 @@ def ver_prendas_pedido(id_pedido):
             flash("No tienes acceso a este pedido.", "danger")
             return redirect(url_for('cliente_pedidos'))
     
-    # Obtener prendas del pedido
+    # Obtener prendas del pedido agrupadas por tipo
     prendas = run_query("""
-        SELECT id_prenda, tipo, cantidad, descripcion
+        SELECT 
+            MIN(id_prenda) as id_prenda,
+            tipo,
+            COUNT(*) as cantidad,
+            MAX(descripcion) as descripcion,
+            CASE tipo
+                WHEN 'Camisa' THEN 5000
+                WHEN 'Pantalón' THEN 6000
+                WHEN 'Vestido' THEN 8000
+                WHEN 'Chaqueta' THEN 10000
+                WHEN 'Saco' THEN 7000
+                WHEN 'Falda' THEN 5500
+                WHEN 'Blusa' THEN 4500
+                WHEN 'Abrigo' THEN 12000
+                WHEN 'Suéter' THEN 6500
+                WHEN 'Jeans' THEN 7000
+                WHEN 'Corbata' THEN 3000
+                WHEN 'Bufanda' THEN 3500
+                WHEN 'Sábana' THEN 8000
+                WHEN 'Edredón' THEN 15000
+                WHEN 'Cortina' THEN 12000
+                ELSE 5000
+            END as precio
         FROM prenda
         WHERE id_pedido = :id
-        ORDER BY id_prenda
+        GROUP BY tipo
+        ORDER BY tipo
     """, {"id": id_pedido}, fetchall=True)
     
-    # Obtener precio de cada tipo de prenda y calcular total
+    # Calcular precio total
     precio_dict = {}
     total_costo = 0
     for prenda in prendas:
-        precio = run_query(
-            "SELECT precio FROM tarifa WHERE nombre = :n",
-            {"n": prenda[1]},
-            fetchone=True
-        )
-        if precio:
-            precio_dict[prenda[1]] = float(precio[0])
-            total_costo += float(precio[0]) * prenda[2]
-        else:
-            precio_dict[prenda[1]] = 0
+        tipo = prenda[1]
+        cantidad = prenda[2]
+        precio = prenda[4]
+        precio_dict[tipo] = float(precio)
+        total_costo += float(precio) * cantidad
     
     return render_template('pedido_prendas.html',
                          pedido=pedido,
