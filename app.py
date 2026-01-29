@@ -841,9 +841,13 @@ def agregar_pedido():
         try:
             from datetime import datetime, timedelta
             
+            print(f"[DEBUG] POST recibido para agregar_pedido")
+            print(f"[DEBUG] Rol del usuario: {rol}")
+            
             # Determinar id_cliente según el rol
             if rol == 'administrador':
                 id_cliente = request.form.get('id_cliente')
+                print(f"[DEBUG] Admin seleccionó id_cliente: {id_cliente}")
                 if not id_cliente:
                     flash('Debes seleccionar un cliente.', 'warning')
                     return redirect(url_for('agregar_pedido'))
@@ -858,14 +862,18 @@ def agregar_pedido():
                     flash('Error al identificar tu usuario.', 'danger')
                     return redirect(url_for('cliente_inicio'))
                 id_cliente = usuario_data[0]
+                print(f"[DEBUG] Cliente logueado id_cliente: {id_cliente}")
             
             # Asegurar que existe el registro en la tabla cliente
+            print(f"[DEBUG] Asegurando que existe cliente con id: {id_cliente}")
             ensure_cliente_exists(id_cliente)
             
             # Obtener prendas del formulario
             tipos = request.form.getlist('tipo[]')
             cantidades = request.form.getlist('cantidad[]')
             descripciones = request.form.getlist('descripcion[]')
+            
+            print(f"[DEBUG] Prendas recibidas - tipos: {tipos}, cantidades: {cantidades}")
             
             if not tipos or not cantidades:
                 flash('Debes agregar al menos una prenda.', 'warning')
@@ -877,6 +885,8 @@ def agregar_pedido():
             fecha_ingreso = datetime.now().strftime('%Y-%m-%d')
             fecha_entrega = (datetime.now() + timedelta(days=dias_entrega)).strftime('%Y-%m-%d')
             
+            print(f"[DEBUG] Creando pedido - fecha_ingreso: {fecha_ingreso}, fecha_entrega: {fecha_entrega}")
+            
             # Crear pedido
             result = run_query(
                 "INSERT INTO pedido (fecha_ingreso, fecha_entrega, estado, id_cliente) VALUES (:fi, :fe, :e, :ic) RETURNING id_pedido",
@@ -886,10 +896,12 @@ def agregar_pedido():
             )
             
             if not result:
+                print(f"[ERROR] No se obtuvo id_pedido después del INSERT")
                 flash('Error al crear el pedido.', 'danger')
                 return redirect(url_for('agregar_pedido'))
             
             id_pedido = result[0]
+            print(f"[DEBUG] Pedido creado con id: {id_pedido}")
             total_costo = 0
             
             # Insertar prendas
@@ -906,21 +918,27 @@ def agregar_pedido():
                             break
                     total_costo += precio * cantidad
                     
+                    print(f"[DEBUG] Insertando {cantidad}x {tipo} - precio: {precio}")
+                    
                     # Insertar cada prenda
-                    for _ in range(cantidad):
+                    for j in range(cantidad):
                         run_query(
                             "INSERT INTO prenda (tipo, descripcion, observaciones, id_pedido) VALUES (:t, :d, '', :ip)",
                             {"t": tipo, "d": descripcion, "ip": id_pedido},
                             commit=True
                         )
             
+            print(f"[DEBUG] Prendas insertadas. Total costo: {total_costo}")
+            
             # Crear recibo
+            print(f"[DEBUG] Creando recibo - id_pedido: {id_pedido}, id_cliente: {id_cliente}, monto: {total_costo}")
             run_query(
                 "INSERT INTO recibo (id_pedido, id_cliente, monto, fecha) VALUES (:ip, :ic, :m, CURRENT_TIMESTAMP)",
                 {"ip": id_pedido, "ic": id_cliente, "m": total_costo},
                 commit=True
             )
             
+            print(f"[DEBUG] Recibo creado exitosamente")
             flash(f'¡Pedido creado exitosamente! Entrega estimada: {fecha_entrega}', 'success')
             
             if rol == 'administrador':
@@ -929,6 +947,9 @@ def agregar_pedido():
                 return redirect(url_for('cliente_pedidos'))
                 
         except Exception as e:
+            print(f"[ERROR CRÍTICO] Error al crear pedido: {type(e).__name__}: {str(e)}")
+            import traceback
+            print(f"[TRACEBACK] {traceback.format_exc()}")
             flash(f'Error al crear pedido: {str(e)}', 'danger')
             return redirect(url_for('agregar_pedido'))
     
