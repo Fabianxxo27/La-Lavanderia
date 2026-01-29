@@ -87,7 +87,7 @@
         <!-- Formulario principal -->
         <div class="col-lg-8">
             <div class="card">
-                <div class="card-header">
+                <div class="card-header" style="background: linear-gradient(135deg, #a6cc48 0%, #8fb933 100%); color: #1a4e7b;">
                     <h3 class="mb-0"><i class="fas fa-cart-plus"></i> Nuevo Pedido</h3>
                 </div>
                 
@@ -134,8 +134,8 @@
                                         <th width="12%">Cantidad</th>
                                         <th>Descripción (Opcional)</th>
                                         <th class="text-center" width="12%">Subtotal</th>
-                                        <th width="8%" class="text-center">
-                                            <i class="fas fa-cog"></i>
+                                        <th width="8%" class="text-center" style="color: #dc3545; font-weight: bold; font-size: 1.1rem;">
+                                            <i class="fas fa-times"></i>
                                         </th>
                                     </tr>
                                 </thead>
@@ -161,8 +161,8 @@
                                             <span class="precio-fila badge bg-secondary">$0</span>
                                         </td>
                                         <td class="text-center">
-                                            <button type="button" class="btn btn-sm btn-outline-danger" onclick="eliminarFila(this)">
-                                                <i class="fas fa-trash"></i>
+                                            <button type="button" class="btn btn-sm btn-danger" onclick="eliminarFila(this)" title="Eliminar fila" style="font-size: 1rem; padding: 0.25rem 0.5rem;">
+                                                <i class="fas fa-times"></i>
                                             </button>
                                         </td>
                                     </tr>
@@ -197,7 +197,7 @@
         <!-- Panel de resumen (lateral) -->
         <div class="col-lg-4">
             <div class="card shadow-lg">
-                <div class="card-header bg-dark text-white">
+                <div class="card-header" style="background: linear-gradient(135deg, #1a4e7b 0%, #0d2a42 100%); color: white;">
                     <h5 class="mb-0"><i class="fas fa-calculator"></i> Resumen</h5>
                 </div>
                 <div class="card-body">
