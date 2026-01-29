@@ -290,7 +290,106 @@ def inicio():
 # -----------------------------------------------
 @app.route('/cliente_inicio')
 def cliente_inicio():
-    return render_template('cliente_inicio.html')
+    """Dashboard del cliente con estadísticas y próximo nivel de descuento."""
+    username = session.get('username')
+    if not username:
+        return redirect(url_for('login'))
+    
+    # Obtener id_usuario
+    usuario = run_query(
+        "SELECT id_usuario FROM usuario WHERE username = :u",
+        {"u": username},
+        fetchone=True
+    )
+    if not usuario:
+        return redirect(url_for('login'))
+    
+    id_cliente = usuario[0]
+    
+    # Contar pedidos del cliente
+    pedidos_count = run_query(
+        "SELECT COUNT(*) FROM pedido WHERE id_cliente = :ic",
+        {"ic": id_cliente},
+        fetchone=True
+    )[0]
+    
+    # Calcular nivel de descuento (tiers: 0-2=0%, 3-5=5%, 6-9=10%, 10+=15%)
+    if pedidos_count >= 10:
+        nivel = "Diamante"
+        descuento_porcentaje = 15
+        icono = "💎"
+    elif pedidos_count >= 6:
+        nivel = "Oro"
+        descuento_porcentaje = 10
+        icono = "🏆"
+    elif pedidos_count >= 3:
+        nivel = "Plata"
+        descuento_porcentaje = 5
+        icono = "⭐"
+    else:
+        nivel = "Bronce"
+        descuento_porcentaje = 0
+        icono = "🎯"
+    
+    # Calcular próximo nivel
+    if pedidos_count < 3:
+        siguiente_nivel = "Plata"
+        pedidos_faltantes = 3 - pedidos_count
+    elif pedidos_count < 6:
+        siguiente_nivel = "Oro"
+        pedidos_faltantes = 6 - pedidos_count
+    elif pedidos_count < 10:
+        siguiente_nivel = "Diamante"
+        pedidos_faltantes = 10 - pedidos_count
+    else:
+        siguiente_nivel = None
+        pedidos_faltantes = 0
+    
+    # Obtener últimos 3 pedidos
+    ultimos_pedidos = run_query("""
+        SELECT p.id_pedido, p.fecha_ingreso, p.fecha_entrega, p.estado,
+               (SELECT COUNT(*) FROM prenda WHERE id_pedido = p.id_pedido) as cantidad_prendas,
+               ROW_NUMBER() OVER (PARTITION BY p.id_cliente ORDER BY p.fecha_ingreso ASC) as numero_pedido_cliente
+        FROM pedido p
+        WHERE p.id_cliente = :ic
+        ORDER BY p.fecha_ingreso DESC
+        LIMIT 3
+    """, {"ic": id_cliente}, fetchall=True)
+    
+    # Calcular dinero ahorrado con descuentos
+    recibos = run_query("""
+        SELECT r.monto FROM recibo r
+        WHERE r.id_cliente = :ic
+    """, {"ic": id_cliente}, fetchall=True)
+    
+    total_gastado = sum(float(r[0]) if r[0] else 0 for r in recibos)
+    total_recibos = len(recibos)
+    
+    # Estimar dinero ahorrado (si cada prenda cuesta 5000)
+    # Este es un cálculo aproximado, en producción sería mejor guardarlo en BD
+    PRICE_PER_PRENDA = 5000
+    prendas_totales = run_query(
+        "SELECT COUNT(*) FROM prenda WHERE id_pedido IN (SELECT id_pedido FROM pedido WHERE id_cliente = :ic)",
+        {"ic": id_cliente},
+        fetchone=True
+    )[0]
+    
+    monto_sin_descuentos = prendas_totales * PRICE_PER_PRENDA
+    dinero_ahorrado = monto_sin_descuentos - total_gastado if total_gastado > 0 else 0
+    
+    return render_template('cliente_inicio.html',
+                         nombre_usuario=session.get('nombre', ''),
+                         nivel=nivel,
+                         icono=icono,
+                         descuento_porcentaje=descuento_porcentaje,
+                         pedidos_count=pedidos_count,
+                         siguiente_nivel=siguiente_nivel,
+                         pedidos_faltantes=pedidos_faltantes,
+                         ultimos_pedidos=ultimos_pedidos,
+                         total_gastado=total_gastado,
+                         total_recibos=total_recibos,
+                         dinero_ahorrado=dinero_ahorrado,
+                         prendas_totales=prendas_totales)
 
 
 # -----------------------------------------------
@@ -413,6 +512,7 @@ def cliente_promociones():
 # -----------------------------------------------
 @app.route('/cliente_pedidos')
 def cliente_pedidos():
+    """Ver pedidos del cliente actual con paginación."""
     # Usar username desde la sesión (más seguro)
     username = session.get('username')
     if not username:
@@ -432,7 +532,22 @@ def cliente_pedidos():
     
     id_usuario = usuario[0]
 
-    # Obtener pedidos con conteo de prendas
+    # Parámetros de paginación
+    pagina = request.args.get('pagina', 1, type=int)
+    if pagina < 1:
+        pagina = 1
+    
+    por_pagina = 10  # Mostrar 10 pedidos por página
+    offset = (pagina - 1) * por_pagina
+
+    # Contar total de pedidos
+    total_count = run_query(
+        "SELECT COUNT(*) FROM pedido WHERE id_cliente = :id",
+        {"id": id_usuario},
+        fetchone=True
+    )[0]
+
+    # Obtener pedidos con conteo de prendas (con paginación)
     pedidos = run_query("""
         SELECT 
             p.id_pedido, 
@@ -446,20 +561,43 @@ def cliente_pedidos():
         WHERE p.id_cliente = :id
         GROUP BY p.id_pedido, p.fecha_ingreso, p.fecha_entrega, p.estado
         ORDER BY p.fecha_ingreso DESC
-    """, {"id": id_usuario}, fetchall=True)
+        LIMIT :limit OFFSET :offset
+    """, {"id": id_usuario, "limit": por_pagina, "offset": offset}, fetchall=True)
     
     # Estadísticas del cliente
     stats = {
-        'total_pedidos': len(pedidos),
-        'pendientes': sum(1 for p in pedidos if p[3] == 'Pendiente'),
-        'en_proceso': sum(1 for p in pedidos if p[3] == 'En proceso'),
-        'completados': sum(1 for p in pedidos if p[3] == 'Completado')
+        'total_pedidos': total_count,
+        'pendientes': run_query(
+            "SELECT COUNT(*) FROM pedido WHERE id_cliente = :id AND estado = 'Pendiente'",
+            {"id": id_usuario},
+            fetchone=True
+        )[0],
+        'en_proceso': run_query(
+            "SELECT COUNT(*) FROM pedido WHERE id_cliente = :id AND estado = 'En proceso'",
+            {"id": id_usuario},
+            fetchone=True
+        )[0],
+        'completados': run_query(
+            "SELECT COUNT(*) FROM pedido WHERE id_cliente = :id AND estado = 'Completado'",
+            {"id": id_usuario},
+            fetchone=True
+        )[0]
     }
+
+    # Calcular paginación
+    total_paginas = (total_count + por_pagina - 1) // por_pagina
+    tiene_anterior = pagina > 1
+    tiene_siguiente = pagina < total_paginas
 
     return render_template('cliente_pedidos.html', 
                          pedidos=pedidos, 
                          username=username,
-                         stats=stats)
+                         stats=stats,
+                         pagina=pagina,
+                         total_paginas=total_paginas,
+                         tiene_anterior=tiene_anterior,
+                         tiene_siguiente=tiene_siguiente,
+                         total_count=total_count)
 
 
 # -----------------------------------------------
@@ -467,19 +605,64 @@ def cliente_pedidos():
 # -----------------------------------------------
 @app.route('/pedidos')
 def pedidos():
-    """Mostrar todos los pedidos (para administrador)."""
+    """Mostrar todos los pedidos con búsqueda y filtrado (para administrador)."""
     if not _admin_only():
         flash('Acceso denegado.', 'danger')
         return redirect(url_for('index'))
     
-    pedidos = run_query("""
+    # Obtener parámetros de filtrado
+    cliente_filter = request.args.get('cliente', '').strip()
+    estado_filter = request.args.get('estado', '').strip()
+    fecha_desde = request.args.get('desde', '').strip()
+    fecha_hasta = request.args.get('hasta', '').strip()
+    
+    # Construir query base
+    query = """
         SELECT p.id_pedido, p.fecha_ingreso, p.fecha_entrega, p.estado, c.nombre
         FROM pedido p
         LEFT JOIN cliente c ON p.id_cliente = c.id_cliente
-        ORDER BY p.fecha_ingreso DESC
-    """, fetchall=True)
+        WHERE 1=1
+    """
+    params = {}
     
-    return render_template('pedidos.html', pedidos=pedidos)
+    # Agregar filtros dinámicamente
+    if cliente_filter:
+        query += " AND (c.nombre LIKE :cliente OR c.id_cliente = :cliente_id)"
+        params['cliente'] = f"%{cliente_filter}%"
+        try:
+            params['cliente_id'] = int(cliente_filter)
+        except:
+            params['cliente_id'] = -1
+    
+    if estado_filter:
+        query += " AND p.estado = :estado"
+        params['estado'] = estado_filter
+    
+    if fecha_desde:
+        query += " AND DATE(p.fecha_ingreso) >= :desde"
+        params['desde'] = fecha_desde
+    
+    if fecha_hasta:
+        query += " AND DATE(p.fecha_ingreso) <= :hasta"
+        params['hasta'] = fecha_hasta
+    
+    query += " ORDER BY p.fecha_ingreso DESC"
+    
+    pedidos = run_query(query, params, fetchall=True)
+    
+    # Obtener opciones de estado únicas
+    estados = run_query("""
+        SELECT DISTINCT estado FROM pedido ORDER BY estado
+    """, fetchall=True)
+    estados = [e[0] for e in estados] if estados else []
+    
+    return render_template('pedidos.html', 
+                         pedidos=pedidos,
+                         cliente_filter=cliente_filter,
+                         estado_filter=estado_filter,
+                         fecha_desde=fecha_desde,
+                         fecha_hasta=fecha_hasta,
+                         estados=estados)
 
 
 # -----------------------------------------------
@@ -510,16 +693,36 @@ def clientes():
 # -----------------------------------------------
 @app.route('/agregar_cliente', methods=['GET', 'POST'])
 def agregar_cliente():
-    """Agregar un nuevo cliente."""
+    """Agregar un nuevo cliente con validación."""
     if not _admin_only():
         flash('Acceso denegado.', 'danger')
         return redirect(url_for('index'))
     
     if request.method == 'POST':
-        nombre = request.form.get('nombre')
-        email = request.form.get('email')
-        telefono = request.form.get('telefono')
-        direccion = request.form.get('direccion')
+        nombre = request.form.get('nombre', '').strip()
+        email = request.form.get('email', '').strip()
+        telefono = request.form.get('telefono', '').strip()
+        direccion = request.form.get('direccion', '').strip()
+        
+        # Validación
+        errores = []
+        
+        if not nombre or len(nombre) < 3:
+            errores.append("El nombre debe tener al menos 3 caracteres.")
+        
+        if not email or '@' not in email or len(email) < 5:
+            errores.append("Por favor ingresa un email válido.")
+        
+        if not telefono or len(telefono) < 7:
+            errores.append("El teléfono debe tener al menos 7 dígitos.")
+        
+        if not direccion or len(direccion) < 5:
+            errores.append("La dirección debe tener al menos 5 caracteres.")
+        
+        if errores:
+            for error in errores:
+                flash(error, 'warning')
+            return redirect(url_for('agregar_cliente'))
         
         try:
             run_query(
@@ -527,10 +730,10 @@ def agregar_cliente():
                 {"n": nombre, "e": email, "t": telefono, "d": direccion},
                 commit=True
             )
-            flash('Cliente agregado correctamente.', 'success')
+            flash('✅ Cliente agregado correctamente.', 'success')
             return redirect(url_for('clientes'))
         except Exception as e:
-            flash(f'Error al agregar cliente: {e}', 'danger')
+            flash(f'❌ Error al agregar cliente: {str(e)}', 'danger')
     
     return render_template('agregar_cliente.html')
 

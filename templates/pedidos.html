@@ -2,84 +2,353 @@
 {% block title %}Pedidos - La Lavandería{% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-3">
-  <h2>Pedidos</h2>
-  <a href="{{ url_for('agregar_pedido') }}" class="btn btn-success">Crear Pedido</a>
-</div>
-
-<table class="table table-hover">
-  <thead>
-    <tr>
-      <th>ID</th>
-      <th>Fecha ingreso</th>
-      <th>Fecha entrega</th>
-      <th>Estado</th>
-      <th>Cliente</th>
-      <th>Acciones</th>
-    </tr>
-  </thead>
-  <tbody>
-    {% for p in pedidos %}
-    <tr>
-      <td>{{ p[0] }}</td>
-      <td>{{ p[1] }}</td>
-      <td>{{ p[2] or '' }}</td>
-      <td>{{ p[3] }}</td>
-      <td>{{ p[4] or 'Sin cliente' }}</td>
-      <td>
-        <a href="{{ url_for('pedido_detalles', id_pedido=p[0]) }}" class="btn btn-sm btn-accion btn-ver">Ver</a>
-        <form action="{{ url_for('eliminar_pedido', id_pedido=p[0]) }}" method="post" 
-              style="display:inline-block; background:none; border:none; padding:0; margin:0;" 
-              onsubmit="return confirm('¿Eliminar pedido?')">
-          <button class="btn btn-sm btn-accion btn-eliminar">Eliminar</button>
-        </form>
-      </td>
-    </tr>
-    {% else %}
-    <tr><td colspan="6">No hay pedidos.</td></tr>
-    {% endfor %}
-  </tbody>
-</table>
-
 <style>
-  /* --- Botones uniformes dentro de tablas --- */
+  .header-section {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+
+  .filter-section {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    border: 2px solid #e8f0d4;
+    margin-bottom: 2rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  }
+
+  .filter-title {
+    color: #1a4e7b;
+    font-weight: 700;
+    margin-bottom: 1rem;
+    font-size: 1.1rem;
+  }
+
+  .filter-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+  }
+
+  .filter-group {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .filter-group label {
+    color: #666;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+  }
+
+  .filter-group input,
+  .filter-group select {
+    padding: 0.6rem 0.8rem;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 0.95rem;
+    transition: all 0.2s ease;
+  }
+
+  .filter-group input:focus,
+  .filter-group select:focus {
+    outline: none;
+    border-color: #a6cc48;
+    box-shadow: 0 0 0 3px rgba(166, 204, 72, 0.1);
+  }
+
+  .filter-buttons {
+    display: flex;
+    gap: 0.8rem;
+    align-items: flex-end;
+    flex-wrap: wrap;
+  }
+
+  .btn-filtrar {
+    background: #a6cc48;
+    color: #1a4e7b;
+    padding: 0.6rem 1.5rem;
+    border: none;
+    border-radius: 6px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .btn-filtrar:hover {
+    background: #84af1d;
+    color: white;
+  }
+
+  .btn-limpiar {
+    background: #e8f0d4;
+    color: #1a4e7b;
+    padding: 0.6rem 1.5rem;
+    border: none;
+    border-radius: 6px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .btn-limpiar:hover {
+    background: #d1e8b8;
+  }
+
+  .pedidos-table {
+    background: white;
+    border-radius: 12px;
+    border: 2px solid #e8f0d4;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  }
+
+  .pedidos-table table {
+    margin-bottom: 0;
+    border-collapse: collapse;
+  }
+
+  .pedidos-table thead {
+    background: #f9fdf5;
+    border-bottom: 2px solid #a6cc48;
+  }
+
+  .pedidos-table th {
+    color: #1a4e7b;
+    font-weight: 700;
+    padding: 1rem;
+    text-align: left;
+  }
+
+  .pedidos-table tbody tr {
+    border-bottom: 1px solid #e8f0d4;
+    transition: all 0.2s ease;
+  }
+
+  .pedidos-table tbody tr:hover {
+    background: #f9fdf5;
+  }
+
+  .pedidos-table td {
+    padding: 1rem;
+  }
+
+  .pedido-id {
+    color: #1a4e7b;
+    font-weight: 700;
+    font-size: 1.1rem;
+  }
+
+  .estado-badge {
+    padding: 0.4rem 0.8rem;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    display: inline-block;
+  }
+
+  .estado-pendiente {
+    background: #fff3cd;
+    color: #856404;
+  }
+
+  .estado-en-proceso {
+    background: #cfe2ff;
+    color: #084298;
+  }
+
+  .estado-completado {
+    background: #d1e7dd;
+    color: #0f5132;
+  }
+
+  .estado-cancelado {
+    background: #f8d7da;
+    color: #842029;
+  }
+
+  .action-buttons {
+    display: flex;
+    gap: 0.5rem;
+  }
+
   .btn-accion {
     color: #fff !important;
     border: none !important;
     border-radius: 6px;
     padding: 6px 12px;
-    font-size: 14px;
-    transition: background-color 0.3s, transform 0.2s;
-  }
-
-  .btn-accion:hover {
-    transform: scale(1.05);
+    font-size: 0.85rem;
+    transition: all 0.2s ease;
+    text-decoration: none;
+    cursor: pointer;
+    white-space: nowrap;
   }
 
   .btn-ver {
-    background-color: #1a4e7b !important; /* azul oscuro similar al anterior */
+    background-color: #1a4e7b !important;
   }
 
   .btn-ver:hover {
-    background-color: #163e62 !important;
+    background-color: #0d1d2a !important;
+    transform: translateY(-1px);
   }
 
   .btn-eliminar {
-    background-color: #a6cc48 !important; /* verde limón igual al anterior */
+    background-color: #d32f2f !important;
   }
 
   .btn-eliminar:hover {
-    background-color: #8db53f !important;
+    background-color: #b71c1c !important;
+    transform: translateY(-1px);
   }
 
-  /* 🔧 Quitar fondo blanco del form */
-  td form {
-    display: inline-block;
-    background: transparent !important;
+  .empty-state {
+    text-align: center;
+    padding: 3rem;
+    color: #999;
   }
 
-  td form button {
-    background: none;
+  .empty-icon {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    opacity: 0.5;
+  }
+
+  .result-count {
+    color: #666;
+    font-size: 0.9rem;
+    margin-top: 0.5rem;
+  }
+
+  @media (max-width: 768px) {
+    .header-section {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .filter-row {
+      grid-template-columns: 1fr;
+    }
+
+    .pedidos-table {
+      overflow-x: auto;
+    }
+
+    .action-buttons {
+      flex-direction: column;
+    }
+
+    .btn-accion {
+      width: 100%;
+      text-align: center;
+    }
   }
 </style>
+
+<div class="header-section">
+  <h2 style="color: #1a4e7b; font-weight: 800;">Administrar Pedidos</h2>
+  <a href="{{ url_for('agregar_pedido') }}" class="btn-filtrar">➕ Crear Pedido</a>
+</div>
+
+<!-- Filtros -->
+<div class="filter-section">
+  <div class="filter-title">🔍 Filtrar Pedidos</div>
+  <form method="get" action="{{ url_for('pedidos') }}">
+    <div class="filter-row">
+      <div class="filter-group">
+        <label>Cliente</label>
+        <input type="text" name="cliente" placeholder="Nombre o ID del cliente" value="{{ cliente_filter }}">
+      </div>
+
+      <div class="filter-group">
+        <label>Estado</label>
+        <select name="estado">
+          <option value="">-- Todos los estados --</option>
+          {% for est in estados %}
+          <option value="{{ est }}" {% if est == estado_filter %}selected{% endif %}>{{ est }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="filter-group">
+        <label>Desde</label>
+        <input type="date" name="desde" value="{{ fecha_desde }}">
+      </div>
+
+      <div class="filter-group">
+        <label>Hasta</label>
+        <input type="date" name="hasta" value="{{ fecha_hasta }}">
+      </div>
+    </div>
+
+    <div class="filter-buttons" style="margin-top: 1rem;">
+      <button type="submit" class="btn-filtrar">Filtrar</button>
+      <a href="{{ url_for('pedidos') }}" class="btn-limpiar">Limpiar Filtros</a>
+    </div>
+  </form>
+  <div class="result-count">
+    Se encontraron <strong>{{ pedidos|length }}</strong> pedido(s)
+  </div>
+</div>
+
+<!-- Tabla de Pedidos -->
+<div class="pedidos-table">
+  {% if pedidos %}
+  <table class="table table-hover">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Fecha Ingreso</th>
+        <th>Fecha Entrega</th>
+        <th>Estado</th>
+        <th>Cliente</th>
+        <th>Acciones</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for p in pedidos %}
+      <tr>
+        <td><span class="pedido-id">#{{ p[0] }}</span></td>
+        <td>{{ p[1] | default('N/A') }}</td>
+        <td>
+          {% if p[2] %}
+            {{ p[2] }}
+          {% else %}
+            <span style="color: #999; font-size: 0.9rem;">Por definir</span>
+          {% endif %}
+        </td>
+        <td>
+          <span class="estado-badge estado-{{ p[3]|lower|replace(' ', '-')|replace('á', 'a')|replace('é', 'e')|replace('í', 'i')|replace('ó', 'o')|replace('ú', 'u') }}">
+            {{ p[3] }}
+          </span>
+        </td>
+        <td>{{ p[4] or 'Sin cliente' }}</td>
+        <td>
+          <div class="action-buttons">
+            <a href="{{ url_for('pedido_detalles', id_pedido=p[0]) }}" class="btn btn-sm btn-accion btn-ver">👁️ Ver</a>
+            <form action="{{ url_for('eliminar_pedido', id_pedido=p[0]) }}" method="post" style="display: inline;">
+              <button type="submit" class="btn btn-sm btn-accion btn-eliminar" onclick="return confirm('¿Estás seguro de que quieres eliminar este pedido?')">🗑️ Eliminar</button>
+            </form>
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="empty-state">
+    <div class="empty-icon">📭</div>
+    <p>No se encontraron pedidos con los filtros aplicados.</p>
+    <a href="{{ url_for('pedidos') }}" style="color: #a6cc48; text-decoration: none; font-weight: 600;">
+      Limpiar filtros
+    </a>
+  </div>
+  {% endif %}
+</div>
+
 {% endblock %}

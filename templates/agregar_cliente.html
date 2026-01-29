@@ -2,25 +2,244 @@
 {% block title %}Agregar Cliente{% endblock %}
 
 {% block content %}
-<h3>Agregar Cliente</h3>
-<form method="post" action="{{ url_for('agregar_cliente') }}">
-  <div class="mb-3">
-    <label class="form-label">Nombre</label>
-    <input class="form-control" name="nombre" required>
+<style>
+  .form-container {
+    max-width: 600px;
+    margin: 0 auto;
+    background: white;
+    border-radius: 12px;
+    padding: 2rem;
+    border: 2px solid #e8f0d4;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  }
+
+  .form-header {
+    text-align: center;
+    margin-bottom: 2rem;
+  }
+
+  .form-title {
+    color: #1a4e7b;
+    font-weight: 800;
+    font-size: 1.6rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .form-subtitle {
+    color: #666;
+    font-size: 0.95rem;
+  }
+
+  .form-group {
+    margin-bottom: 1.5rem;
+  }
+
+  .form-label {
+    color: #1a4e7b;
+    font-weight: 700;
+    display: block;
+    margin-bottom: 0.5rem;
+    font-size: 0.95rem;
+  }
+
+  .form-control {
+    width: 100%;
+    padding: 0.8rem;
+    border: 2px solid #e8f0d4;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    transition: all 0.2s ease;
+    box-sizing: border-box;
+  }
+
+  .form-control:focus {
+    outline: none;
+    border-color: #a6cc48;
+    box-shadow: 0 0 0 3px rgba(166, 204, 72, 0.1);
+  }
+
+  .form-control:invalid:not(:placeholder-shown) {
+    border-color: #d32f2f;
+  }
+
+  .form-control:valid:not(:placeholder-shown) {
+    border-color: #4caf50;
+  }
+
+  .help-text {
+    font-size: 0.85rem;
+    color: #999;
+    margin-top: 0.3rem;
+  }
+
+  .form-buttons {
+    display: flex;
+    gap: 1rem;
+    margin-top: 2rem;
+  }
+
+  .btn {
+    flex: 1;
+    padding: 0.8rem 1.5rem;
+    border: none;
+    border-radius: 8px;
+    font-weight: 700;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-decoration: none;
+    text-align: center;
+    display: inline-block;
+  }
+
+  .btn-submit {
+    background: #a6cc48;
+    color: #1a4e7b;
+  }
+
+  .btn-submit:hover:not(:disabled) {
+    background: #84af1d;
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(132, 175, 29, 0.2);
+  }
+
+  .btn-submit:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  .btn-cancel {
+    background: #e8f0d4;
+    color: #1a4e7b;
+  }
+
+  .btn-cancel:hover {
+    background: #d1e8b8;
+    transform: translateY(-2px);
+  }
+
+  .required-note {
+    color: #d32f2f;
+    font-weight: 700;
+  }
+
+  @media (max-width: 768px) {
+    .form-container {
+      padding: 1.5rem;
+    }
+
+    .form-buttons {
+      flex-direction: column;
+    }
+  }
+</style>
+
+<div class="form-container">
+  <div class="form-header">
+    <h2 class="form-title">➕ Agregar Nuevo Cliente</h2>
+    <p class="form-subtitle">Completa los datos del cliente. Los campos marcados con <span class="required-note">*</span> son obligatorios.</p>
   </div>
-  <div class="mb-3">
-    <label class="form-label">Username</label>
-    <input class="form-control" name="username" required>
-  </div>
-  <div class="mb-3">
-    <label class="form-label">Email</label>
-    <input class="form-control" name="email" type="email" required>
-  </div>
-  <div class="mb-3">
-    <label class="form-label">Contraseña</label>
-    <input class="form-control" name="password" type="password" required>
-  </div>
-  <button class="btn btn-success">Guardar</button>
-  <a href="{{ url_for('clientes') }}" class="btn btn-secondary">Cancelar</a>
-</form>
+
+  <form method="post" action="{{ url_for('agregar_cliente') }}" onsubmit="return validarFormulario(event)">
+    <div class="form-group">
+      <label class="form-label">
+        Nombre <span class="required-note">*</span>
+      </label>
+      <input 
+        class="form-control" 
+        name="nombre" 
+        type="text"
+        minlength="3"
+        maxlength="100"
+        placeholder="Ej: Juan García López"
+        required
+      >
+      <div class="help-text">Mínimo 3 caracteres</div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">
+        Email <span class="required-note">*</span>
+      </label>
+      <input 
+        class="form-control" 
+        name="email" 
+        type="email"
+        placeholder="Ej: juan.garcia@ejemplo.com"
+        required
+      >
+      <div class="help-text">Formato válido: ejemplo@dominio.com</div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">
+        Teléfono <span class="required-note">*</span>
+      </label>
+      <input 
+        class="form-control" 
+        name="telefono" 
+        type="tel"
+        minlength="7"
+        maxlength="15"
+        placeholder="Ej: 1234567890"
+        required
+      >
+      <div class="help-text">Mínimo 7 dígitos</div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">
+        Dirección <span class="required-note">*</span>
+      </label>
+      <input 
+        class="form-control" 
+        name="direccion" 
+        type="text"
+        minlength="5"
+        maxlength="200"
+        placeholder="Ej: Calle Principal 123, Apt 4B"
+        required
+      >
+      <div class="help-text">Mínimo 5 caracteres</div>
+    </div>
+
+    <div class="form-buttons">
+      <button type="submit" class="btn btn-submit">✅ Guardar Cliente</button>
+      <a href="{{ url_for('clientes') }}" class="btn btn-cancel">❌ Cancelar</a>
+    </div>
+  </form>
+</div>
+
+<script>
+  function validarFormulario(event) {
+    const nombre = document.querySelector('[name="nombre"]').value.trim();
+    const email = document.querySelector('[name="email"]').value.trim();
+    const telefono = document.querySelector('[name="telefono"]').value.trim();
+    const direccion = document.querySelector('[name="direccion"]').value.trim();
+
+    if (nombre.length < 3) {
+      alert('El nombre debe tener al menos 3 caracteres.');
+      return false;
+    }
+
+    if (!email.includes('@') || email.length < 5) {
+      alert('Por favor ingresa un email válido.');
+      return false;
+    }
+
+    if (telefono.length < 7) {
+      alert('El teléfono debe tener al menos 7 dígitos.');
+      return false;
+    }
+
+    if (direccion.length < 5) {
+      alert('La dirección debe tener al menos 5 caracteres.');
+      return false;
+    }
+
+    return true;
+  }
+</script>
+
 {% endblock %}

@@ -1,219 +1,478 @@
 {% extends "cliente_base.html" %}
-{% block title %}Inicio - Cliente{% endblock %}
+{% block title %}Dashboard - La Lavandería{% endblock %}
 
 {% block content %}
 <style>
-  .welcome-section {
+  .dashboard-header {
     text-align: center;
-    margin-bottom: 2rem;
+    margin-bottom: 2.5rem;
   }
 
   .welcome-title {
-    color: #35472e;
+    color: #1a4e7b;
     font-weight: 900;
     font-size: 2.2rem;
-    margin-bottom: 0.8rem;
-    text-shadow: 1px 1px 0 #b3be83;
+    margin-bottom: 0.5rem;
   }
 
   .welcome-subtitle {
-    color: #272f14;
-    font-weight: 600;
+    color: #666;
+    font-weight: 500;
     font-size: 1rem;
-    margin-bottom: 2rem;
   }
 
-  .cards-container {
+  /* Tier Card - Destacado */
+  .tier-card {
+    background: linear-gradient(135deg, #a6cc48 0%, #84af1d 100%);
+    border-radius: 16px;
+    padding: 2rem;
+    color: white;
+    text-align: center;
+    margin-bottom: 2rem;
+    box-shadow: 0 8px 24px rgba(132, 175, 29, 0.2);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .tier-card::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    right: -50%;
+    width: 200px;
+    height: 200px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 50%;
+  }
+
+  .tier-content {
+    position: relative;
+    z-index: 1;
+  }
+
+  .tier-icon {
+    font-size: 3rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .tier-name {
+    font-size: 1.8rem;
+    font-weight: 800;
+    margin-bottom: 0.3rem;
+  }
+
+  .tier-discount {
+    font-size: 1.4rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    background: rgba(255, 255, 255, 0.2);
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    display: inline-block;
+  }
+
+  .tier-progress {
+    margin-top: 1.5rem;
+    text-align: left;
+  }
+
+  .progress-label {
+    font-size: 0.9rem;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+  }
+
+  .progress-bar-container {
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 8px;
+    height: 8px;
+    overflow: hidden;
+    margin-bottom: 0.5rem;
+  }
+
+  .progress-bar-fill {
+    background: white;
+    height: 100%;
+    border-radius: 8px;
+    transition: width 0.3s ease;
+  }
+
+  .progress-text {
+    font-size: 0.85rem;
+    font-weight: 500;
+  }
+
+  /* Stats Cards */
+  .stats-container {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
     gap: 1.5rem;
     margin-bottom: 2rem;
   }
 
-  .service-card {
-    background: #fff;
+  .stat-card {
+    background: white;
     border-radius: 12px;
-    padding: 2rem;
+    padding: 1.5rem;
     text-align: center;
     border: 2px solid #e8f0d4;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
     transition: all 0.2s ease;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
   }
 
-  .service-card:hover {
+  .stat-card:hover {
     border-color: #a6cc48;
     box-shadow: 0 6px 16px rgba(166, 204, 72, 0.15);
-    transform: translateY(-3px);
   }
 
-  .service-icon {
-    font-size: 2.5rem;
-    margin-bottom: 1rem;
-  }
-
-  .service-card:nth-child(1) .service-icon {
-    color: #1a4e7b;
-  }
-
-  .service-card:nth-child(2) .service-icon {
-    color: #84af1d;
-  }
-
-  .service-card:nth-child(3) .service-icon {
-    color: #d4af37;
-  }
-
-  .card-title {
-    color: #1a4e7b;
-    font-weight: 800;
-    font-size: 1.3rem;
+  .stat-icon {
+    font-size: 2rem;
     margin-bottom: 0.8rem;
   }
 
-  .card-text {
-    color: #272f14;
-    font-weight: 500;
-    line-height: 1.6;
-    margin-bottom: 1.5rem;
-    flex-grow: 1;
-    font-size: 0.95rem;
+  .stat-label {
+    color: #666;
+    font-weight: 600;
+    font-size: 0.9rem;
+    margin-bottom: 0.5rem;
   }
 
-  .btn-service {
-    padding: 0.7rem 1.5rem;
-    border-radius: 8px;
-    font-weight: 700;
-    border: none;
-    text-decoration: none;
-    display: inline-block;
-    transition: all 0.2s ease;
-    align-self: center;
-  }
-
-  .service-card:nth-child(1) .btn-service {
-    background: #1a4e7b;
-    color: white;
-  }
-
-  .service-card:nth-child(1) .btn-service:hover {
-    background: #0d1d2a;
-  }
-
-  .service-card:nth-child(2) .btn-service {
-    background: #84af1d;
-    color: white;
-  }
-
-  .service-card:nth-child(2) .btn-service:hover {
-    background: #5f8022;
-  }
-
-  .service-card:nth-child(3) .btn-service {
-    background: #a6cc48;
+  .stat-value {
     color: #1a4e7b;
-  }
-
-  .service-card:nth-child(3) .btn-service:hover {
-    background: #7dbc30;
-  }
-
-  .info-box {
-    background: #e8f0d4;
-    border-left: 5px solid #84af1d;
-    padding: 1.5rem;
-    border-radius: 8px;
-    margin-top: 2rem;
-  }
-
-  .info-box h5 {
-    color: #35472e;
     font-weight: 800;
+    font-size: 1.8rem;
+  }
+
+  .stat-unit {
+    color: #999;
+    font-size: 0.9rem;
+    font-weight: 500;
+  }
+
+  /* Action Cards */
+  .action-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+  }
+
+  .action-card {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    border: 2px solid #e8f0d4;
+    transition: all 0.2s ease;
+    text-decoration: none;
+    color: inherit;
+  }
+
+  .action-card:hover {
+    border-color: #a6cc48;
+    box-shadow: 0 6px 16px rgba(166, 204, 72, 0.15);
+    transform: translateY(-2px);
+  }
+
+  .action-icon {
+    font-size: 2rem;
+    color: #1a4e7b;
+    margin-bottom: 0.8rem;
+  }
+
+  .action-title {
+    color: #1a4e7b;
+    font-weight: 700;
+    font-size: 1.1rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .action-text {
+    color: #666;
+    font-size: 0.9rem;
     margin-bottom: 1rem;
   }
 
-  .info-box p {
-    color: #272f14;
-    font-weight: 500;
-    margin: 0;
+  .action-btn {
+    display: inline-block;
+    background: #a6cc48;
+    color: #1a4e7b;
+    padding: 0.6rem 1.2rem;
+    border-radius: 6px;
+    font-weight: 700;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    font-size: 0.9rem;
   }
 
-  .info-list {
-    list-style: none;
-    padding: 0;
-    margin: 1rem 0 0 0;
+  .action-btn:hover {
+    background: #84af1d;
+    color: white;
+    transform: translateX(3px);
   }
 
-  .info-list li {
-    padding: 0.5rem 0;
-    color: #272f14;
-    font-weight: 500;
+  /* Recent Orders */
+  .section-title {
+    color: #1a4e7b;
+    font-weight: 800;
+    font-size: 1.4rem;
+    margin-bottom: 1.5rem;
+    margin-top: 2rem;
+    padding-bottom: 0.8rem;
+    border-bottom: 3px solid #a6cc48;
   }
 
-  .info-list li:before {
-    content: "✓ ";
+  .orders-list {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    border: 2px solid #e8f0d4;
+  }
+
+  .order-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    border-bottom: 1px solid #e8f0d4;
+    transition: all 0.2s ease;
+  }
+
+  .order-item:last-child {
+    border-bottom: none;
+  }
+
+  .order-item:hover {
+    background: #f9fdf5;
+  }
+
+  .order-info {
+    flex: 1;
+  }
+
+  .order-number {
+    color: #1a4e7b;
+    font-weight: 700;
+    font-size: 1.1rem;
+    margin-bottom: 0.3rem;
+  }
+
+  .order-date {
+    color: #999;
+    font-size: 0.9rem;
+  }
+
+  .order-details {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+  }
+
+  .order-status {
+    padding: 0.4rem 0.8rem;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    font-weight: 600;
+  }
+
+  .status-pendiente {
+    background: #fff3cd;
+    color: #856404;
+  }
+
+  .status-en-proceso {
+    background: #cfe2ff;
+    color: #084298;
+  }
+
+  .status-completado {
+    background: #d1e7dd;
+    color: #0f5132;
+  }
+
+  .order-items {
+    color: #666;
+    font-size: 0.9rem;
+  }
+
+  .order-link {
+    color: #a6cc48;
+    text-decoration: none;
+    font-weight: 600;
+    margin-left: 0.5rem;
+  }
+
+  .order-link:hover {
     color: #84af1d;
-    font-weight: 900;
-    margin-right: 0.6rem;
+    text-decoration: underline;
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 2rem;
+    color: #999;
+  }
+
+  .empty-icon {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    opacity: 0.5;
   }
 
   @media (max-width: 768px) {
     .welcome-title {
-      font-size: 1.8rem;
+      font-size: 1.6rem;
     }
 
-    .cards-container {
-      grid-template-columns: 1fr;
+    .tier-card {
+      padding: 1.5rem;
+    }
+
+    .tier-name {
+      font-size: 1.4rem;
+    }
+
+    .tier-icon {
+      font-size: 2.5rem;
+    }
+
+    .order-item {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    .order-details {
+      margin-top: 0.8rem;
+      width: 100%;
+      flex-wrap: wrap;
     }
   }
 </style>
 
-<div class="welcome-section">
-  <h1 class="welcome-title">¡Bienvenido, {{ session.get('username') }}!</h1>
-  <p class="welcome-subtitle">Accede a tus pedidos, recibos y promociones especiales</p>
+<!-- Header -->
+<div class="dashboard-header">
+  <h1 class="welcome-title">Bienvenido, {{ session.get('nombre') or session.get('username') }}! 👋</h1>
+  <p class="welcome-subtitle">Tu dashboard de La Lavandería</p>
 </div>
 
-<div class="cards-container">
-  <div class="service-card">
-    <div class="service-icon">
-      <i class="fas fa-box-open"></i>
-    </div>
-    <h5 class="card-title">Mis Pedidos</h5>
-    <p class="card-text">Crea nuevos pedidos, revisa el estado de tus encargos y consulta el historial.</p>
-    <a href="{{ url_for('cliente_pedidos', username=session.get('username')) }}" class="btn-service">Ver Pedidos</a>
-  </div>
+<!-- Tier Card -->
+<div class="tier-card">
+  <div class="tier-content">
+    <div class="tier-icon">{{ icono }}</div>
+    <div class="tier-name">Nivel {{ nivel }}</div>
+    <div class="tier-discount">{{ descuento_porcentaje }}% Descuento</div>
 
-  <div class="service-card">
-    <div class="service-icon">
-      <i class="fas fa-file-invoice"></i>
+    {% if siguiente_nivel %}
+    <div class="tier-progress">
+      <div class="progress-label">Progreso hacia {{ siguiente_nivel }}</div>
+      <div class="progress-bar-container">
+        <div class="progress-bar-fill" style="width: {{ ((pedidos_count % 3) / 3) * 100 }}%"></div>
+      </div>
+      <div class="progress-text">{{ pedidos_faltantes }} pedidos más para alcanzar {{ siguiente_nivel }}</div>
     </div>
-    <h5 class="card-title">Mis Recibos</h5>
-    <p class="card-text">Descarga y revisa todos tus comprobantes de pago y montos.</p>
-    <a href="{{ url_for('cliente_recibos', username=session.get('username')) }}" class="btn-service">Ver Recibos</a>
-  </div>
-
-  <div class="service-card">
-    <div class="service-icon">
-      <i class="fas fa-gift"></i>
+    {% else %}
+    <div style="margin-top: 1rem; font-size: 1.1rem; font-weight: 600;">
+      ¡Has alcanzado el máximo nivel! 🎉
     </div>
-    <h5 class="card-title">Promociones</h5>
-    <p class="card-text">Descuentos automáticos según tu historial de compras.</p>
-    <a href="{{ url_for('cliente_promociones', username=session.get('username')) }}" class="btn-service">Ver Promociones</a>
+    {% endif %}
   </div>
 </div>
 
-<div class="info-box">
-  <h5><i class="fas fa-star"></i> Programa de Lealtad</h5>
-  <p>Obtén descuentos automáticos en cada pedido según tu historial:</p>
-  <ul class="info-list">
-    <li>Pedidos 1-2: Sin descuento (Bronce)</li>
-    <li>Pedidos 3-5: 5% descuento (Plata)</li>
-    <li>Pedidos 6-9: 10% descuento (Oro)</li>
-    <li>Pedidos 10+: 15% descuento (Diamante)</li>
-  </ul>
-  <p style="margin-top: 1rem; font-size: 0.9rem; color: #7f8c8d;">Los descuentos se aplican automáticamente en cada pedido.</p>
+<!-- Statistics -->
+<div class="stats-container">
+  <div class="stat-card">
+    <div class="stat-icon">📦</div>
+    <div class="stat-label">Total de Pedidos</div>
+    <div class="stat-value">{{ pedidos_count }}</div>
+  </div>
+
+  <div class="stat-card">
+    <div class="stat-icon">👕</div>
+    <div class="stat-label">Prendas Lavadas</div>
+    <div class="stat-value">{{ prendas_totales }}</div>
+  </div>
+
+  <div class="stat-card">
+    <div class="stat-icon">💰</div>
+    <div class="stat-label">Total Gastado</div>
+    <div class="stat-value">${{ "{:,.0f}".format(total_gastado) }}</div>
+  </div>
+
+  <div class="stat-card">
+    <div class="stat-icon">🎁</div>
+    <div class="stat-label">Dinero Ahorrado</div>
+    <div class="stat-value">${{ "{:,.0f}".format(dinero_ahorrado) }}</div>
+  </div>
 </div>
+
+<!-- Actions -->
+<div class="action-container">
+  <a href="{{ url_for('agregar_pedido') }}" class="action-card">
+    <div class="action-icon">➕</div>
+    <div class="action-title">Crear Nuevo Pedido</div>
+    <div class="action-text">Ingresa tus prendas para lavar</div>
+    <span class="action-btn">Crear Pedido</span>
+  </a>
+
+  <a href="{{ url_for('cliente_pedidos') }}" class="action-card">
+    <div class="action-icon">📋</div>
+    <div class="action-title">Mis Pedidos</div>
+    <div class="action-text">Ver todos tus pedidos activos</div>
+    <span class="action-btn">Ver Pedidos</span>
+  </a>
+
+  <a href="{{ url_for('cliente_recibos') }}" class="action-card">
+    <div class="action-icon">🧾</div>
+    <div class="action-title">Mis Recibos</div>
+    <div class="action-text">Consulta tus comprobantes de pago</div>
+    <span class="action-btn">Ver Recibos</span>
+  </a>
+
+  <a href="{{ url_for('cliente_promociones') }}" class="action-card">
+    <div class="action-icon">🎉</div>
+    <div class="action-title">Promociones</div>
+    <div class="action-text">Descuentos especiales para ti</div>
+    <span class="action-btn">Ver Promociones</span>
+  </a>
+</div>
+
+<!-- Recent Orders -->
+{% if ultimos_pedidos %}
+<h2 class="section-title">Tus Últimos Pedidos</h2>
+<div class="orders-list">
+  {% for pedido in ultimos_pedidos %}
+  <div class="order-item">
+    <div class="order-info">
+      <div class="order-number">Mi Pedido #{{ pedido[5] }}</div>
+      <div class="order-date">Creado: {{ pedido[1] | default('N/A') }}</div>
+    </div>
+    <div class="order-details">
+      <span class="order-status status-{{ pedido[3]|lower|replace(' ', '-')|replace('á', 'a')|replace('é', 'e')|replace('í', 'i')|replace('ó', 'o')|replace('ú', 'u') }}">
+        {{ pedido[3] }}
+      </span>
+      <span class="order-items">
+        {{ pedido[4] }} prenda{{ 's' if pedido[4] != 1 else '' }}
+      </span>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<div style="text-align: center; margin-top: 1.5rem;">
+  <a href="{{ url_for('cliente_pedidos') }}" style="color: #a6cc48; text-decoration: none; font-weight: 600;">
+    Ver todos tus pedidos → 
+  </a>
+</div>
+{% else %}
+<h2 class="section-title">Tus Últimos Pedidos</h2>
+<div class="orders-list">
+  <div class="empty-state">
+    <div class="empty-icon">📭</div>
+    <p>Aún no tienes pedidos. ¡Crea tu primer pedido hoy!</p>
+    <a href="{{ url_for('agregar_pedido') }}" class="action-btn" style="margin-top: 1rem;">
+      Crear mi primer pedido
+    </a>
+  </div>
+</div>
+{% endif %}
 
 {% endblock %}

@@ -2,62 +2,393 @@
 {% block title %}Pedido {{ pedido[0] }}{% endblock %}
 
 {% block content %}
-<h3>Pedido #{{ pedido[0] }}</h3>
-<p><strong>Cliente:</strong> {{ cliente_nombre }}</p>
-<p><strong>Fecha ingreso:</strong> {{ pedido[1] }}</p>
-<p><strong>Fecha entrega:</strong> {{ pedido[2] or '---' }}</p>
-<p><strong>Estado:</strong> {{ pedido[3] }}</p>
+<style>
+  .pedido-header {
+    background: linear-gradient(135deg, #1a4e7b 0%, #084298 100%);
+    color: white;
+    padding: 2rem;
+    border-radius: 12px;
+    margin-bottom: 2rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
 
-<hr>
-<h5>Prendas</h5>
-<table class="table">
-  <thead><tr><th>ID</th><th>Tipo</th><th>Descripcion</th><th>Observaciones</th></tr></thead>
-  <tbody>
-    {% for pr in prendas %}
-    <tr>
-      <td>{{ pr[0] }}</td>
-      <td>{{ pr[1] }}</td>
-      <td>{{ pr[2] }}</td>
-      <td>{{ pr[3] }}</td>
-    </tr>
-    {% else %}
-    <tr><td colspan="4">No hay prendas.</td></tr>
-    {% endfor %}
-  </tbody>
-</table>
+  .pedido-title {
+    font-size: 1.8rem;
+    font-weight: 800;
+    margin-bottom: 1rem;
+  }
 
-<h5>Agregar prenda</h5>
-<form method="post" action="{{ url_for('agregar_prenda', id_pedido=pedido[0]) }}">
-  <div class="mb-3">
-    <label class="form-label">Tipo</label>
-    <input class="form-control" name="tipo" required>
-  </div>
-  <div class="mb-3">
-    <label class="form-label">Descripción</label>
-    <input class="form-control" name="descripcion">
-  </div>
-  <div class="mb-3">
-    <label class="form-label">Observaciones</label>
-    <input class="form-control" name="observaciones">
-  </div>
-  <button class="btn btn-primary">Agregar prenda</button>
-</form>
+  .info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-top: 1rem;
+  }
 
+  .info-item {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 1rem;
+    border-radius: 8px;
+    border-left: 3px solid #a6cc48;
+  }
+
+  .info-label {
+    font-size: 0.9rem;
+    opacity: 0.9;
+    margin-bottom: 0.3rem;
+    font-weight: 600;
+  }
+
+  .info-value {
+    font-size: 1.1rem;
+    font-weight: 700;
+  }
+
+  .section {
+    background: white;
+    border-radius: 12px;
+    padding: 2rem;
+    border: 2px solid #e8f0d4;
+    margin-bottom: 2rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  }
+
+  .section-title {
+    color: #1a4e7b;
+    font-weight: 800;
+    font-size: 1.3rem;
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.8rem;
+    border-bottom: 2px solid #a6cc48;
+  }
+
+  .prendas-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .prendas-table thead {
+    background: #f9fdf5;
+    border-bottom: 2px solid #a6cc48;
+  }
+
+  .prendas-table th {
+    color: #1a4e7b;
+    font-weight: 700;
+    padding: 0.8rem;
+    text-align: left;
+  }
+
+  .prendas-table tbody tr {
+    border-bottom: 1px solid #e8f0d4;
+    transition: background 0.2s ease;
+  }
+
+  .prendas-table tbody tr:hover {
+    background: #f9fdf5;
+  }
+
+  .prendas-table td {
+    padding: 0.8rem;
+  }
+
+  .empty-prendas {
+    text-align: center;
+    padding: 2rem;
+    color: #999;
+  }
+
+  .form-section {
+    background: #f9fdf5;
+    padding: 1.5rem;
+    border-radius: 8px;
+    margin-top: 1.5rem;
+  }
+
+  .form-title {
+    color: #1a4e7b;
+    font-weight: 700;
+    margin-bottom: 1rem;
+  }
+
+  .form-group {
+    margin-bottom: 1rem;
+  }
+
+  .form-label {
+    color: #666;
+    font-weight: 600;
+    display: block;
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+  }
+
+  .form-control {
+    width: 100%;
+    padding: 0.8rem;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 0.95rem;
+    transition: all 0.2s ease;
+  }
+
+  .form-control:focus {
+    outline: none;
+    border-color: #a6cc48;
+    box-shadow: 0 0 0 3px rgba(166, 204, 72, 0.1);
+  }
+
+  .form-buttons {
+    display: flex;
+    gap: 0.8rem;
+    flex-wrap: wrap;
+    margin-top: 1rem;
+  }
+
+  .btn {
+    padding: 0.7rem 1.5rem;
+    border: none;
+    border-radius: 6px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-decoration: none;
+    display: inline-block;
+  }
+
+  .btn-primary {
+    background: #a6cc48;
+    color: #1a4e7b;
+  }
+
+  .btn-primary:hover {
+    background: #84af1d;
+    color: white;
+    transform: translateY(-1px);
+  }
+
+  .btn-secondary {
+    background: #e8f0d4;
+    color: #1a4e7b;
+  }
+
+  .btn-secondary:hover {
+    background: #d1e8b8;
+  }
+
+  .btn-back {
+    background: #1a4e7b;
+    color: white;
+  }
+
+  .btn-back:hover {
+    background: #0d1d2a;
+  }
+
+  .estado-select {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 0.8rem;
+    margin-top: 0.8rem;
+  }
+
+  .estado-option {
+    padding: 0.8rem;
+    border: 2px solid #ddd;
+    border-radius: 6px;
+    cursor: pointer;
+    text-align: center;
+    font-weight: 600;
+    transition: all 0.2s ease;
+  }
+
+  .estado-option:hover {
+    border-color: #a6cc48;
+    background: #f9fdf5;
+  }
+
+  .estado-option input[type="radio"] {
+    display: none;
+  }
+
+  .estado-option input[type="radio"]:checked + label {
+    color: white !important;
+    background: #a6cc48 !important;
+    border-color: #a6cc48 !important;
+  }
+
+  .estado-pendiente {
+    color: #856404;
+    background: #fff3cd;
+    border-color: #ffeaba;
+  }
+
+  .estado-en-proceso {
+    color: #084298;
+    background: #cfe2ff;
+    border-color: #b6d4fe;
+  }
+
+  .estado-completado {
+    color: #0f5132;
+    background: #d1e7dd;
+    border-color: #badbcc;
+  }
+
+  .estado-cancelado {
+    color: #842029;
+    background: #f8d7da;
+    border-color: #f5c2c7;
+  }
+
+  .admin-section {
+    background: linear-gradient(135deg, rgba(26, 78, 123, 0.05) 0%, rgba(166, 204, 72, 0.05) 100%);
+    border-left: 4px solid #1a4e7b;
+  }
+
+  @media (max-width: 768px) {
+    .info-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .prendas-table {
+      font-size: 0.9rem;
+    }
+
+    .estado-select {
+      grid-template-columns: 1fr;
+    }
+
+    .form-buttons {
+      flex-direction: column;
+    }
+
+    .btn {
+      width: 100%;
+      text-align: center;
+    }
+  }
+</style>
+
+<!-- Header del Pedido -->
+<div class="pedido-header">
+  <div class="pedido-title">Pedido #{{ pedido[0] }}</div>
+  <div class="info-grid">
+    <div class="info-item">
+      <div class="info-label">Cliente</div>
+      <div class="info-value">{{ cliente_nombre }}</div>
+    </div>
+    <div class="info-item">
+      <div class="info-label">Fecha Ingreso</div>
+      <div class="info-value">{{ pedido[1] | default('N/A') }}</div>
+    </div>
+    <div class="info-item">
+      <div class="info-label">Fecha Entrega</div>
+      <div class="info-value">{{ pedido[2] or 'Por definir' }}</div>
+    </div>
+    <div class="info-item">
+      <div class="info-label">Estado Actual</div>
+      <div class="info-value">{{ pedido[3] }}</div>
+    </div>
+  </div>
+</div>
+
+<!-- Prendas -->
+<div class="section">
+  <h3 class="section-title">👕 Prendas del Pedido</h3>
+  {% if prendas %}
+  <table class="prendas-table">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Tipo</th>
+        <th>Descripción</th>
+        <th>Observaciones</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for pr in prendas %}
+      <tr>
+        <td>#{{ pr[0] }}</td>
+        <td><strong>{{ pr[1] }}</strong></td>
+        <td>{{ pr[2] or '—' }}</td>
+        <td>{{ pr[3] or '—' }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="empty-prendas">
+    <div style="font-size: 2rem; opacity: 0.5;">📭</div>
+    <p>No hay prendas en este pedido aún.</p>
+  </div>
+  {% endif %}
+
+  <!-- Agregar prenda -->
+  <div class="form-section">
+    <div class="form-title">➕ Agregar Nueva Prenda</div>
+    <form method="post" action="{{ url_for('agregar_prenda', id_pedido=pedido[0]) }}">
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+        <div class="form-group">
+          <label class="form-label">Tipo de Prenda *</label>
+          <input class="form-control" name="tipo" required placeholder="Ej: Camisa, Pantalón...">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Descripción</label>
+          <input class="form-control" name="descripcion" placeholder="Ej: Color azul, talla M...">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Observaciones</label>
+          <input class="form-control" name="observaciones" placeholder="Ej: Mancha en la manga...">
+        </div>
+      </div>
+      <div class="form-buttons">
+        <button type="submit" class="btn btn-primary">✅ Agregar Prenda</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Edición de estado (Solo Admin) -->
 {% if session.get('rol') and session.get('rol')|lower in ['administrador','admin'] %}
-  <form method="post" action="{{ url_for('actualizar_pedido', id_pedido=pedido[0]) }}" class="mt-3">
-    <label class="form-label">Cambiar estado (administrador)</label>
-    <select name="estado" class="form-select mb-2">
-      <option value="Pendiente" {% if pedido[3] == 'Pendiente' %}selected{% endif %}>Pendiente</option>
-      <option value="En proceso" {% if pedido[3] == 'En proceso' %}selected{% endif %}>En proceso</option>
-      <option value="Completado" {% if pedido[3] == 'Completado' %}selected{% endif %}>Completado</option>
-      <option value="Cancelado" {% if pedido[3] == 'Cancelado' %}selected{% endif %}>Cancelado</option>
-    </select>
-    <button class="btn btn-primary">Actualizar estado</button>
+<div class="section admin-section">
+  <h3 class="section-title">⚙️ Herramientas de Administrador</h3>
+
+  <form method="post" action="{{ url_for('actualizar_pedido', id_pedido=pedido[0]) }}">
+    <div class="form-group">
+      <label class="form-label" style="font-weight: 700; color: #1a4e7b;">Cambiar Estado del Pedido</label>
+      <div class="estado-select">
+        <label class="estado-option estado-pendiente">
+          <input type="radio" name="estado" value="Pendiente" {% if pedido[3] == 'Pendiente' %}checked{% endif %}>
+          <span>⏳ Pendiente</span>
+        </label>
+        <label class="estado-option estado-en-proceso">
+          <input type="radio" name="estado" value="En proceso" {% if pedido[3] == 'En proceso' %}checked{% endif %}>
+          <span>🔄 En Proceso</span>
+        </label>
+        <label class="estado-option estado-completado">
+          <input type="radio" name="estado" value="Completado" {% if pedido[3] == 'Completado' %}checked{% endif %}>
+          <span>✅ Completado</span>
+        </label>
+        <label class="estado-option estado-cancelado">
+          <input type="radio" name="estado" value="Cancelado" {% if pedido[3] == 'Cancelado' %}checked{% endif %}>
+          <span>❌ Cancelado</span>
+        </label>
+      </div>
+    </div>
+    <div class="form-buttons">
+      <button type="submit" class="btn btn-primary">💾 Actualizar Estado</button>
+    </div>
   </form>
+</div>
 {% endif %}
 
-<div class="mt-3">
-  <button class="btn btn-secondary" onclick="history.back()">Volver</button>
-  <a href="{{ url_for('pedidos') if session.get('rol') and session.get('rol')|lower in ['administrador','admin'] else url_for('cliente_pedidos') }}" class="btn btn-outline-secondary">Volver a la lista</a>
+<!-- Botones de navegación -->
+<div style="display: flex; gap: 0.8rem; margin-top: 2rem; flex-wrap: wrap;">
+  <button class="btn btn-back" onclick="history.back()">← Volver Atrás</button>
+  <a href="{{ url_for('pedidos') if session.get('rol') and session.get('rol')|lower in ['administrador','admin'] else url_for('cliente_pedidos') }}" class="btn btn-secondary">
+    📋 Volver a la Lista
+  </a>
 </div>
+
 {% endblock %}
