@@ -196,12 +196,12 @@
                         </thead>
                         <tbody>
                             {% if prendas_top %}
-                                {% set total_prendas_top = prendas_top|map(attribute=1)|sum %}
-                                {% for prenda, cantidad in prendas_top[:5] %}
+                                {% set total_prendas_top = prendas_top|map(attribute=1)|list|sum %}
+                                {% for prenda in prendas_top[:5] %}
                                 <tr>
-                                    <td>{{ prenda }}</td>
-                                    <td class="text-center"><strong>{{ cantidad }}</strong></td>
-                                    <td class="text-right">{{ "%.1f"|format((cantidad / total_prendas_top * 100) if total_prendas_top > 0 else 0) }}%</td>
+                                    <td>{{ prenda[0] }}</td>
+                                    <td class="text-center"><strong>{{ prenda[1] }}</strong></td>
+                                    <td class="text-right">{{ "%.1f"|format((prenda[1] / total_prendas_top * 100) if total_prendas_top > 0 else 0) }}%</td>
                                 </tr>
                                 {% endfor %}
                             {% endif %}
@@ -240,7 +240,7 @@
                                     <td class="text-center"><span class="badge bg-primary">{{ cliente[2] }}</span></td>
                                     <td class="text-center"><strong>{{ cliente[3] }}</strong></td>
                                     <td class="text-right">${{ "{:,.0f}".format(cliente[4]) }}</td>
-                                    <td class="text-center"><small>{{ cliente[5][:10] }}</small></td>
+                                    <td class="text-center"><small>{{ cliente[5][:10] if cliente[5] else 'N/A' }}</small></td>
                                 </tr>
                                 {% endfor %}
                             {% endif %}
