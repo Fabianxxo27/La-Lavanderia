@@ -5,20 +5,13 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from io import BytesIO
 import pandas as pd
 import datetime
-import smtplib
 import credentials as cd
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
 import os
 import urllib.parse
 from dotenv import load_dotenv
 
 # Cargar variables de entorno desde .env (si existe)
 load_dotenv()
-
-# Precio por prenda (asunción razonable). Cambia este valor si deseas otra tarifa.
-# Sistema de descuentos automáticos por lealtad implementado
-PRICE_PER_PRENDA = 5000.0
 
 # Configuración de la app
 app = Flask(__name__)
@@ -170,11 +163,9 @@ def login():
             return redirect(url_for('login'))
 
         if password_ok:
-            # user = (username, password_hash, rol)
-            session['username'] = user[0]  # Guarda el username en sesión
-            session['rol'] = user[2]       # Guarda el rol en sesión
+            session['username'] = user[0]
+            session['rol'] = user[2]
             flash(f"Bienvenido {username}", "success")
-            print(f"DEBUG: Usuario {username} con rol: '{user[2]}'")
 
             # Redirigir según rol
             if str(user[2]).strip().lower() == 'administrador':
@@ -802,104 +793,6 @@ def eliminar_cliente(id_cliente):
 
 
 # -----------------------------------------------
-# EXPORTAR tablas a Excel
-# -----------------------------------------------
-@app.route('/exportar')
-def exportar():
-    tables = run_query("SHOW TABLES", fetchall=True)
-
-    output = BytesIO()
-    with pd.ExcelWriter(output, engine='openpyxl') as writer:
-        for table in tables:
-            table_name = table[0]
-            if table_name.lower() in ('administradores',):
-                continue
-            data = run_query(f"SELECT * FROM `{table_name}`", fetchall=True)
-            columns = [col[0] for col in run_query(f"SHOW COLUMNS FROM `{table_name}`", fetchall=True)]
-            df = pd.DataFrame(data, columns=columns)
-            df.to_excel(writer, index=False, sheet_name=table_name[:31])
-
-    output.seek(0)
-    now = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-    return send_file(output,
-                     as_attachment=True,
-                     download_name=f"lavanderia_export_{now}.xlsx",
-                     mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-
-
-@app.route('/exportar/usuarios')
-def exportar_usuarios():
-    if not _admin_only():
-        flash('Acceso denegado.', 'danger')
-        return redirect(url_for('index'))
-    data = run_query("SELECT id_usuario, nombre, username, rol, email FROM usuario ORDER BY id_usuario DESC", fetchall=True) or []
-    cols = ['id_usuario', 'nombre', 'username', 'rol', 'email']
-    return _make_excel_response(data, cols, 'usuarios')
-
-
-@app.route('/exportar/pedidos')
-def exportar_pedidos():
-    if not _admin_only():
-        flash('Acceso denegado.', 'danger')
-        return redirect(url_for('index'))
-    data = run_query("SELECT id_pedido, fecha_ingreso, fecha_entrega, estado, id_cliente FROM pedido ORDER BY id_pedido DESC", fetchall=True) or []
-    cols = ['id_pedido', 'fecha_ingreso', 'fecha_entrega', 'estado', 'id_cliente']
-    return _make_excel_response(data, cols, 'pedidos')
-
-
-@app.route('/exportar/promociones')
-def exportar_promociones():
-    if not _admin_only():
-        flash('Acceso denegado.', 'danger')
-        return redirect(url_for('index'))
-    data = run_query("SELECT id_promocion, descripcion, descuento, fecha_inicio, fecha_fin FROM promocion ORDER BY id_promocion DESC", fetchall=True) or []
-    cols = ['id_promocion', 'descripcion', 'descuento', 'fecha_inicio', 'fecha_fin']
-    return _make_excel_response(data, cols, 'promociones')
-
-
-def _make_excel_response(data, columns, filename):
-    output = BytesIO()
-    df = pd.DataFrame(data, columns=columns)
-    with pd.ExcelWriter(output, engine='openpyxl') as writer:
-        df.to_excel(writer, index=False, sheet_name=filename[:31])
-    output.seek(0)
-    return send_file(output, as_attachment=True, download_name=f"{filename}.xlsx", mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-
-
-# -----------------------------------------------
-# EJEMPLOS DE OPERACIONES CON PEDIDOS / PRENDAS (fragmentos principales)
-# -----------------------------------------------
-@app.route('/agregar_prenda/<int:id_pedido>', methods=['POST'])
-def agregar_prenda(id_pedido):
-    """Añade una prenda al pedido indicado por id_pedido."""
-    # Validar que el pedido exista
-    pedido = run_query("SELECT id_pedido FROM pedido WHERE id_pedido = :id", {"id": id_pedido}, fetchone=True)
-    if not pedido:
-        flash('Pedido no encontrado.', 'danger')
-        return redirect(url_for('pedidos'))
-
-    tipo = request.form.get('tipo', '').strip()
-
-    if not tipo:
-        flash('El campo tipo es obligatorio.', 'warning')
-        return redirect(url_for('pedido_detalles', id_pedido=id_pedido))
-
-    try:
-        run_query(
-            "INSERT INTO prenda (tipo, id_pedido) VALUES (:tipo, :id)",
-            {"tipo": tipo, "id": id_pedido},
-            commit=True
-        )
-        flash('Prenda agregada correctamente.', 'success')
-    except Exception as e:
-        flash(f'Error al agregar prenda: {e}', 'danger')
-
-    return redirect(url_for('pedido_detalles', id_pedido=id_pedido))
-
-
-# -----------------------------------------------
-# REPORTES
-# -----------------------------------------------
 # REPORTES
 # -----------------------------------------------
 @app.route('/reportes')
@@ -1057,17 +950,11 @@ def agregar_pedido():
     
     if request.method == 'POST':
         try:
-            import sys
             from datetime import datetime, timedelta
-            
-            sys.stdout.flush()
-            print(f"[DEBUG] === INICIO POST AGREGAR_PEDIDO ===", flush=True)
-            sys.stdout.flush()
             
             # 1. Determinar id_cliente
             if rol == 'administrador':
                 id_cliente = request.form.get('id_cliente')
-                print(f"[DEBUG] Admin - id_cliente: {id_cliente}", flush=True)
             else:
                 usuario_data = run_query(
                     "SELECT id_usuario FROM usuario WHERE username = :u",
@@ -1075,9 +962,6 @@ def agregar_pedido():
                     fetchone=True
                 )
                 id_cliente = usuario_data[0] if usuario_data else None
-                print(f"[DEBUG] Cliente - id_cliente: {id_cliente}", flush=True)
-            
-            sys.stdout.flush()
             
             if not id_cliente:
                 flash('Error al identificar el cliente.', 'danger')
@@ -1085,18 +969,11 @@ def agregar_pedido():
             
             # 2. Asegurar que existe en tabla cliente
             ensure_cliente_exists(id_cliente)
-            print(f"[DEBUG] Cliente verificado: {id_cliente}", flush=True)
             
             # 3. Obtener prendas
             tipos = request.form.getlist('tipo[]')
             cantidades = request.form.getlist('cantidad[]')
             descripciones = request.form.getlist('descripcion[]')
-            
-            print(f"[DEBUG] Form data - tipos: {tipos}", flush=True)
-            print(f"[DEBUG] Form data - cantidades: {cantidades}", flush=True)
-            print(f"[DEBUG] Form data - descripciones: {descripciones}", flush=True)
-            
-            sys.stdout.flush()
             
             if not tipos or len(tipos) == 0:
                 flash('Debes agregar al menos una prenda.', 'warning')
@@ -1108,13 +985,7 @@ def agregar_pedido():
             fecha_ingreso = datetime.now().strftime('%Y-%m-%d')
             fecha_entrega = (datetime.now() + timedelta(days=dias_entrega)).strftime('%Y-%m-%d')
             
-            print(f"[DEBUG] Fechas - ingreso: {fecha_ingreso}, entrega: {fecha_entrega}", flush=True)
-            sys.stdout.flush()
-            
             # 5. Crear pedido
-            print(f"[DEBUG] Insertando pedido...", flush=True)
-            sys.stdout.flush()
-            
             result = run_query(
                 "INSERT INTO pedido (fecha_ingreso, fecha_entrega, estado, id_cliente) VALUES (:fi, :fe, :e, :ic) RETURNING id_pedido",
                 {"fi": fecha_ingreso, "fe": fecha_entrega, "e": "Pendiente", "ic": id_cliente},
@@ -1122,29 +993,19 @@ def agregar_pedido():
                 fetchone=True
             )
             
-            print(f"[DEBUG] Result del INSERT pedido: {result}", flush=True)
-            sys.stdout.flush()
-            
             if not result or len(result) == 0:
-                print(f"[ERROR] No se recibió id_pedido", flush=True)
-                sys.stdout.flush()
                 flash('Error al crear el pedido.', 'danger')
                 return redirect(url_for('agregar_pedido'))
             
             id_pedido = result[0]
-            print(f"[DEBUG] ✓ Pedido creado con ID: {id_pedido}", flush=True)
-            sys.stdout.flush()
             
             # 6. Procesar y calcular costo primero
-            print(f"[DEBUG] Procesando prendas del formulario...", flush=True)
-            sys.stdout.flush()
             prendas_a_insertar = []
             total_costo = 0
             
             for i in range(len(tipos)):
                 tipo = tipos[i]
                 if not tipo or tipo.strip() == '':
-                    print(f"[DEBUG] Saltando tipo vacío en posición {i}", flush=True)
                     continue
                     
                 cantidad = int(cantidades[i]) if i < len(cantidades) and cantidades[i] else 1
@@ -1157,8 +1018,6 @@ def agregar_pedido():
                         precio = prenda_def['precio']
                         break
                 
-                print(f"[DEBUG] Prenda procesada: tipo='{tipo}', cantidad={cantidad}, precio={precio}", flush=True)
-                
                 prendas_a_insertar.append({
                     'tipo': tipo,
                     'cantidad': cantidad,
@@ -1168,9 +1027,6 @@ def agregar_pedido():
                 
                 total_costo += precio * cantidad
             
-            print(f"[DEBUG] Total prendas a insertar: {len(prendas_a_insertar)}, Costo total: {total_costo}", flush=True)
-            sys.stdout.flush()
-            
             # 7. Insertar prendas en la base de datos
             prendas_insertadas = 0
             
@@ -1179,36 +1035,15 @@ def agregar_pedido():
                 cantidad = prenda['cantidad']
                 descripcion = prenda['descripcion']
                 
-                print(f"[DEBUG] Insertando {cantidad} unidad(es) de '{tipo}'...", flush=True)
-                sys.stdout.flush()
-                
                 for unidad in range(cantidad):
-                    try:
-                        print(f"[DEBUG]   -> Insertando unidad {unidad+1}/{cantidad}: tipo='{tipo}', desc='{descripcion}', id_pedido={id_pedido}", flush=True)
-                        sys.stdout.flush()
-                        
-                        run_query(
-                            "INSERT INTO prenda (tipo, descripcion, observaciones, id_pedido) VALUES (:tipo, :desc, :obs, :id_ped)",
-                            {"tipo": tipo, "desc": descripcion, "obs": '', "id_ped": id_pedido},
-                            commit=True
-                        )
-                        
-                        prendas_insertadas += 1
-                        print(f"[DEBUG]   ✓ Unidad insertada exitosamente (total: {prendas_insertadas})", flush=True)
-                        sys.stdout.flush()
-                        
-                    except Exception as e_prenda:
-                        print(f"[ERROR] Error insertando unidad {unidad+1} de '{tipo}': {type(e_prenda).__name__}: {str(e_prenda)}", flush=True)
-                        import traceback
-                        print(f"[TRACEBACK PRENDA] {traceback.format_exc()}", flush=True)
-                        sys.stdout.flush()
-            
-            print(f"[DEBUG] ✓ Total prendas insertadas en DB: {prendas_insertadas}", flush=True)
-            sys.stdout.flush()
+                    run_query(
+                        "INSERT INTO prenda (tipo, descripcion, observaciones, id_pedido) VALUES (:tipo, :desc, :obs, :id_ped)",
+                        {"tipo": tipo, "desc": descripcion, "obs": '', "id_ped": id_pedido},
+                        commit=True
+                    )
+                    prendas_insertadas += 1
             
             # 8. Calcular descuento según la cantidad de pedidos del cliente
-            print(f"[DEBUG] Calculando descuento para cliente {id_cliente}...", flush=True)
-            sys.stdout.flush()
             
             pedidos_count = run_query(
                 "SELECT COUNT(*) FROM pedido WHERE id_cliente = :id",
@@ -1216,58 +1051,27 @@ def agregar_pedido():
                 fetchone=True
             )[0] or 0
             
-            print(f"[DEBUG] Cliente tiene {pedidos_count} pedidos totales", flush=True)
-            sys.stdout.flush()
-            
             # Determinar nivel y descuento
             descuento_porcentaje = 0
-            nivel_cliente = 'Bronce'
             
             if pedidos_count >= 10:
                 descuento_porcentaje = 15
-                nivel_cliente = 'Diamante'
             elif pedidos_count >= 6:
                 descuento_porcentaje = 10
-                nivel_cliente = 'Oro'
             elif pedidos_count >= 3:
                 descuento_porcentaje = 5
-                nivel_cliente = 'Plata'
-            else:
-                descuento_porcentaje = 0
-                nivel_cliente = 'Bronce'
-            
-            print(f"[DEBUG] Nivel: {nivel_cliente}, Descuento: {descuento_porcentaje}%", flush=True)
-            sys.stdout.flush()
             
             # Calcular monto con descuento
             monto_descuento = (total_costo * descuento_porcentaje) / 100
             monto_final = total_costo - monto_descuento
             
-            print(f"[DEBUG] Subtotal: {total_costo}, Descuento: {monto_descuento}, Final: {monto_final}", flush=True)
-            sys.stdout.flush()
-            
             # 9. Crear recibo con descuento
-            print(f"[DEBUG] Insertando recibo - id_pedido={id_pedido}, id_cliente={id_cliente}, monto={monto_final}, descuento_porcentaje={descuento_porcentaje}", flush=True)
-            sys.stdout.flush()
-            
-            try:
-                # Insertar recibo con los campos de descuento
-                run_query(
-                    """INSERT INTO recibo (id_pedido, id_cliente, monto, fecha) 
-                       VALUES (:ip, :ic, :m, CURRENT_TIMESTAMP)""",
-                    {"ip": id_pedido, "ic": id_cliente, "m": monto_final},
-                    commit=True
-                )
-                print(f"[DEBUG] ✓ Recibo creado exitosamente (monto final con descuento: {monto_final})", flush=True)
-                sys.stdout.flush()
-            except Exception as e_recibo:
-                print(f"[ERROR] Error creando recibo: {type(e_recibo).__name__}: {str(e_recibo)}", flush=True)
-                import traceback
-                print(f"[TRACEBACK RECIBO] {traceback.format_exc()}", flush=True)
-                sys.stdout.flush()
-            
-            print(f"[DEBUG] === FIN POST AGREGAR_PEDIDO - EXITOSO ===", flush=True)
-            sys.stdout.flush()
+            run_query(
+                """INSERT INTO recibo (id_pedido, id_cliente, monto, fecha) 
+                   VALUES (:ip, :ic, :m, CURRENT_TIMESTAMP)""",
+                {"ip": id_pedido, "ic": id_cliente, "m": monto_final},
+                commit=True
+            )
             
             # Mensaje con descuento aplicado
             msg_descuento = f" (Descuento {descuento_porcentaje}%: -${monto_descuento:,.0f})" if descuento_porcentaje > 0 else ""
@@ -1279,24 +1083,13 @@ def agregar_pedido():
                 return redirect(url_for('cliente_pedidos'))
                 
         except Exception as e:
-            print(f"[ERROR CRÍTICO] {type(e).__name__}: {str(e)}", flush=True)
-            import traceback
-            print(f"[TRACEBACK] {traceback.format_exc()}", flush=True)
-            sys.stdout.flush()
             flash(f'Error: {str(e)}', 'danger')
             return redirect(url_for('agregar_pedido'))
-    
-    # GET request
-    print(f"[DEBUG] GET request - Cargando formulario agregar_pedido")
-    print(f"[DEBUG] Rol: {rol}, prendas_default count: {len(prendas_default)}")
     
     clientes = run_query(
         "SELECT id_usuario, nombre FROM usuario WHERE rol = 'cliente' ORDER BY nombre",
         fetchall=True
     )
-    
-    print(f"[DEBUG] Clientes encontrados: {len(clientes) if clientes else 0}")
-    print(f"[DEBUG] Renderizando template con prendas_default")
     
     return render_template('agregar_pedido.html', 
                          clientes=clientes, 
@@ -1386,41 +1179,6 @@ def _admin_only():
         return False
     return str(rol).strip().lower() == 'administrador'
 
-
-# -----------------------------------------------
-# FUNCIÓN PARA ENVIAR CORREO
-# -----------------------------------------------
-def send_welcome_email(to_email, username):
-    smtp_server = "smtp.gmail.com"
-    smtp_port = 587
-    sender_email = "lalavanderiabogota@gmail.com"
-    sender_password = "dsjmjtvtwcahqrwy"
-
-    subject = "Bienvenido a La Lavandería"
-    body = f"""
-Hola {username},
-
-¡Gracias por registrarte en La Lavandería!
-Estamos felices de tenerte con nosotros.
-
-Atentamente,
-El equipo de La Lavandería.
-"""
-
-    message = MIMEMultipart()
-    message["From"] = sender_email
-    message["To"] = to_email
-    message["Subject"] = subject
-    message.attach(MIMEText(body, "plain"))
-
-    try:
-        with smtplib.SMTP(smtp_server, smtp_port) as server:
-            server.starttls()  # Activa cifrado TLS
-            server.login(sender_email, sender_password)
-            server.sendmail(sender_email, to_email, message.as_string())
-        print("Correo enviado correctamente")
-    except Exception as e:
-        print(f"Error al enviar el correo: {e}")
 
 # -----------------------------------------------
 # MAIN
