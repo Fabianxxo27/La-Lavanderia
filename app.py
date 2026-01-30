@@ -1645,9 +1645,6 @@ def descargar_recibo_pdf(id_pedido):
             ['Estado:', pedido[3]],
         ]
         
-        if pedido[5]:  # código de barras
-            info_data.append(['Código Barras:', pedido[5]])
-        
         info_table = Table(info_data, colWidths=[2*inch, 4*inch])
         info_table.setStyle(TableStyle([
             ('BACKGROUND', (0, 0), (0, -1), colors.lightgrey),
@@ -1656,6 +1653,30 @@ def descargar_recibo_pdf(id_pedido):
         ]))
         story.append(info_table)
         story.append(Spacer(1, 0.3*inch))
+        
+        # Agregar código de barras como imagen
+        if pedido[5]:
+            story.append(Paragraph("Código de Barras:", styles['Heading3']))
+            story.append(Spacer(1, 0.1*inch))
+            
+            # Generar imagen del código de barras
+            code128 = barcode.get_barcode_class('code128')
+            barcode_instance = code128(pedido[5], writer=ImageWriter())
+            barcode_buffer = BytesIO()
+            barcode_instance.write(barcode_buffer, options={
+                'module_width': 0.3,
+                'module_height': 10.0,
+                'quiet_zone': 2.0,
+                'font_size': 10,
+                'text_distance': 3.0,
+                'write_text': True
+            })
+            barcode_buffer.seek(0)
+            
+            # Agregar imagen al PDF
+            barcode_img = Image(barcode_buffer, width=4*inch, height=1*inch)
+            story.append(barcode_img)
+            story.append(Spacer(1, 0.3*inch))
         
         # Tabla de prendas
         story.append(Paragraph("Prendas:", styles['Heading2']))
