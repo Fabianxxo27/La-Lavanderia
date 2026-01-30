@@ -74,6 +74,7 @@
                                     <th><i class="fas fa-barcode"></i> Código</th>
                                     <th><i class="fas fa-calendar"></i> Fecha</th>
                                     <th class="text-end"><i class="fas fa-dollar-sign"></i> Monto</th>
+                                    <th class="text-center"><i class="fas fa-download"></i> Descargar</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -102,6 +103,11 @@
                                         <strong class="text-success fs-5">
                                             ${{ r[2]|int if r[2] else '0' }}
                                         </strong>
+                                    </td>
+                                    <td class="text-center">
+                                        <a href="{{ url_for('descargar_recibo_pdf', id_pedido=r[1]) }}" class="btn btn-sm btn-danger" title="Descargar PDF">
+                                            <i class="fas fa-file-pdf"></i>
+                                        </a>
                                     </td>
                                 </tr>
                                 {% endfor %}

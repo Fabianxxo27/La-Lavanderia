@@ -18,6 +18,9 @@ openpyxl==3.1.2
 python-barcode==0.15.1
 Pillow==10.0.0
 
+# Generación de PDFs
+reportlab==4.0.7
+
 # Servidor WSGI
 waitress==2.1.2
 

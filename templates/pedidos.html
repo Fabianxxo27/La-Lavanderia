@@ -380,6 +380,14 @@
         <td>
           <div class="action-buttons">
             <a href="{{ url_for('pedido_detalles', id_pedido=p[0]) }}" class="btn btn-sm btn-accion btn-ver">Ver</a>
+            <a href="{{ url_for('descargar_recibo_pdf', id_pedido=p[0]) }}" class="btn btn-sm btn-accion" style="background: #e74c3c; color: white;" title="Descargar Recibo PDF">
+              <i class="fas fa-file-pdf"></i>
+            </a>
+            {% if p[5] %}
+            <a href="{{ url_for('descargar_barcode', codigo=p[5]) }}" class="btn btn-sm btn-accion" style="background: #3498db; color: white;" title="Descargar Código de Barras">
+              <i class="fas fa-barcode"></i>
+            </a>
+            {% endif %}
             <form action="{{ url_for('eliminar_pedido', id_pedido=p[0]) }}" method="post" style="display: inline;">
               <button type="submit" class="btn btn-sm btn-accion btn-eliminar" onclick="return confirm('¿Estás seguro de que quieres eliminar este pedido?')">Eliminar</button>
             </form>

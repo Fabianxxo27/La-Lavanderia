@@ -314,6 +314,11 @@
   <div style="background: rgba(255,255,255,0.95); padding: 1rem; border-radius: 8px; margin: 1rem 0; text-align: center;">
     <div style="font-size: 0.9rem; color: #333; margin-bottom: 0.5rem; font-weight: 600;">Código de Barras</div>
     <img src="{{ url_for('generar_barcode', codigo=pedido[5]) }}" alt="Código de barras {{ pedido[5] }}" style="max-width: 100%; height: auto;">
+    <div style="margin-top: 0.5rem;">
+      <a href="{{ url_for('descargar_barcode', codigo=pedido[5]) }}" class="btn btn-sm btn-outline-secondary" style="font-size: 0.85rem;">
+        <i class="fas fa-download"></i> Descargar Código
+      </a>
+    </div>
   </div>
   {% endif %}
   <div class="info-grid">
@@ -408,6 +413,11 @@
   <button class="btn btn-back" onclick="history.back()">Volver Atrás</button>
   <a href="{{ url_for('pedidos') if session.get('rol') and session.get('rol')|lower in ['administrador','admin'] else url_for('cliente_pedidos') }}" class="btn btn-secondary">
     Volver a la Lista
+  </a>
+  <a href="{{ url_for('descargar_recibo_pdf', id_pedido=pedido[0]) }}" class="btn" style="background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%); color: white;">
+    <i class="fas fa-file-pdf"></i> Descargar Recibo PDF
+  </a>
+</div>
   </a>
 </div>
 

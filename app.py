@@ -11,6 +11,11 @@ import urllib.parse
 from dotenv import load_dotenv
 import barcode
 from barcode.writer import ImageWriter
+from reportlab.lib.pagesizes import letter
+from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.lib.units import inch
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image
+from reportlab.lib import colors
 
 # Cargar variables de entorno desde .env (si existe)
 load_dotenv()
@@ -1544,6 +1549,161 @@ def generar_barcode(codigo):
     except Exception as e:
         print(f"Error generando código de barras: {e}")
         return "Error generando código de barras", 500
+
+
+@app.route('/descargar_barcode/<codigo>')
+def descargar_barcode(codigo):
+    """Descarga la imagen del código de barras."""
+    try:
+        code128 = barcode.get_barcode_class('code128')
+        barcode_instance = code128(codigo, writer=ImageWriter())
+        
+        buffer = BytesIO()
+        barcode_instance.write(buffer, options={
+            'module_width': 0.3,
+            'module_height': 10.0,
+            'quiet_zone': 2.0,
+            'font_size': 10,
+            'text_distance': 3.0,
+            'write_text': True
+        })
+        buffer.seek(0)
+        
+        return send_file(
+            buffer,
+            mimetype='image/png',
+            as_attachment=True,
+            download_name=f'barcode_{codigo}.png'
+        )
+    except Exception as e:
+        print(f"Error descargando código de barras: {e}")
+        return "Error", 500
+
+
+@app.route('/descargar_recibo_pdf/<int:id_pedido>')
+def descargar_recibo_pdf(id_pedido):
+    """Genera y descarga el recibo en formato PDF."""
+    try:
+        # Obtener datos del pedido
+        pedido = run_query("""
+            SELECT p.id_pedido, p.fecha_ingreso, p.fecha_entrega, p.estado, c.nombre, p.codigo_barras
+            FROM pedido p
+            LEFT JOIN cliente c ON p.id_cliente = c.id_cliente
+            WHERE p.id_pedido = :id
+        """, {"id": id_pedido}, fetchone=True)
+        
+        if not pedido:
+            return "Pedido no encontrado", 404
+        
+        # Obtener prendas
+        prendas = run_query("""
+            SELECT tipo, descripcion, 
+                CASE tipo
+                    WHEN 'Camisa' THEN 5000
+                    WHEN 'Pantalón' THEN 6000
+                    WHEN 'Vestido' THEN 8000
+                    WHEN 'Chaqueta' THEN 10000
+                    WHEN 'Saco' THEN 7000
+                    WHEN 'Falda' THEN 5500
+                    WHEN 'Blusa' THEN 4500
+                    WHEN 'Abrigo' THEN 12000
+                    WHEN 'Suéter' THEN 6500
+                    WHEN 'Jeans' THEN 7000
+                    WHEN 'Corbata' THEN 3000
+                    WHEN 'Bufanda' THEN 3500
+                    WHEN 'Sábana' THEN 8000
+                    WHEN 'Edredón' THEN 15000
+                    WHEN 'Cortina' THEN 12000
+                    ELSE 5000
+                END as precio
+            FROM prenda
+            WHERE id_pedido = :id
+        """, {"id": id_pedido}, fetchall=True)
+        
+        # Obtener recibo
+        recibo = run_query("""
+            SELECT monto, fecha FROM recibo WHERE id_pedido = :id
+        """, {"id": id_pedido}, fetchone=True)
+        
+        # Crear PDF
+        buffer = BytesIO()
+        doc = SimpleDocTemplate(buffer, pagesize=letter)
+        styles = getSampleStyleSheet()
+        story = []
+        
+        # Título
+        title_style = styles['Title']
+        story.append(Paragraph("RECIBO - LA LAVANDERÍA", title_style))
+        story.append(Spacer(1, 0.3*inch))
+        
+        # Información del pedido
+        info_data = [
+            ['Pedido #:', str(pedido[0])],
+            ['Cliente:', pedido[4] or 'N/A'],
+            ['Fecha Ingreso:', str(pedido[1])],
+            ['Fecha Entrega:', str(pedido[2]) if pedido[2] else 'Por definir'],
+            ['Estado:', pedido[3]],
+        ]
+        
+        if pedido[5]:  # código de barras
+            info_data.append(['Código Barras:', pedido[5]])
+        
+        info_table = Table(info_data, colWidths=[2*inch, 4*inch])
+        info_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (0, -1), colors.lightgrey),
+            ('GRID', (0, 0), (-1, -1), 1, colors.black),
+            ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
+        ]))
+        story.append(info_table)
+        story.append(Spacer(1, 0.3*inch))
+        
+        # Tabla de prendas
+        story.append(Paragraph("Prendas:", styles['Heading2']))
+        story.append(Spacer(1, 0.1*inch))
+        
+        prendas_data = [['Tipo', 'Descripción', 'Precio']]
+        total = 0
+        for prenda in prendas:
+            prendas_data.append([prenda[0], prenda[1] or '-', f'${prenda[2]:,}'])
+            total += prenda[2]
+        
+        prendas_table = Table(prendas_data, colWidths=[2*inch, 2.5*inch, 1.5*inch])
+        prendas_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('GRID', (0, 0), (-1, -1), 1, colors.black),
+            ('ALIGN', (2, 0), (2, -1), 'RIGHT'),
+        ]))
+        story.append(prendas_table)
+        story.append(Spacer(1, 0.2*inch))
+        
+        # Total
+        if recibo:
+            total_data = [['TOTAL A PAGAR:', f'${recibo[0]:,.0f}']]
+            total_table = Table(total_data, colWidths=[4.5*inch, 1.5*inch])
+            total_table.setStyle(TableStyle([
+                ('BACKGROUND', (0, 0), (-1, -1), colors.lightgreen),
+                ('FONTNAME', (0, 0), (-1, -1), 'Helvetica-Bold'),
+                ('FONTSIZE', (0, 0), (-1, -1), 14),
+                ('GRID', (0, 0), (-1, -1), 1, colors.black),
+                ('ALIGN', (1, 0), (1, -1), 'RIGHT'),
+            ]))
+            story.append(total_table)
+        
+        # Generar PDF
+        doc.build(story)
+        buffer.seek(0)
+        
+        return send_file(
+            buffer,
+            mimetype='application/pdf',
+            as_attachment=True,
+            download_name=f'recibo_pedido_{id_pedido}.pdf'
+        )
+    except Exception as e:
+        print(f"Error generando PDF: {e}")
+        return "Error generando PDF", 500
 
 
 # -----------------------------------------------
