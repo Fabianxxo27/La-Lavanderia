@@ -1624,11 +1624,12 @@ def descargar_barcode(codigo):
 def descargar_recibo_pdf(id_pedido):
     """Genera y descarga el recibo en formato PDF."""
     try:
-        # Obtener datos del pedido
+        # Obtener datos del pedido con email del cliente
         pedido = run_query("""
-            SELECT p.id_pedido, p.fecha_ingreso, p.fecha_entrega, p.estado, c.nombre, p.codigo_barras
+            SELECT p.id_pedido, p.fecha_ingreso, p.fecha_entrega, p.estado, c.nombre, p.codigo_barras, u.email
             FROM pedido p
             LEFT JOIN cliente c ON p.id_cliente = c.id_cliente
+            LEFT JOIN usuario u ON c.id_cliente = u.id_usuario
             WHERE p.id_pedido = :id
         """, {"id": id_pedido}, fetchone=True)
         
@@ -1699,6 +1700,7 @@ def descargar_recibo_pdf(id_pedido):
         info_data = [
             ['Pedido #:', str(pedido[0])],
             ['Cliente:', pedido[4] or 'N/A'],
+            ['Email:', pedido[6] or 'No registrado'],
             ['Fecha Ingreso:', str(pedido[1])],
             ['Fecha Entrega:', str(pedido[2]) if pedido[2] else 'Por definir'],
             ['Estado:', pedido[3]],
