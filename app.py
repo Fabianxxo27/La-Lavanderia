@@ -1191,7 +1191,7 @@ def agregar_pedido():
                     )
                     prendas_insertadas += 1
             
-            # 8. Calcular descuento según la cantidad de pedidos del cliente
+            # 8. Calcular descuento según la cantidad de pedidos del cliente (ciclo cada 10 pedidos)
             
             pedidos_count = run_query(
                 "SELECT COUNT(*) FROM pedido WHERE id_cliente = :id",
@@ -1199,15 +1199,24 @@ def agregar_pedido():
                 fetchone=True
             )[0] or 0
             
-            # Determinar nivel y descuento
+            # Determinar nivel y descuento (ciclo cada 10 pedidos)
+            pedidos_en_ciclo = pedidos_count % 10  # Resetea cada 10 pedidos
             descuento_porcentaje = 0
+            nivel_descuento = "Sin nivel"
             
-            if pedidos_count >= 10:
+            if pedidos_en_ciclo == 0 and pedidos_count > 0:
+                # El pedido 10, 20, 30, etc. tiene 15%
                 descuento_porcentaje = 15
-            elif pedidos_count >= 6:
+                nivel_descuento = "Oro"
+            elif pedidos_en_ciclo >= 6 or (pedidos_en_ciclo == 0 and pedidos_count == 0):
                 descuento_porcentaje = 10
-            elif pedidos_count >= 3:
+                nivel_descuento = "Plata"
+            elif pedidos_en_ciclo >= 3:
                 descuento_porcentaje = 5
+                nivel_descuento = "Bronce"
+            else:
+                descuento_porcentaje = 0
+                nivel_descuento = "Sin nivel"
             
             # Calcular monto con descuento
             monto_descuento = (total_costo * descuento_porcentaje) / 100
@@ -1229,8 +1238,12 @@ def agregar_pedido():
             )
             
             # Mensaje con descuento aplicado y código de barras
-            msg_descuento = f" (Descuento {descuento_porcentaje}%: -${monto_descuento:,.0f})" if descuento_porcentaje > 0 else ""
-            flash(f'¡Pedido #{id_pedido} creado! Código: {codigo_barras} | {prendas_insertadas} prendas. Total: ${monto_final:,.0f}{msg_descuento}. Entrega: {fecha_entrega}', 'success')
+            if descuento_porcentaje > 0:
+                msg_descuento = f" | Nivel {nivel_descuento}: Descuento {descuento_porcentaje}% (-${monto_descuento:,.0f})"
+            else:
+                msg_descuento = ""
+            
+            flash(f'¡Pedido #{id_pedido} creado! Código: {codigo_barras} | {prendas_insertadas} prendas. Subtotal: ${total_costo:,.0f}{msg_descuento}. Total: ${monto_final:,.0f}. Entrega: {fecha_entrega}', 'success')
             
             # Redirigir según el rol
             if rol == 'administrador':
@@ -1247,10 +1260,37 @@ def agregar_pedido():
         fetchall=True
     )
     
+    # Obtener información de descuento del cliente actual si no es admin
+    descuento_info = None
+    if rol != 'administrador':
+        usuario_data = run_query(
+            "SELECT id_usuario FROM usuario WHERE LOWER(username) = :u",
+            {"u": username.lower()},
+            fetchone=True
+        )
+        if usuario_data:
+            id_cliente = usuario_data[0]
+            pedidos_count = run_query(
+                "SELECT COUNT(*) FROM pedido WHERE id_cliente = :id",
+                {"id": id_cliente},
+                fetchone=True
+            )[0] or 0
+            
+            pedidos_en_ciclo = pedidos_count % 10
+            if pedidos_en_ciclo == 0 and pedidos_count > 0:
+                descuento_info = {"nivel": "Oro", "porcentaje": 15, "pedidos": pedidos_count}
+            elif pedidos_en_ciclo >= 6:
+                descuento_info = {"nivel": "Plata", "porcentaje": 10, "pedidos": pedidos_count}
+            elif pedidos_en_ciclo >= 3:
+                descuento_info = {"nivel": "Bronce", "porcentaje": 5, "pedidos": pedidos_count}
+            else:
+                descuento_info = {"nivel": "Sin nivel", "porcentaje": 0, "pedidos": pedidos_count}
+    
     return render_template('agregar_pedido.html', 
                          clientes=clientes, 
                          rol=rol,
-                         prendas_default=prendas_default)
+                         prendas_default=prendas_default,
+                         descuento_info=descuento_info)
 
 
 # -----------------------------------------------
@@ -1620,10 +1660,29 @@ def descargar_recibo_pdf(id_pedido):
             WHERE id_pedido = :id
         """, {"id": id_pedido}, fetchall=True)
         
-        # Obtener recibo
+        # Obtener recibo y cliente
         recibo = run_query("""
-            SELECT monto, fecha FROM recibo WHERE id_pedido = :id
+            SELECT r.monto, r.fecha, r.id_cliente FROM recibo r WHERE id_pedido = :id
         """, {"id": id_pedido}, fetchone=True)
+        
+        # Calcular descuento aplicado
+        subtotal = sum(p[2] for p in prendas)
+        descuento_monto = 0
+        descuento_porcentaje = 0
+        nivel_descuento = "Sin nivel"
+        
+        if recibo and subtotal > 0:
+            descuento_monto = subtotal - recibo[0]
+            if descuento_monto > 0:
+                descuento_porcentaje = int((descuento_monto / subtotal) * 100)
+                
+                # Determinar nivel según porcentaje
+                if descuento_porcentaje >= 15:
+                    nivel_descuento = "Oro (10+ pedidos en ciclo)"
+                elif descuento_porcentaje >= 10:
+                    nivel_descuento = "Plata (6-9 pedidos en ciclo)"
+                elif descuento_porcentaje >= 5:
+                    nivel_descuento = "Bronce (3-5 pedidos en ciclo)"
         
         # Crear PDF
         buffer = BytesIO()
@@ -1699,8 +1758,35 @@ def descargar_recibo_pdf(id_pedido):
         story.append(prendas_table)
         story.append(Spacer(1, 0.2*inch))
         
-        # Total
+        # Subtotal y descuento
         if recibo:
+            # Subtotal
+            subtotal_data = [['Subtotal:', f'${subtotal:,.0f}']]
+            subtotal_table = Table(subtotal_data, colWidths=[4.5*inch, 1.5*inch])
+            subtotal_table.setStyle(TableStyle([
+                ('GRID', (0, 0), (-1, -1), 1, colors.black),
+                ('FONTNAME', (0, 0), (-1, -1), 'Helvetica'),
+                ('ALIGN', (1, 0), (1, -1), 'RIGHT'),
+            ]))
+            story.append(subtotal_table)
+            
+            # Descuento si aplica
+            if descuento_monto > 0:
+                story.append(Spacer(1, 0.1*inch))
+                descuento_data = [[f'Descuento {nivel_descuento} ({descuento_porcentaje}%):', f'-${descuento_monto:,.0f}']]
+                descuento_table = Table(descuento_data, colWidths=[4.5*inch, 1.5*inch])
+                descuento_table.setStyle(TableStyle([
+                    ('BACKGROUND', (0, 0), (-1, -1), colors.lightyellow),
+                    ('GRID', (0, 0), (-1, -1), 1, colors.black),
+                    ('FONTNAME', (0, 0), (-1, -1), 'Helvetica-Bold'),
+                    ('TEXTCOLOR', (1, 0), (1, -1), colors.red),
+                    ('ALIGN', (1, 0), (1, -1), 'RIGHT'),
+                ]))
+                story.append(descuento_table)
+            
+            story.append(Spacer(1, 0.1*inch))
+            
+            # Total final
             total_data = [['TOTAL A PAGAR:', f'${recibo[0]:,.0f}']]
             total_table = Table(total_data, colWidths=[4.5*inch, 1.5*inch])
             total_table.setStyle(TableStyle([
