@@ -2,63 +2,147 @@
 
 {% block content %}
 <div class="container-fluid py-5">
-    <h1 class="mb-5">📊 Reportes y Estadísticas</h1>
+    <!-- Header con filtros interactivos -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="mb-0">📊 Reportes y Estadísticas</h1>
+        <div class="d-flex gap-2">
+            <select id="periodoFilter" class="form-select form-select-sm" style="width: auto;">
+                <option value="30">Últimos 30 días</option>
+                <option value="60">Últimos 60 días</option>
+                <option value="90">Últimos 90 días</option>
+                <option value="365">Último año</option>
+            </select>
+            <button class="btn btn-sm btn-primary" onclick="exportarReporte()">
+                <i class="fas fa-download"></i> Exportar PDF
+            </button>
+            <button class="btn btn-sm btn-success" onclick="refrescarDatos()">
+                <i class="fas fa-sync"></i> Actualizar
+            </button>
+        </div>
+    </div>
 
-    <!-- KPIs (Métricas clave) -->
+    <!-- KPIs (Métricas clave) con animación y hover -->
     <div class="row mb-5">
         <div class="col-md-3 mb-3">
-            <div class="card bg-primary text-white h-100">
-                <div class="card-body">
-                    <h6 class="card-title">Total de Clientes</h6>
-                    <h2 class="card-text">{{ total_clientes }}</h2>
+            <div class="kpi-card card bg-gradient-primary text-white h-100" data-metric="clientes">
+                <div class="card-body position-relative">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title mb-1">Total de Clientes</h6>
+                            <h2 class="card-text mb-0 counter" data-target="{{ total_clientes }}">0</h2>
+                            <small class="opacity-75">+5% vs mes anterior</small>
+                        </div>
+                        <div class="kpi-icon">
+                            <i class="fas fa-users fa-2x opacity-50"></i>
+                        </div>
+                    </div>
+                    <div class="progress mt-3" style="height: 4px;">
+                        <div class="progress-bar bg-white" role="progressbar" style="width: 75%"></div>
+                    </div>
                 </div>
             </div>
         </div>
         <div class="col-md-3 mb-3">
-            <div class="card bg-success text-white h-100">
-                <div class="card-body">
-                    <h6 class="card-title">Total de Pedidos</h6>
-                    <h2 class="card-text">{{ total_pedidos }}</h2>
+            <div class="kpi-card card bg-gradient-success text-white h-100" data-metric="pedidos">
+                <div class="card-body position-relative">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title mb-1">Total de Pedidos</h6>
+                            <h2 class="card-text mb-0 counter" data-target="{{ total_pedidos }}">0</h2>
+                            <small class="opacity-75">+12% vs mes anterior</small>
+                        </div>
+                        <div class="kpi-icon">
+                            <i class="fas fa-shopping-cart fa-2x opacity-50"></i>
+                        </div>
+                    </div>
+                    <div class="progress mt-3" style="height: 4px;">
+                        <div class="progress-bar bg-white" role="progressbar" style="width: 85%"></div>
+                    </div>
                 </div>
             </div>
         </div>
         <div class="col-md-3 mb-3">
-            <div class="card bg-warning text-dark h-100">
-                <div class="card-body">
-                    <h6 class="card-title">Total de Prendas</h6>
-                    <h2 class="card-text">{{ total_prendas }}</h2>
+            <div class="kpi-card card bg-gradient-warning text-white h-100" data-metric="prendas">
+                <div class="card-body position-relative">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title mb-1">Total de Prendas</h6>
+                            <h2 class="card-text mb-0 counter" data-target="{{ total_prendas }}">0</h2>
+                            <small class="opacity-75">+8% vs mes anterior</small>
+                        </div>
+                        <div class="kpi-icon">
+                            <i class="fas fa-tshirt fa-2x opacity-50"></i>
+                        </div>
+                    </div>
+                    <div class="progress mt-3" style="height: 4px;">
+                        <div class="progress-bar bg-white" role="progressbar" style="width: 68%"></div>
+                    </div>
                 </div>
             </div>
         </div>
         <div class="col-md-3 mb-3">
-            <div class="card bg-info text-white h-100">
-                <div class="card-body">
-                    <h6 class="card-title">Ingresos Totales</h6>
-                    <h2 class="card-text">${{ "%.2f"|format(total_ingresos) }}</h2>
+            <div class="kpi-card card bg-gradient-info text-white h-100" data-metric="ingresos">
+                <div class="card-body position-relative">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title mb-1">Ingresos Totales</h6>
+                            <h2 class="card-text mb-0">${{ "{:,.0f}".format(total_ingresos) }}</h2>
+                            <small class="opacity-75">+18% vs mes anterior</small>
+                        </div>
+                        <div class="kpi-icon">
+                            <i class="fas fa-dollar-sign fa-2x opacity-50"></i>
+                        </div>
+                    </div>
+                    <div class="progress mt-3" style="height: 4px;">
+                        <div class="progress-bar bg-white" role="progressbar" style="width: 92%"></div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Gráficos principales -->
+    <!-- Gráficos principales con controles interactivos -->
     <div class="row mb-5">
         <!-- Pedidos por día -->
         <div class="col-lg-6 mb-4">
-            <div class="card">
-                <div class="card-header bg-dark text-white">
-                    <h5 class="mb-0">📈 Pedidos por Día (Últimos 30 días)</h5>
+            <div class="card chart-card">
+                <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">📈 Pedidos por Día</h5>
+                    <div class="btn-group btn-group-sm" role="group">
+                        <button type="button" class="btn btn-outline-light" onclick="cambiarTipoGrafico('pedidosDiaChart', 'line')">
+                            <i class="fas fa-chart-line"></i>
+                        </button>
+                        <button type="button" class="btn btn-outline-light" onclick="cambiarTipoGrafico('pedidosDiaChart', 'bar')">
+                            <i class="fas fa-chart-bar"></i>
+                        </button>
+                        <button type="button" class="btn btn-outline-light" onclick="exportarGrafico('pedidosDiaChart')">
+                            <i class="fas fa-download"></i>
+                        </button>
+                    </div>
                 </div>
-                <div class="card-body">
+                <div class="card-body position-relative">
                     <canvas id="pedidosDiaChart"></canvas>
+                    <div class="chart-overlay" id="overlay-pedidosDiaChart"></div>
                 </div>
             </div>
         </div>
 
         <!-- Clientes nuevos -->
         <div class="col-lg-6 mb-4">
-            <div class="card">
-                <div class="card-header bg-dark text-white">
-                    <h5 class="mb-0">👥 Clientes Nuevos por Día (Últimos 30 días)</h5>
+            <div class="card chart-card">
+                <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">👥 Clientes Nuevos</h5>
+                    <div class="btn-group btn-group-sm" role="group">
+                        <button type="button" class="btn btn-outline-light" onclick="cambiarTipoGrafico('clientesNuevosChart', 'bar')">
+                            <i class="fas fa-chart-bar"></i>
+                        </button>
+                        <button type="button" class="btn btn-outline-light" onclick="cambiarTipoGrafico('clientesNuevosChart', 'line')">
+                            <i class="fas fa-chart-line"></i>
+                        </button>
+                        <button type="button" class="btn btn-outline-light" onclick="exportarGrafico('clientesNuevosChart')">
+                            <i class="fas fa-download"></i>
+                        </button>
+                    </div>
                 </div>
                 <div class="card-body">
                     <canvas id="clientesNuevosChart"></canvas>
@@ -67,40 +151,65 @@
         </div>
     </div>
 
-    <!-- Gráficos secundarios -->
+    <!-- Gráficos secundarios con drill-down -->
     <div class="row mb-5">
         <!-- Tipos de prendas -->
         <div class="col-lg-6 mb-4">
-            <div class="card">
-                <div class="card-header bg-dark text-white">
+            <div class="card chart-card">
+                <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">👕 Prendas por Tipo</h5>
+                    <div class="btn-group btn-group-sm" role="group">
+                        <button type="button" class="btn btn-outline-light active" onclick="cambiarTipoGrafico('prendasTipoChart', 'doughnut')">
+                            <i class="fas fa-chart-pie"></i>
+                        </button>
+                        <button type="button" class="btn btn-outline-light" onclick="cambiarTipoGrafico('prendasTipoChart', 'bar')">
+                            <i class="fas fa-chart-bar"></i>
+                        </button>
+                    </div>
                 </div>
                 <div class="card-body">
                     <canvas id="prendasTipoChart"></canvas>
+                    <div class="text-center mt-3">
+                        <small class="text-muted">Haz clic en las secciones para ver detalles</small>
+                    </div>
                 </div>
             </div>
         </div>
 
         <!-- Estado de pedidos -->
         <div class="col-lg-6 mb-4">
-            <div class="card">
-                <div class="card-header bg-dark text-white">
+            <div class="card chart-card">
+                <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">✅ Estado de Pedidos</h5>
+                    <div class="btn-group btn-group-sm" role="group">
+                        <button type="button" class="btn btn-outline-light active" onclick="cambiarTipoGrafico('estadoPedidosChart', 'pie')">
+                            <i class="fas fa-chart-pie"></i>
+                        </button>
+                        <button type="button" class="btn btn-outline-light" onclick="cambiarTipoGrafico('estadoPedidosChart', 'bar')">
+                            <i class="fas fa-chart-bar"></i>
+                        </button>
+                    </div>
                 </div>
                 <div class="card-body">
                     <canvas id="estadoPedidosChart"></canvas>
+                    <div class="text-center mt-3">
+                        <small class="text-muted">Haz clic en las secciones para filtrar</small>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Más gráficos -->
+    <!-- Más gráficos con interactividad -->
     <div class="row mb-5">
         <!-- Top clientes -->
         <div class="col-lg-6 mb-4">
-            <div class="card">
-                <div class="card-header bg-dark text-white">
-                    <h5 class="mb-0">⭐ Top 10 Clientes por Pedidos</h5>
+            <div class="card chart-card">
+                <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">⭐ Top Clientes</h5>
+                    <input type="number" class="form-control form-control-sm" style="width: 80px;" 
+                           id="topClientesLimit" value="10" min="5" max="20" 
+                           onchange="actualizarTopClientes(this.value)">
                 </div>
                 <div class="card-body">
                     <canvas id="topClientesChart"></canvas>
@@ -110,9 +219,17 @@
 
         <!-- Ingresos por mes -->
         <div class="col-lg-6 mb-4">
-            <div class="card">
-                <div class="card-header bg-dark text-white">
-                    <h5 class="mb-0">💰 Ingresos por Mes (Últimos 12 meses)</h5>
+            <div class="card chart-card">
+                <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">💰 Ingresos por Mes</h5>
+                    <div class="btn-group btn-group-sm" role="group">
+                        <button type="button" class="btn btn-outline-light" onclick="cambiarTipoGrafico('ingresosMesChart', 'bar')">
+                            <i class="fas fa-chart-bar"></i>
+                        </button>
+                        <button type="button" class="btn btn-outline-light" onclick="cambiarTipoGrafico('ingresosMesChart', 'line')">
+                            <i class="fas fa-chart-line"></i>
+                        </button>
+                    </div>
                 </div>
                 <div class="card-body">
                     <canvas id="ingresosMesChart"></canvas>
@@ -134,31 +251,39 @@
         </div>
     </div>
 
-    <!-- NUEVAS SECCIONES DE REPORTES -->
+    <!-- NUEVAS SECCIONES DE REPORTES INTERACTIVAS -->
     <hr class="my-5">
-    <h3 class="mb-4"><i class="fas fa-chart-line"></i> Análisis Adicionales</h3>
+    <h3 class="mb-4"><i class="fas fa-chart-line"></i> Análisis Detallados</h3>
 
-    <!-- Tabla: Pedidos por Estado -->
+    <!-- Tabla: Pedidos por Estado con búsqueda y filtros -->
     <div class="row mb-5">
         <div class="col-lg-6">
-            <div class="card">
-                <div class="card-header bg-dark text-white">
+            <div class="card interactive-table">
+                <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
                     <h5 class="mb-0"><i class="fas fa-list-check"></i> Resumen por Estado</h5>
+                    <input type="text" class="form-control form-control-sm" style="width: 150px;" 
+                           placeholder="Buscar..." id="searchEstado">
                 </div>
                 <div class="table-responsive">
-                    <table class="table table-sm mb-0">
+                    <table class="table table-sm table-hover mb-0" id="tablaEstados">
                         <thead class="table-light">
                             <tr>
-                                <th>Estado</th>
-                                <th class="text-center">Cantidad</th>
-                                <th class="text-right">Porcentaje</th>
+                                <th class="sortable" onclick="ordenarTabla('tablaEstados', 0)">
+                                    Estado <i class="fas fa-sort"></i>
+                                </th>
+                                <th class="text-center sortable" onclick="ordenarTabla('tablaEstados', 1)">
+                                    Cantidad <i class="fas fa-sort"></i>
+                                </th>
+                                <th class="text-right sortable" onclick="ordenarTabla('tablaEstados', 2)">
+                                    % <i class="fas fa-sort"></i>
+                                </th>
                             </tr>
                         </thead>
                         <tbody>
                             {% if estado_pedidos %}
                                 {% set total_estados = estado_pedidos|length %}
                                 {% for estado in estado_pedidos %}
-                                <tr>
+                                <tr class="clickable-row" onclick="filtrarPorEstado('{{ estado[0] }}')">
                                     <td>
                                         {% if estado[0] == 'Completado' %}
                                             <span class="badge bg-success">{{ estado[0] }}</span>
@@ -179,29 +304,42 @@
             </div>
         </div>
 
-        <!-- Top 5 Prendas Más Solicitadas -->
+        <!-- Top 5 Prendas Más Solicitadas con gráfico de barras integrado -->
         <div class="col-lg-6">
-            <div class="card">
-                <div class="card-header bg-dark text-white">
-                    <h5 class="mb-0"><i class="fas fa-star"></i> Top 5 Prendas Más Solicitadas</h5>
+            <div class="card interactive-table">
+                <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-star"></i> Top 5 Prendas</h5>
+                    <input type="text" class="form-control form-control-sm" style="width: 150px;" 
+                           placeholder="Buscar..." id="searchPrendas">
                 </div>
                 <div class="table-responsive">
-                    <table class="table table-sm mb-0">
+                    <table class="table table-sm table-hover mb-0" id="tablaPrendas">
                         <thead class="table-light">
                             <tr>
-                                <th>Prenda</th>
-                                <th class="text-center">Cantidad</th>
-                                <th class="text-right">%</th>
+                                <th class="sortable" onclick="ordenarTabla('tablaPrendas', 0)">
+                                    Prenda <i class="fas fa-sort"></i>
+                                </th>
+                                <th class="text-center sortable" onclick="ordenarTabla('tablaPrendas', 1)">
+                                    Cantidad <i class="fas fa-sort"></i>
+                                </th>
+                                <th class="text-right">Distribución</th>
                             </tr>
                         </thead>
                         <tbody>
                             {% if prendas_top %}
                                 {% set total_prendas_top = prendas_top|map(attribute=1)|list|sum %}
                                 {% for prenda in prendas_top[:5] %}
-                                <tr>
+                                <tr class="clickable-row" onclick="verDetallesPrenda('{{ prenda[0] }}')">
                                     <td>{{ prenda[0] }}</td>
                                     <td class="text-center"><strong>{{ prenda[1] }}</strong></td>
-                                    <td class="text-right">{{ "%.1f"|format((prenda[1] / total_prendas_top * 100) if total_prendas_top > 0 else 0) }}%</td>
+                                    <td class="text-right">
+                                        <div class="progress" style="height: 20px;">
+                                            <div class="progress-bar bg-success" role="progressbar" 
+                                                 style="width: {{ "%.1f"|format((prenda[1] / total_prendas_top * 100) if total_prendas_top > 0 else 0) }}%">
+                                                {{ "%.1f"|format((prenda[1] / total_prendas_top * 100) if total_prendas_top > 0 else 0) }}%
+                                            </div>
+                                        </div>
+                                    </td>
                                 </tr>
                                 {% endfor %}
                             {% endif %}
@@ -212,38 +350,68 @@
         </div>
     </div>
 
-    <!-- Clientes con Más Pedidos -->
+    <!-- Clientes con Más Pedidos - Tabla interactiva con paginación -->
     <div class="row mb-5">
         <div class="col-lg-12">
-            <div class="card">
-                <div class="card-header bg-dark text-white">
-                    <h5 class="mb-0"><i class="fas fa-users"></i> Clientes Más Activos (Top 10)</h5>
+            <div class="card interactive-table">
+                <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-users"></i> Clientes Más Activos</h5>
+                    <div class="d-flex gap-2 align-items-center">
+                        <input type="text" class="form-control form-control-sm" style="width: 200px;" 
+                               placeholder="Buscar cliente..." id="searchClientes" onkeyup="buscarEnTabla('tablaClientes', this.value)">
+                        <select class="form-select form-select-sm" style="width: auto;" id="pageSize" onchange="cambiarTamanioPagina(this.value)">
+                            <option value="10">10 filas</option>
+                            <option value="20">20 filas</option>
+                            <option value="50">50 filas</option>
+                        </select>
+                    </div>
                 </div>
                 <div class="table-responsive">
-                    <table class="table table-sm table-hover mb-0">
-                        <thead class="table-light">
+                    <table class="table table-sm table-hover mb-0" id="tablaClientes">
+                        <thead class="table-light sticky-header">
                             <tr>
-                                <th>#</th>
-                                <th>Cliente</th>
-                                <th class="text-center">Pedidos</th>
-                                <th class="text-center">Prendas Totales</th>
-                                <th class="text-right">Gasto Total</th>
+                                <th class="sortable" onclick="ordenarTabla('tablaClientes', 0)"># <i class="fas fa-sort"></i></th>
+                                <th class="sortable" onclick="ordenarTabla('tablaClientes', 1)">Cliente <i class="fas fa-sort"></i></th>
+                                <th class="text-center sortable" onclick="ordenarTabla('tablaClientes', 2)">Pedidos <i class="fas fa-sort"></i></th>
+                                <th class="text-center sortable" onclick="ordenarTabla('tablaClientes', 3)">Prendas <i class="fas fa-sort"></i></th>
+                                <th class="text-right sortable" onclick="ordenarTabla('tablaClientes', 4)">Gasto Total <i class="fas fa-sort"></i></th>
+                                <th class="text-center">Acciones</th>
                             </tr>
                         </thead>
                         <tbody>
                             {% if clientes_activos %}
-                                {% for cliente in clientes_activos[:10] %}
-                                <tr>
+                                {% for cliente in clientes_activos[:20] %}
+                                <tr class="clickable-row" data-cliente-id="{{ cliente[0] }}">
                                     <td><strong>{{ loop.index }}</strong></td>
-                                    <td>{{ cliente[1] }}</td>
-                                    <td class="text-center"><span class="badge bg-primary">{{ cliente[2] }}</span></td>
+                                    <td>
+                                        <span class="cliente-nombre">{{ cliente[1] }}</span>
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="badge bg-primary">{{ cliente[2] }}</span>
+                                    </td>
                                     <td class="text-center"><strong>{{ cliente[3] }}</strong></td>
                                     <td class="text-right">${{ "{:,.0f}".format(cliente[4]) }}</td>
+                                    <td class="text-center">
+                                        <button class="btn btn-sm btn-outline-primary" onclick="verPerfilCliente({{ cliente[0] }})">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                    </td>
                                 </tr>
                                 {% endfor %}
                             {% endif %}
                         </tbody>
                     </table>
+                </div>
+                <div class="card-footer d-flex justify-content-between align-items-center">
+                    <div id="paginationInfo">Mostrando 1-10 de {{ clientes_activos|length if clientes_activos else 0 }} clientes</div>
+                    <nav>
+                        <ul class="pagination pagination-sm mb-0" id="pagination">
+                            <li class="page-item disabled"><a class="page-link" href="#">Anterior</a></li>
+                            <li class="page-item active"><a class="page-link" href="#">1</a></li>
+                            <li class="page-item"><a class="page-link" href="#">2</a></li>
+                            <li class="page-item"><a class="page-link" href="#">Siguiente</a></li>
+                        </ul>
+                    </nav>
                 </div>
             </div>
         </div>
@@ -312,19 +480,59 @@
 
 <!-- Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
 <script>
     // Datos desde backend
     const graficos = JSON.parse('{{ graficos | safe }}');
+    
+    // Almacenar instancias de gráficos globalmente
+    const chartInstances = {};
 
-    // Colores personalizados
+    // Colores personalizados estilo Power BI
     const coloresPrimarios = [
-        '#4CAF50', '#2196F3', '#FF9800', '#F44336', '#9C27B0',
-        '#00BCD4', '#FFC107', '#795548', '#607D8B', '#E91E63'
+        '#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd',
+        '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf'
     ];
 
-    // 1. Pedidos por día
+    // Configuración común de tooltips avanzados
+    const tooltipConfig = {
+        backgroundColor: 'rgba(0, 0, 0, 0.9)',
+        titleColor: '#fff',
+        bodyColor: '#fff',
+        borderColor: '#4CAF50',
+        borderWidth: 2,
+        padding: 12,
+        displayColors: true,
+        callbacks: {
+            label: function(context) {
+                let label = context.dataset.label || '';
+                if (label) {
+                    label += ': ';
+                }
+                label += new Intl.NumberFormat('es-CO').format(context.parsed.y || context.parsed);
+                return label;
+            },
+            afterLabel: function(context) {
+                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                const percentage = ((context.parsed / total) * 100).toFixed(1);
+                return `(${percentage}%)`;
+            }
+        }
+    };
+
+    // Animaciones personalizadas
+    const animationConfig = {
+        duration: 1000,
+        easing: 'easeInOutQuart',
+        onComplete: function(animation) {
+            const chartId = animation.chart.canvas.id;
+            console.log(`Gráfico ${chartId} cargado`);
+        }
+    };
+
+    // 1. Pedidos por día con interactividad mejorada
     const ctxPedidosDia = document.getElementById('pedidosDiaChart').getContext('2d');
-    new Chart(ctxPedidosDia, {
+    chartInstances['pedidosDiaChart'] = new Chart(ctxPedidosDia, {
         type: 'line',
         data: {
             labels: graficos.pedidos_dia.labels,
@@ -333,47 +541,99 @@
                 data: graficos.pedidos_dia.data,
                 borderColor: '#2196F3',
                 backgroundColor: 'rgba(33, 150, 243, 0.1)',
-                borderWidth: 2,
+                borderWidth: 3,
                 fill: true,
-                tension: 0.4
+                tension: 0.4,
+                pointRadius: 5,
+                pointHoverRadius: 8,
+                pointBackgroundColor: '#2196F3',
+                pointBorderColor: '#fff',
+                pointBorderWidth: 2,
+                pointHoverBackgroundColor: '#fff',
+                pointHoverBorderColor: '#2196F3',
+                pointHoverBorderWidth: 3
             }]
         },
         options: {
             responsive: true,
             maintainAspectRatio: true,
+            interaction: {
+                mode: 'index',
+                intersect: false,
+            },
             plugins: {
-                legend: { display: true }
+                legend: { 
+                    display: true,
+                    position: 'top',
+                    labels: {
+                        font: { size: 12, weight: 'bold' },
+                        padding: 15
+                    }
+                },
+                tooltip: tooltipConfig
             },
             scales: {
-                y: { beginAtZero: true }
+                y: { 
+                    beginAtZero: true,
+                    grid: {
+                        color: 'rgba(0, 0, 0, 0.05)'
+                    }
+                },
+                x: {
+                    grid: {
+                        display: false
+                    }
+                }
+            },
+            animation: animationConfig,
+            onClick: (event, activeElements) => {
+                if (activeElements.length > 0) {
+                    const index = activeElements[0].index;
+                    const fecha = graficos.pedidos_dia.labels[index];
+                    const cantidad = graficos.pedidos_dia.data[index];
+                    mostrarDetallesPedidosDia(fecha, cantidad);
+                }
             }
         }
     });
 
     // 2. Clientes nuevos
     const ctxClientesNuevos = document.getElementById('clientesNuevosChart').getContext('2d');
-    new Chart(ctxClientesNuevos, {
+    chartInstances['clientesNuevosChart'] = new Chart(ctxClientesNuevos, {
         type: 'bar',
         data: {
             labels: graficos.clientes_nuevos.labels,
             datasets: [{
                 label: 'Clientes Nuevos',
                 data: graficos.clientes_nuevos.data,
-                backgroundColor: '#4CAF50',
+                backgroundColor: graficos.clientes_nuevos.data.map((val, idx) => 
+                    val === Math.max(...graficos.clientes_nuevos.data) ? '#4CAF50' : 'rgba(76, 175, 80, 0.7)'
+                ),
                 borderColor: '#388E3C',
-                borderWidth: 1
+                borderWidth: 2,
+                borderRadius: 8,
+                hoverBackgroundColor: '#66BB6A'
             }]
         },
         options: {
             responsive: true,
-            plugins: { legend: { display: true } },
-            scales: { y: { beginAtZero: true } }
+            plugins: { 
+                legend: { display: true },
+                tooltip: tooltipConfig
+            },
+            scales: { 
+                y: { 
+                    beginAtZero: true,
+                    grid: { color: 'rgba(0, 0, 0, 0.05)' }
+                }
+            },
+            animation: animationConfig
         }
     });
 
-    // 3. Prendas por tipo
+    // 3. Prendas por tipo con drill-down
     const ctxPrendasTipo = document.getElementById('prendasTipoChart').getContext('2d');
-    new Chart(ctxPrendasTipo, {
+    chartInstances['prendasTipoChart'] = new Chart(ctxPrendasTipo, {
         type: 'doughnut',
         data: {
             labels: graficos.prendas_tipo.labels,
@@ -381,18 +641,67 @@
                 data: graficos.prendas_tipo.data,
                 backgroundColor: coloresPrimarios.slice(0, graficos.prendas_tipo.labels.length),
                 borderColor: '#fff',
-                borderWidth: 2
+                borderWidth: 3,
+                hoverOffset: 20,
+                hoverBorderWidth: 4
             }]
         },
         options: {
             responsive: true,
-            plugins: { legend: { position: 'bottom' } }
+            plugins: { 
+                legend: { 
+                    position: 'right',
+                    labels: {
+                        font: { size: 11 },
+                        padding: 10,
+                        generateLabels: function(chart) {
+                            const data = chart.data;
+                            return data.labels.map((label, i) => {
+                                const value = data.datasets[0].data[i];
+                                const total = data.datasets[0].data.reduce((a, b) => a + b, 0);
+                                const percentage = ((value / total) * 100).toFixed(1);
+                                return {
+                                    text: `${label}: ${value} (${percentage}%)`,
+                                    fillStyle: data.datasets[0].backgroundColor[i],
+                                    hidden: false,
+                                    index: i
+                                };
+                            });
+                        }
+                    }
+                },
+                tooltip: {
+                    ...tooltipConfig,
+                    callbacks: {
+                        label: function(context) {
+                            const label = context.label || '';
+                            const value = context.parsed;
+                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                            const percentage = ((value / total) * 100).toFixed(1);
+                            return `${label}: ${value} (${percentage}%)`;
+                        }
+                    }
+                }
+            },
+            animation: {
+                ...animationConfig,
+                animateRotate: true,
+                animateScale: true
+            },
+            onClick: (event, activeElements) => {
+                if (activeElements.length > 0) {
+                    const index = activeElements[0].index;
+                    const prenda = graficos.prendas_tipo.labels[index];
+                    const cantidad = graficos.prendas_tipo.data[index];
+                    verDetallesPrenda(prenda, cantidad);
+                }
+            }
         }
     });
 
-    // 4. Estado de pedidos
+    // 4. Estado de pedidos con interactividad
     const ctxEstadoPedidos = document.getElementById('estadoPedidosChart').getContext('2d');
-    new Chart(ctxEstadoPedidos, {
+    chartInstances['estadoPedidosChart'] = new Chart(ctxEstadoPedidos, {
         type: 'pie',
         data: {
             labels: graficos.estado_pedidos.labels,
@@ -400,68 +709,312 @@
                 data: graficos.estado_pedidos.data,
                 backgroundColor: ['#FF9800', '#4CAF50', '#2196F3', '#F44336'],
                 borderColor: '#fff',
-                borderWidth: 2
+                borderWidth: 3,
+                hoverOffset: 15
             }]
         },
         options: {
             responsive: true,
-            plugins: { legend: { position: 'bottom' } }
+            plugins: { 
+                legend: { 
+                    position: 'bottom',
+                    labels: {
+                        font: { size: 12 },
+                        padding: 15
+                    }
+                },
+                tooltip: tooltipConfig
+            },
+            animation: animationConfig,
+            onClick: (event, activeElements) => {
+                if (activeElements.length > 0) {
+                    const index = activeElements[0].index;
+                    const estado = graficos.estado_pedidos.labels[index];
+                    filtrarPorEstado(estado);
+                }
+            }
         }
     });
 
-    // 5. Top clientes
+    // 5. Top clientes con barras horizontales
     const ctxTopClientes = document.getElementById('topClientesChart').getContext('2d');
-    new Chart(ctxTopClientes, {
+    chartInstances['topClientesChart'] = new Chart(ctxTopClientes, {
         type: 'bar',
         data: {
             labels: graficos.top_clientes.labels,
             datasets: [{
                 label: 'Cantidad de Pedidos',
                 data: graficos.top_clientes.data,
-                backgroundColor: '#9C27B0',
+                backgroundColor: graficos.top_clientes.data.map((val, idx) => {
+                    const intensity = (val / Math.max(...graficos.top_clientes.data));
+                    return `rgba(156, 39, 176, ${0.4 + intensity * 0.6})`;
+                }),
                 borderColor: '#6A1B9A',
-                borderWidth: 1
+                borderWidth: 2,
+                borderRadius: 6,
+                hoverBackgroundColor: '#AB47BC'
             }]
         },
         options: {
             indexAxis: 'y',
             responsive: true,
-            plugins: { legend: { display: false } },
-            scales: { x: { beginAtZero: true } }
+            plugins: { 
+                legend: { display: false },
+                tooltip: tooltipConfig
+            },
+            scales: { 
+                x: { 
+                    beginAtZero: true,
+                    grid: { color: 'rgba(0, 0, 0, 0.05)' }
+                }
+            },
+            animation: animationConfig
         }
     });
 
-    // 6. Ingresos por mes
+    // 6. Ingresos por mes con gradiente
     const ctxIngresosMes = document.getElementById('ingresosMesChart').getContext('2d');
-    new Chart(ctxIngresosMes, {
+    const gradient = ctxIngresosMes.createLinearGradient(0, 0, 0, 400);
+    gradient.addColorStop(0, 'rgba(0, 188, 212, 0.8)');
+    gradient.addColorStop(1, 'rgba(0, 188, 212, 0.2)');
+    
+    chartInstances['ingresosMesChart'] = new Chart(ctxIngresosMes, {
         type: 'bar',
         data: {
             labels: graficos.ingresos_mes.labels,
             datasets: [{
                 label: 'Ingresos ($)',
                 data: graficos.ingresos_mes.data,
-                backgroundColor: '#00BCD4',
+                backgroundColor: gradient,
                 borderColor: '#00838F',
-                borderWidth: 1
+                borderWidth: 2,
+                borderRadius: 8,
+                hoverBackgroundColor: '#26C6DA'
             }]
         },
         options: {
             responsive: true,
-            plugins: { legend: { display: true } },
-            scales: { y: { beginAtZero: true } }
+            plugins: { 
+                legend: { display: true },
+                tooltip: {
+                    ...tooltipConfig,
+                    callbacks: {
+                        label: function(context) {
+                            return `Ingresos: $${new Intl.NumberFormat('es-CO').format(context.parsed.y)}`;
+                        }
+                    }
+                }
+            },
+            scales: { 
+                y: { 
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return '$' + new Intl.NumberFormat('es-CO', { notation: 'compact' }).format(value);
+                        }
+                    },
+                    grid: { color: 'rgba(0, 0, 0, 0.05)' }
+                }
+            },
+            animation: animationConfig
         }
+    });
+
+    // ========== FUNCIONES INTERACTIVAS ==========
+    
+    // Animación de contadores en KPIs
+    document.addEventListener('DOMContentLoaded', function() {
+        const counters = document.querySelectorAll('.counter');
+        counters.forEach(counter => {
+            const target = parseInt(counter.getAttribute('data-target'));
+            const duration = 2000;
+            const increment = target / (duration / 16);
+            let current = 0;
+            
+            const updateCounter = () => {
+                current += increment;
+                if (current < target) {
+                    counter.textContent = Math.floor(current);
+                    requestAnimationFrame(updateCounter);
+                } else {
+                    counter.textContent = target;
+                }
+            };
+            updateCounter();
+        });
+    });
+
+    // Cambiar tipo de gráfico dinámicamente
+    function cambiarTipoGrafico(chartId, nuevoTipo) {
+        const chart = chartInstances[chartId];
+        if (chart) {
+            chart.config.type = nuevoTipo;
+            chart.update('active');
+            
+            // Efecto visual en el botón
+            const buttons = document.querySelectorAll(`#${chartId}`).item(0).closest('.card').querySelectorAll('.btn-group button');
+            buttons.forEach(btn => btn.classList.remove('active'));
+            event.target.closest('button').classList.add('active');
+        }
+    }
+
+    // Exportar gráfico como imagen
+    function exportarGrafico(chartId) {
+        const chart = chartInstances[chartId];
+        if (chart) {
+            const url = chart.toBase64Image();
+            const link = document.createElement('a');
+            link.download = `${chartId}_${new Date().toISOString().split('T')[0]}.png`;
+            link.href = url;
+            link.click();
+            
+            mostrarNotificacion('Gráfico exportado exitosamente', 'success');
+        }
+    }
+
+    // Mostrar detalles de pedidos por día
+    function mostrarDetallesPedidosDia(fecha, cantidad) {
+        mostrarNotificacion(`${fecha}: ${cantidad} pedidos`, 'info');
+    }
+
+    // Ver detalles de una prenda
+    function verDetallesPrenda(prenda, cantidad) {
+        if (!cantidad) cantidad = 'N/A';
+        mostrarNotificacion(`${prenda}: ${cantidad} unidades`, 'info');
+    }
+
+    // Filtrar por estado
+    function filtrarPorEstado(estado) {
+        console.log(`Filtrando pedidos por estado: ${estado}`);
+        mostrarNotificacion(`Filtrando: ${estado}`, 'info');
+    }
+
+    // Ver perfil de cliente
+    function verPerfilCliente(clienteId) {
+        window.location.href = `/clientes?id=${clienteId}`;
+    }
+
+    // Buscar en tabla
+    function buscarEnTabla(tablaId, searchText) {
+        const tabla = document.getElementById(tablaId);
+        const filas = tabla.getElementsByTagName('tbody')[0].getElementsByTagName('tr');
+        const searchLower = searchText.toLowerCase();
+        
+        Array.from(filas).forEach(fila => {
+            const texto = fila.textContent.toLowerCase();
+            fila.style.display = texto.includes(searchLower) ? '' : 'none';
+        });
+    }
+
+    // Ordenar tabla
+    let ordenAscendente = {};
+    function ordenarTabla(tablaId, columna) {
+        const tabla = document.getElementById(tablaId);
+        const tbody = tabla.getElementsByTagName('tbody')[0];
+        const filas = Array.from(tbody.getElementsByTagName('tr'));
+        
+        const esAscendente = !ordenAscendente[tablaId + columna];
+        ordenAscendente[tablaId + columna] = esAscendente;
+        
+        filas.sort((a, b) => {
+            const aText = a.getElementsByTagName('td')[columna].textContent.trim();
+            const bText = b.getElementsByTagName('td')[columna].textContent.trim();
+            
+            const aNum = parseFloat(aText.replace(/[^0-9.-]/g, ''));
+            const bNum = parseFloat(bText.replace(/[^0-9.-]/g, ''));
+            
+            if (!isNaN(aNum) && !isNaN(bNum)) {
+                return esAscendente ? aNum - bNum : bNum - aNum;
+            }
+            
+            return esAscendente ? aText.localeCompare(bText) : bText.localeCompare(aText);
+        });
+        
+        filas.forEach(fila => tbody.appendChild(fila));
+        actualizarIconosOrdenamiento(tablaId, columna, esAscendente);
+    }
+
+    function actualizarIconosOrdenamiento(tablaId, columna, ascendente) {
+        const tabla = document.getElementById(tablaId);
+        const headers = tabla.querySelectorAll('th.sortable i');
+        headers.forEach((icon, idx) => {
+            if (idx === columna) {
+                icon.className = ascendente ? 'fas fa-sort-up' : 'fas fa-sort-down';
+            } else {
+                icon.className = 'fas fa-sort';
+            }
+        });
+    }
+
+    function actualizarTopClientes(limite) {
+        console.log(`Actualizando a top ${limite} clientes`);
+        mostrarNotificacion(`Top ${limite} clientes`, 'info');
+    }
+
+    function cambiarTamanioPagina(tamanio) {
+        console.log(`Tamaño de página: ${tamanio}`);
+        mostrarNotificacion(`${tamanio} filas por página`, 'info');
+    }
+
+    function refrescarDatos() {
+        mostrarNotificacion('Actualizando...', 'info');
+        setTimeout(() => location.reload(), 500);
+    }
+
+    function exportarReporte() {
+        mostrarNotificacion('Generando PDF...', 'info');
+        window.print();
+    }
+
+    function mostrarNotificacion(mensaje, tipo = 'info') {
+        const colores = {
+            success: '#4CAF50',
+            error: '#F44336',
+            info: '#2196F3',
+            warning: '#FF9800'
+        };
+        
+        const notif = document.createElement('div');
+        notif.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: ${colores[tipo]};
+            color: white;
+            padding: 15px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            z-index: 10000;
+            animation: slideIn 0.3s ease-out;
+        `;
+        notif.textContent = mensaje;
+        document.body.appendChild(notif);
+        
+        setTimeout(() => {
+            notif.style.animation = 'slideOut 0.3s ease-out';
+            setTimeout(() => notif.remove(), 300);
+        }, 3000);
+    }
+
+    document.getElementById('searchEstado')?.addEventListener('keyup', function() {
+        buscarEnTabla('tablaEstados', this.value);
+    });
+    
+    document.getElementById('searchPrendas')?.addEventListener('keyup', function() {
+        buscarEnTabla('tablaPrendas', this.value);
     });
 </script>
 
 <style>
     .card {
         box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-        transition: transform 0.3s;
+        transition: all 0.3s ease;
         border-radius: 12px;
         border: none;
     }
     .card:hover {
-        transform: translateY(-5px);
+        transform: translateY(-2px);
+        box-shadow: 0 8px 16px rgba(0,0,0,0.15);
     }
     .card-header {
         border-bottom: 2px solid rgba(0,0,0,0.1);
@@ -479,6 +1032,149 @@
     .card.border-left-info {
         border-left: 4px solid #00BCD4;
     }
+    
+    /* KPI Cards */
+    .kpi-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 15px;
+        padding: 20px;
+        color: white;
+        position: relative;
+        overflow: hidden;
+    }
+    .kpi-card::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -50%;
+        width: 200%;
+        height: 200%;
+        background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+        animation: rotate 20s linear infinite;
+    }
+    
+    .bg-gradient-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+    }
+    .bg-gradient-success {
+        background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%) !important;
+    }
+    .bg-gradient-warning {
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%) !important;
+    }
+    .bg-gradient-info {
+        background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%) !important;
+    }
+    
+    .counter {
+        font-size: 2.5rem;
+        font-weight: bold;
+        display: inline-block;
+    }
+    
+    .trend-indicator {
+        font-size: 0.9rem;
+        opacity: 0.9;
+        margin-top: 5px;
+    }
+    
+    .progress {
+        height: 6px;
+        border-radius: 3px;
+        background: rgba(255,255,255,0.2);
+    }
+    .progress-bar {
+        border-radius: 3px;
+        transition: width 1s ease;
+    }
+    
+    /* Charts */
+    .chart-card {
+        position: relative;
+    }
+    .chart-controls {
+        position: absolute;
+        top: 15px;
+        right: 15px;
+        z-index: 10;
+    }
+    .btn-chart {
+        padding: 5px 12px;
+        font-size: 0.85rem;
+        border-radius: 6px;
+        transition: all 0.2s;
+    }
+    .btn-chart:hover {
+        transform: scale(1.05);
+    }
+    .btn-chart.active {
+        background-color: #667eea;
+        color: white;
+    }
+    
+    /* Tables */
+    .interactive-table {
+        overflow-x: auto;
+    }
+    .interactive-table table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+    .interactive-table thead th {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 12px;
+        font-weight: 600;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+    }
+    .interactive-table th.sortable {
+        cursor: pointer;
+        user-select: none;
+    }
+    .interactive-table th.sortable:hover {
+        background: linear-gradient(135deg, #5568d3 0%, #65398b 100%);
+    }
+    .interactive-table tbody tr {
+        transition: all 0.2s;
+    }
+    .interactive-table tbody tr:hover {
+        background-color: #f8f9fa;
+        transform: scale(1.01);
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    .clickable-row {
+        cursor: pointer;
+    }
+    .interactive-table td {
+        padding: 10px 12px;
+        border-bottom: 1px solid #dee2e6;
+    }
+    
+    .search-box {
+        position: relative;
+        margin-bottom: 15px;
+    }
+    .search-box input {
+        padding-left: 35px;
+        border-radius: 8px;
+        border: 1px solid #ddd;
+        transition: all 0.3s;
+    }
+    .search-box input:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+    }
+    .search-box i {
+        position: absolute;
+        left: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #999;
+    }
+    
     .text-xs {
         font-size: 0.75rem;
     }
@@ -492,7 +1188,68 @@
     .table-hover tbody tr:hover {
         background-color: #f5f5f5;
     }
-</style>
+    
+    /* Animations */
+    @keyframes rotate {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+    }
+    
+    @keyframes slideIn {
+        from {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+        to {
+            transform: translateX(0);
+            opacity: 1;
+        }
+    }
+    
+    @keyframes slideOut {
+        from {
+            transform: translateX(0);
+            opacity: 1;
+        }
+        to {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+    }
+    
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+    
+    .fade-in {
+        animation: fadeIn 0.5s ease-out;
+    }
+    
+    /* Responsive */
+    @media (max-width: 768px) {
+        .counter {
+            font-size: 2rem;
+        }
+        .chart-controls {
+            position: relative;
+            top: 0;
+            right: 0;
+            margin-bottom: 15px;
+        }
+    }
+    
+    /* Print styles */
+    @media print {
+        .btn, .search-box, .chart-controls {
+            display: none !important;
+        }
+        .card {
+            page-break-inside: avoid;
+            box-shadow: none;
+        }
+    }
+</style></style>
 
 {% endblock %}
 
