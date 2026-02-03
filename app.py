@@ -16,6 +16,10 @@ from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.lib.units import inch
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image
 from reportlab.lib import colors
+from pyzbar.pyzbar import decode
+from PIL import Image as PILImage
+import cv2
+import numpy as np
 
 # Cargar variables de entorno desde .env (si existe)
 load_dotenv()
@@ -1027,6 +1031,106 @@ def reportes():
                          promedio_gasto=round(float(promedio_gasto), 0),
                          pedidos_pendientes=pedidos_pendientes,
                          promedio_dias=round(float(promedio_dias), 1))
+
+
+# -----------------------------------------------
+# LECTOR DE CÓDIGOS DE BARRAS
+# -----------------------------------------------
+@app.route('/lector_barcode', methods=['GET', 'POST'])
+def lector_barcode():
+    """Escanear código de barras y mostrar detalles del pedido."""
+    if not _admin_only():
+        flash('Acceso denegado.', 'danger')
+        return redirect(url_for('index'))
+    
+    if request.method == 'POST':
+        # Verificar si se subió una imagen
+        if 'barcode_image' not in request.files:
+            return {'success': False, 'error': 'No se subió ninguna imagen'}, 400
+        
+        file = request.files['barcode_image']
+        if file.filename == '':
+            return {'success': False, 'error': 'No se seleccionó ningún archivo'}, 400
+        
+        try:
+            # Leer imagen
+            image_bytes = file.read()
+            nparr = np.frombuffer(image_bytes, np.uint8)
+            img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+            
+            # Convertir a PIL Image para pyzbar
+            img_pil = PILImage.fromarray(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
+            
+            # Decodificar código de barras
+            decoded_objects = decode(img_pil)
+            
+            if not decoded_objects:
+                return {'success': False, 'error': 'No se detectó ningún código de barras en la imagen'}, 400
+            
+            # Obtener el primer código detectado
+            barcode_data = decoded_objects[0].data.decode('utf-8')
+            
+            # Buscar pedido por código de barras
+            pedido = run_query("""
+                SELECT p.id_pedido, p.id_cliente, p.fecha_ingreso, p.fecha_entrega, 
+                       p.estado, p.instrucciones, c.nombre, c.telefono, c.direccion,
+                       u.email
+                FROM pedido p
+                JOIN cliente c ON p.id_cliente = c.id_cliente
+                LEFT JOIN usuario u ON c.id_cliente = u.id_usuario
+                WHERE p.codigo_barras = :codigo
+            """, {"codigo": barcode_data}, fetchone=True)
+            
+            if not pedido:
+                return {'success': False, 'error': f'No se encontró ningún pedido con el código: {barcode_data}'}, 404
+            
+            # Obtener prendas del pedido
+            prendas = run_query("""
+                SELECT tipo, estado
+                FROM prenda
+                WHERE id_pedido = :id
+            """, {"id": pedido[0]}, fetchall=True)
+            
+            # Obtener recibo del pedido
+            recibo = run_query("""
+                SELECT monto, descuento, fecha
+                FROM recibo
+                WHERE id_pedido = :id
+            """, {"id": pedido[0]}, fetchone=True)
+            
+            # Preparar respuesta
+            response_data = {
+                'success': True,
+                'codigo_barras': barcode_data,
+                'pedido': {
+                    'id': pedido[0],
+                    'fecha_ingreso': pedido[2].strftime('%d/%m/%Y %H:%M') if pedido[2] else 'N/A',
+                    'fecha_entrega': pedido[3].strftime('%d/%m/%Y') if pedido[3] else 'Pendiente',
+                    'estado': pedido[4],
+                    'instrucciones': pedido[5] or 'Sin instrucciones',
+                },
+                'cliente': {
+                    'id': pedido[1],
+                    'nombre': pedido[6],
+                    'telefono': pedido[7] or 'No registrado',
+                    'direccion': pedido[8] or 'No registrada',
+                    'email': pedido[9] or 'No registrado'
+                },
+                'prendas': [{'tipo': p[0], 'estado': p[1]} for p in prendas] if prendas else [],
+                'recibo': {
+                    'monto': float(recibo[0]) if recibo and recibo[0] else 0,
+                    'descuento': float(recibo[1]) if recibo and recibo[1] else 0,
+                    'fecha': recibo[2].strftime('%d/%m/%Y') if recibo and recibo[2] else 'N/A'
+                } if recibo else None
+            }
+            
+            return response_data, 200
+            
+        except Exception as e:
+            return {'success': False, 'error': f'Error al procesar la imagen: {str(e)}'}, 500
+    
+    # GET request - mostrar página
+    return render_template('lector_barcode.html')
 
 
 # -----------------------------------------------

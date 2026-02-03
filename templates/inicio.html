@@ -165,6 +165,23 @@
         </svg>
       </div>
     </a>
+
+    <a href="{{ url_for('lector_barcode') }}" class="dashboard-card">
+      <div class="card-icon">
+        <svg viewBox="0 0 16 16">
+          <path d="M0 3a1.5 1.5 0 0 1 1.5-1.5h13A1.5 1.5 0 0 1 16 3v10a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 0 13V3zm1.5-.5A.5.5 0 0 0 1 3v10a.5.5 0 0 0 .5.5h13a.5.5 0 0 0 .5-.5V3a.5.5 0 0 0-.5-.5h-13z"/>
+          <path d="M2 4h1v8H2V4zm2 0h.5v8H4V4zm1.5 0h.5v8h-.5V4zm1.5 0h1v8H7V4zm2 0h.5v8H9V4zm1.5 0h1v8h-1V4zm2 0h.5v8h-.5V4z"/>
+        </svg>
+      </div>
+      <div class="card-title">Lector de Códigos</div>
+      <div class="card-description">Escanea códigos de barras para consultar pedidos. Sube una imagen o toma una foto del código.</div>
+      <div class="card-action">
+        Escanear código
+        <svg viewBox="0 0 16 16">
+          <path fill-rule="evenodd" d="M4 8a.5.5 0 0 1 .5-.5h5.793L8.146 5.354a.5.5 0 1 1 .708-.708l3 3a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708-.708L10.293 8.5H4.5A.5.5 0 0 1 4 8z"/>
+        </svg>
+      </div>
+    </a>
   </div>
 </div>
 {% endblock %}

@@ -1,0 +1,796 @@
+{% extends "base.html" %}
+{% block title %}Lector de Códigos - La Lavandería{% endblock %}
+
+{% block content %}
+<style>
+  .scanner-container {
+    max-width: 1200px;
+    margin: 2rem auto;
+    padding: 0 1rem;
+  }
+
+  .page-header {
+    text-align: center;
+    margin-bottom: 2rem;
+  }
+
+  .page-header h1 {
+    color: #1a4e7b;
+    font-weight: 800;
+    font-size: 2.5rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .page-header p {
+    color: #666;
+    font-size: 1.1rem;
+  }
+
+  .scanner-card {
+    background: white;
+    border-radius: 12px;
+    padding: 2.5rem;
+    box-shadow: 0 2px 15px rgba(0, 0, 0, 0.08);
+    margin-bottom: 2rem;
+  }
+
+  .upload-zone {
+    border: 3px dashed #a6cc48;
+    border-radius: 12px;
+    padding: 3rem 2rem;
+    text-align: center;
+    background: #f8fcf4;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .upload-zone:hover {
+    border-color: #84af1d;
+    background: #f0f9e8;
+    transform: scale(1.02);
+  }
+
+  .upload-zone.dragover {
+    border-color: #1a4e7b;
+    background: #e8f0ff;
+    transform: scale(1.05);
+  }
+
+  .upload-icon {
+    width: 80px;
+    height: 80px;
+    margin: 0 auto 1.5rem;
+    background: linear-gradient(135deg, #a6cc48 0%, #84af1d 100%);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .upload-icon svg {
+    width: 40px;
+    height: 40px;
+    fill: white;
+  }
+
+  .upload-zone h3 {
+    color: #1a4e7b;
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+  }
+
+  .upload-zone p {
+    color: #666;
+    margin-bottom: 1.5rem;
+    font-size: 1rem;
+  }
+
+  .upload-buttons {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .btn-upload, .btn-camera {
+    padding: 0.8rem 2rem;
+    border-radius: 8px;
+    border: none;
+    font-weight: 600;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .btn-upload {
+    background: linear-gradient(135deg, #a6cc48 0%, #84af1d 100%);
+    color: white;
+  }
+
+  .btn-upload:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(166, 204, 72, 0.4);
+  }
+
+  .btn-camera {
+    background: linear-gradient(135deg, #1a4e7b 0%, #153e63 100%);
+    color: white;
+  }
+
+  .btn-camera:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(26, 78, 123, 0.4);
+  }
+
+  .camera-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.9);
+    z-index: 1000;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .camera-modal.active {
+    display: flex;
+  }
+
+  .camera-content {
+    max-width: 90%;
+    max-height: 90%;
+    background: white;
+    border-radius: 12px;
+    padding: 2rem;
+    position: relative;
+  }
+
+  #video {
+    width: 100%;
+    max-width: 640px;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+  }
+
+  .camera-controls {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+  }
+
+  .btn-capture, .btn-close-camera {
+    padding: 0.8rem 2rem;
+    border-radius: 8px;
+    border: none;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+
+  .btn-capture {
+    background: #a6cc48;
+    color: white;
+  }
+
+  .btn-close-camera {
+    background: #dc3545;
+    color: white;
+  }
+
+  .preview-zone {
+    display: none;
+    margin-top: 2rem;
+    text-align: center;
+  }
+
+  .preview-zone.active {
+    display: block;
+  }
+
+  .preview-image {
+    max-width: 100%;
+    max-height: 400px;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
+
+  .btn-scan {
+    background: linear-gradient(135deg, #1a4e7b 0%, #153e63 100%);
+    color: white;
+    padding: 1rem 3rem;
+    border: none;
+    border-radius: 8px;
+    font-size: 1.1rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+
+  .btn-scan:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(26, 78, 123, 0.4);
+  }
+
+  .btn-scan:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  .loading {
+    display: none;
+    margin-top: 1rem;
+    color: #1a4e7b;
+    font-weight: 600;
+  }
+
+  .loading.active {
+    display: block;
+  }
+
+  .spinner {
+    border: 4px solid #e8f0d4;
+    border-top: 4px solid #a6cc48;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    animation: spin 1s linear infinite;
+    margin: 1rem auto;
+  }
+
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+
+  .results-container {
+    display: none;
+    margin-top: 2rem;
+  }
+
+  .results-container.active {
+    display: block;
+  }
+
+  .alert {
+    padding: 1rem 1.5rem;
+    border-radius: 8px;
+    margin-bottom: 1.5rem;
+    font-weight: 500;
+  }
+
+  .alert-success {
+    background: #d4edda;
+    color: #155724;
+    border-left: 4px solid #28a745;
+  }
+
+  .alert-error {
+    background: #f8d7da;
+    color: #721c24;
+    border-left: 4px solid #dc3545;
+  }
+
+  .pedido-details {
+    background: #f8f9fa;
+    border-radius: 12px;
+    padding: 2rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .detail-section {
+    background: white;
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  }
+
+  .detail-section h3 {
+    color: #1a4e7b;
+    font-weight: 700;
+    font-size: 1.3rem;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .detail-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.7rem 0;
+    border-bottom: 1px solid #e8f0d4;
+  }
+
+  .detail-row:last-child {
+    border-bottom: none;
+  }
+
+  .detail-label {
+    color: #666;
+    font-weight: 600;
+  }
+
+  .detail-value {
+    color: #1a4e7b;
+    font-weight: 500;
+  }
+
+  .estado-badge {
+    display: inline-block;
+    padding: 0.4rem 1rem;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    font-weight: 600;
+  }
+
+  .estado-pendiente {
+    background: #fff3cd;
+    color: #856404;
+  }
+
+  .estado-proceso {
+    background: #cfe2ff;
+    color: #084298;
+  }
+
+  .estado-completado {
+    background: #d1e7dd;
+    color: #0f5132;
+  }
+
+  .prendas-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-top: 1rem;
+  }
+
+  .prenda-item {
+    background: #f8fcf4;
+    padding: 1rem;
+    border-radius: 8px;
+    border-left: 4px solid #a6cc48;
+    text-align: center;
+  }
+
+  .prenda-tipo {
+    font-weight: 700;
+    color: #1a4e7b;
+    margin-bottom: 0.3rem;
+  }
+
+  .prenda-estado {
+    font-size: 0.9rem;
+    color: #666;
+  }
+
+  .recibo-summary {
+    background: linear-gradient(135deg, #1a4e7b 0%, #153e63 100%);
+    color: white;
+    padding: 1.5rem;
+    border-radius: 8px;
+    margin-top: 1rem;
+  }
+
+  .recibo-summary h4 {
+    margin-bottom: 1rem;
+    font-size: 1.2rem;
+  }
+
+  .recibo-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.5rem 0;
+    font-size: 1rem;
+  }
+
+  .recibo-total {
+    border-top: 2px solid rgba(255, 255, 255, 0.3);
+    margin-top: 0.5rem;
+    padding-top: 1rem;
+    font-size: 1.3rem;
+    font-weight: 700;
+  }
+
+  .btn-nuevo-scan {
+    background: #a6cc48;
+    color: white;
+    padding: 0.8rem 2rem;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 1rem;
+    transition: all 0.3s ease;
+  }
+
+  .btn-nuevo-scan:hover {
+    background: #84af1d;
+    transform: translateY(-2px);
+  }
+
+  @media (max-width: 768px) {
+    .scanner-card {
+      padding: 1.5rem;
+    }
+
+    .upload-zone {
+      padding: 2rem 1rem;
+    }
+
+    .upload-buttons {
+      flex-direction: column;
+    }
+
+    .btn-upload, .btn-camera {
+      width: 100%;
+      justify-content: center;
+    }
+
+    .prendas-list {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+
+<div class="scanner-container">
+  <div class="page-header">
+    <h1>🔍 Lector de Códigos de Barras</h1>
+    <p>Escanea códigos para consultar información de pedidos</p>
+  </div>
+
+  <div class="scanner-card">
+    <div class="upload-zone" id="uploadZone">
+      <div class="upload-icon">
+        <svg viewBox="0 0 16 16">
+          <path d="M0 3a1.5 1.5 0 0 1 1.5-1.5h13A1.5 1.5 0 0 1 16 3v10a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 0 13V3zm1.5-.5A.5.5 0 0 0 1 3v10a.5.5 0 0 0 .5.5h13a.5.5 0 0 0 .5-.5V3a.5.5 0 0 0-.5-.5h-13z"/>
+          <path d="M2 4h1v8H2V4zm2 0h.5v8H4V4zm1.5 0h.5v8h-.5V4zm1.5 0h1v8H7V4zm2 0h.5v8H9V4zm1.5 0h1v8h-1V4zm2 0h.5v8h-.5V4z"/>
+        </svg>
+      </div>
+      <h3>Sube o captura un código de barras</h3>
+      <p>Arrastra una imagen aquí o selecciona una opción</p>
+      <input type="file" id="fileInput" accept="image/*" style="display: none;">
+      <div class="upload-buttons">
+        <button class="btn-upload" onclick="document.getElementById('fileInput').click()">
+          <svg width="20" height="20" viewBox="0 0 16 16" fill="currentColor">
+            <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/>
+            <path d="M7.646 1.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1-.708.708L8.5 2.707V11.5a.5.5 0 0 1-1 0V2.707L5.354 4.854a.5.5 0 1 1-.708-.708l3-3z"/>
+          </svg>
+          Subir Imagen
+        </button>
+        <button class="btn-camera" id="btnCamera">
+          <svg width="20" height="20" viewBox="0 0 16 16" fill="currentColor">
+            <path d="M15 12a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h1.172a3 3 0 0 0 2.12-.879l.83-.828A1 1 0 0 1 6.827 3h2.344a1 1 0 0 1 .707.293l.828.828A3 3 0 0 0 12.828 5H14a1 1 0 0 1 1 1v6zM2 4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-1.172a2 2 0 0 1-1.414-.586l-.828-.828A2 2 0 0 0 9.172 2H6.828a2 2 0 0 0-1.414.586l-.828.828A2 2 0 0 1 3.172 4H2z"/>
+            <path d="M8 11a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5zm0 1a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z"/>
+          </svg>
+          Tomar Foto
+        </button>
+      </div>
+    </div>
+
+    <div class="preview-zone" id="previewZone">
+      <img id="previewImage" class="preview-image" alt="Preview">
+      <div>
+        <button class="btn-scan" id="btnScan">
+          <span>Escanear Código</span>
+        </button>
+        <button class="btn-nuevo-scan" onclick="resetScanner()">Nueva Imagen</button>
+      </div>
+    </div>
+
+    <div class="loading" id="loading">
+      <div class="spinner"></div>
+      <p>Procesando imagen...</p>
+    </div>
+
+    <div class="results-container" id="resultsContainer">
+      <!-- Aquí se mostrarán los resultados -->
+    </div>
+  </div>
+</div>
+
+<!-- Modal de Cámara -->
+<div class="camera-modal" id="cameraModal">
+  <div class="camera-content">
+    <video id="video" autoplay></video>
+    <canvas id="canvas" style="display: none;"></canvas>
+    <div class="camera-controls">
+      <button class="btn-capture" id="btnCapture">Capturar</button>
+      <button class="btn-close-camera" id="btnCloseCamera">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  let selectedFile = null;
+  let videoStream = null;
+
+  // Configurar zona de arrastre
+  const uploadZone = document.getElementById('uploadZone');
+  const fileInput = document.getElementById('fileInput');
+  const previewZone = document.getElementById('previewZone');
+  const previewImage = document.getElementById('previewImage');
+  const loading = document.getElementById('loading');
+  const resultsContainer = document.getElementById('resultsContainer');
+
+  uploadZone.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    uploadZone.classList.add('dragover');
+  });
+
+  uploadZone.addEventListener('dragleave', () => {
+    uploadZone.classList.remove('dragover');
+  });
+
+  uploadZone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    uploadZone.classList.remove('dragover');
+    const files = e.dataTransfer.files;
+    if (files.length > 0) {
+      handleFileSelect(files[0]);
+    }
+  });
+
+  fileInput.addEventListener('change', (e) => {
+    if (e.target.files.length > 0) {
+      handleFileSelect(e.target.files[0]);
+    }
+  });
+
+  function handleFileSelect(file) {
+    if (!file.type.startsWith('image/')) {
+      alert('Por favor selecciona una imagen válida');
+      return;
+    }
+
+    selectedFile = file;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      previewImage.src = e.target.result;
+      uploadZone.style.display = 'none';
+      previewZone.classList.add('active');
+      resultsContainer.classList.remove('active');
+    };
+    reader.readAsDataURL(file);
+  }
+
+  // Cámara
+  const cameraModal = document.getElementById('cameraModal');
+  const video = document.getElementById('video');
+  const canvas = document.getElementById('canvas');
+  const btnCamera = document.getElementById('btnCamera');
+  const btnCapture = document.getElementById('btnCapture');
+  const btnCloseCamera = document.getElementById('btnCloseCamera');
+
+  btnCamera.addEventListener('click', async () => {
+    try {
+      videoStream = await navigator.mediaDevices.getUserMedia({ 
+        video: { facingMode: 'environment' } 
+      });
+      video.srcObject = videoStream;
+      cameraModal.classList.add('active');
+    } catch (error) {
+      alert('No se pudo acceder a la cámara: ' + error.message);
+    }
+  });
+
+  btnCapture.addEventListener('click', () => {
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    canvas.getContext('2d').drawImage(video, 0, 0);
+    
+    canvas.toBlob((blob) => {
+      selectedFile = new File([blob], 'captura.jpg', { type: 'image/jpeg' });
+      previewImage.src = canvas.toDataURL();
+      uploadZone.style.display = 'none';
+      previewZone.classList.add('active');
+      resultsContainer.classList.remove('active');
+      closeCamera();
+    }, 'image/jpeg');
+  });
+
+  btnCloseCamera.addEventListener('click', closeCamera);
+
+  function closeCamera() {
+    if (videoStream) {
+      videoStream.getTracks().forEach(track => track.stop());
+      videoStream = null;
+    }
+    cameraModal.classList.remove('active');
+  }
+
+  // Escanear código
+  document.getElementById('btnScan').addEventListener('click', async () => {
+    if (!selectedFile) {
+      alert('Por favor selecciona o captura una imagen primero');
+      return;
+    }
+
+    loading.classList.add('active');
+    resultsContainer.classList.remove('active');
+    document.getElementById('btnScan').disabled = true;
+
+    const formData = new FormData();
+    formData.append('barcode_image', selectedFile);
+
+    try {
+      const response = await fetch('{{ url_for("lector_barcode") }}', {
+        method: 'POST',
+        body: formData
+      });
+
+      const data = await response.json();
+      loading.classList.remove('active');
+      document.getElementById('btnScan').disabled = false;
+
+      if (data.success) {
+        displayResults(data);
+      } else {
+        displayError(data.error || 'Error al procesar la imagen');
+      }
+    } catch (error) {
+      loading.classList.remove('active');
+      document.getElementById('btnScan').disabled = false;
+      displayError('Error de conexión: ' + error.message);
+    }
+  });
+
+  function displayResults(data) {
+    const estadoClass = {
+      'Pendiente': 'estado-pendiente',
+      'En proceso': 'estado-proceso',
+      'Completado': 'estado-completado'
+    };
+
+    let prendasHTML = '';
+    if (data.prendas && data.prendas.length > 0) {
+      prendasHTML = data.prendas.map(prenda => `
+        <div class="prenda-item">
+          <div class="prenda-tipo">${prenda.tipo}</div>
+          <div class="prenda-estado">${prenda.estado}</div>
+        </div>
+      `).join('');
+    } else {
+      prendasHTML = '<p style="color: #666; text-align: center;">No hay prendas registradas</p>';
+    }
+
+    let reciboHTML = '';
+    if (data.recibo) {
+      const subtotal = data.recibo.monto + data.recibo.descuento;
+      reciboHTML = `
+        <div class="recibo-summary">
+          <h4>💰 Información de Pago</h4>
+          <div class="recibo-row">
+            <span>Subtotal:</span>
+            <span>$${subtotal.toLocaleString('es-CO')}</span>
+          </div>
+          ${data.recibo.descuento > 0 ? `
+          <div class="recibo-row">
+            <span>Descuento:</span>
+            <span style="color: #a6cc48;">-$${data.recibo.descuento.toLocaleString('es-CO')}</span>
+          </div>
+          ` : ''}
+          <div class="recibo-row recibo-total">
+            <span>Total:</span>
+            <span>$${data.recibo.monto.toLocaleString('es-CO')}</span>
+          </div>
+          <div class="recibo-row">
+            <span>Fecha de pago:</span>
+            <span>${data.recibo.fecha}</span>
+          </div>
+        </div>
+      `;
+    }
+
+    resultsContainer.innerHTML = `
+      <div class="alert alert-success">
+        ✅ Código de barras detectado: <strong>${data.codigo_barras}</strong>
+      </div>
+      <div class="pedido-details">
+        <div class="detail-section">
+          <h3>
+            <svg width="24" height="24" viewBox="0 0 16 16" fill="currentColor">
+              <path d="M0 2.5A.5.5 0 0 1 .5 2H2a.5.5 0 0 1 .485.379L2.89 4H14.5a.5.5 0 0 1 .485.621l-1.5 6A.5.5 0 0 1 13 11H4a.5.5 0 0 1-.485-.379L1.61 3H.5a.5.5 0 0 1-.5-.5z"/>
+            </svg>
+            Detalles del Pedido
+          </h3>
+          <div class="detail-row">
+            <span class="detail-label">ID Pedido:</span>
+            <span class="detail-value">#${data.pedido.id}</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">Estado:</span>
+            <span class="estado-badge ${estadoClass[data.pedido.estado] || ''}">${data.pedido.estado}</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">Fecha de Ingreso:</span>
+            <span class="detail-value">${data.pedido.fecha_ingreso}</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">Fecha de Entrega:</span>
+            <span class="detail-value">${data.pedido.fecha_entrega}</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">Instrucciones:</span>
+            <span class="detail-value">${data.pedido.instrucciones}</span>
+          </div>
+        </div>
+
+        <div class="detail-section">
+          <h3>
+            <svg width="24" height="24" viewBox="0 0 16 16" fill="currentColor">
+              <path d="M8 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm2-3a2 2 0 1 1-4 0 2 2 0 0 1 4 0zm4 8c0 1-1 1-1 1H3s-1 0-1-1 1-4 6-4 6 3 6 4zm-1-.004c-.001-.246-.154-.986-.832-1.664C11.516 10.68 10.289 10 8 10c-2.29 0-3.516.68-4.168 1.332-.678.678-.83 1.418-.832 1.664h10z"/>
+            </svg>
+            Información del Cliente
+          </h3>
+          <div class="detail-row">
+            <span class="detail-label">Nombre:</span>
+            <span class="detail-value">${data.cliente.nombre}</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">Teléfono:</span>
+            <span class="detail-value">${data.cliente.telefono}</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">Email:</span>
+            <span class="detail-value">${data.cliente.email}</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">Dirección:</span>
+            <span class="detail-value">${data.cliente.direccion}</span>
+          </div>
+        </div>
+
+        <div class="detail-section">
+          <h3>
+            <svg width="24" height="24" viewBox="0 0 16 16" fill="currentColor">
+              <path d="M7 14s-1 0-1-1 1-4 5-4 5 3 5 4-1 1-1 1H7zm4-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/>
+              <path fill-rule="evenodd" d="M5.216 14A2.238 2.238 0 0 1 5 13c0-1.355.68-2.75 1.936-3.72A6.325 6.325 0 0 0 5 9c-4 0-5 3-5 4s1 1 1 1h4.216z"/>
+              <path d="M4.5 8a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z"/>
+            </svg>
+            Prendas (${data.prendas.length})
+          </h3>
+          <div class="prendas-list">
+            ${prendasHTML}
+          </div>
+        </div>
+
+        ${reciboHTML}
+      </div>
+      <button class="btn-nuevo-scan" onclick="resetScanner()">Escanear Otro Código</button>
+    `;
+    resultsContainer.classList.add('active');
+  }
+
+  function displayError(message) {
+    resultsContainer.innerHTML = `
+      <div class="alert alert-error">
+        ❌ ${message}
+      </div>
+      <button class="btn-nuevo-scan" onclick="resetScanner()">Intentar de Nuevo</button>
+    `;
+    resultsContainer.classList.add('active');
+  }
+
+  function resetScanner() {
+    selectedFile = null;
+    uploadZone.style.display = 'block';
+    previewZone.classList.remove('active');
+    resultsContainer.classList.remove('active');
+    loading.classList.remove('active');
+    fileInput.value = '';
+  }
+</script>
+{% endblock %}
