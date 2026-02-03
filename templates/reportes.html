@@ -503,13 +503,18 @@
                 if (label) {
                     label += ': ';
                 }
-                label += new Intl.NumberFormat('es-CO').format(context.parsed.y || context.parsed);
+                // Manejar diferentes tipos de datos
+                const value = context.parsed.y !== undefined ? context.parsed.y : context.parsed;
+                label += new Intl.NumberFormat('es-CO').format(value);
+                
+                // Calcular porcentaje solo para gráficos de pie/doughnut
+                if (context.chart.config.type === 'pie' || context.chart.config.type === 'doughnut') {
+                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                    const percentage = ((value / total) * 100).toFixed(1);
+                    label += ` (${percentage}%)`;
+                }
+                
                 return label;
-            },
-            afterLabel: function(context) {
-                const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                const percentage = ((context.parsed / total) * 100).toFixed(1);
-                return `(${percentage}%)`;
             }
         }
     };
