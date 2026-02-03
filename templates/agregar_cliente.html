@@ -124,6 +124,47 @@
     font-weight: 700;
   }
 
+  .password-requirements {
+    background: #e8f4fd;
+    border-left: 4px solid #2196F3;
+    padding: 12px 16px;
+    border-radius: 8px;
+    margin-top: 8px;
+    font-size: 0.85rem;
+  }
+
+  .password-requirements .title {
+    font-weight: 700;
+    color: #1565C0;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .password-requirements ul {
+    margin: 0;
+    padding-left: 20px;
+    color: #424242;
+  }
+
+  .password-requirements li {
+    margin: 4px 0;
+    line-height: 1.5;
+  }
+
+  .password-requirements li::marker {
+    color: #2196F3;
+  }
+
+  .password-match {
+    border-color: #4caf50 !important;
+  }
+
+  .password-no-match {
+    border-color: #d32f2f !important;
+  }
+
   @media (max-width: 768px) {
     .form-container {
       padding: 1.5rem;
@@ -153,9 +194,27 @@
         minlength="3"
         maxlength="100"
         placeholder="Ej: Juan García López"
+        value="{{ nombre if nombre else '' }}"
         required
       >
       <div class="help-text">Mínimo 3 caracteres</div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">
+        Usuario <span class="required-note">*</span>
+      </label>
+      <input 
+        class="form-control" 
+        name="username" 
+        type="text"
+        minlength="3"
+        maxlength="50"
+        placeholder="Ej: juangarcia"
+        value="{{ username if username else '' }}"
+        required
+      >
+      <div class="help-text">Nombre de usuario para iniciar sesión</div>
     </div>
 
     <div class="form-group">
@@ -167,6 +226,7 @@
         name="email" 
         type="email"
         placeholder="Ej: juan.garcia@ejemplo.com"
+        value="{{ email if email else '' }}"
         required
       >
       <div class="help-text">Formato válido: ejemplo@dominio.com</div>
@@ -174,34 +234,44 @@
 
     <div class="form-group">
       <label class="form-label">
-        Teléfono <span class="required-note">*</span>
+        Contraseña <span class="required-note">*</span>
       </label>
       <input 
         class="form-control" 
-        name="telefono" 
-        type="tel"
-        minlength="7"
-        maxlength="15"
-        placeholder="Ej: 1234567890"
+        id="password"
+        name="password" 
+        type="password"
+        minlength="6"
+        placeholder="Crear contraseña"
         required
       >
-      <div class="help-text">Mínimo 7 dígitos</div>
+      <div class="password-requirements">
+        <div class="title">
+          <span>🔒</span>
+          <span>La contraseña debe tener:</span>
+        </div>
+        <ul>
+          <li>Al menos <strong>6 caracteres</strong></li>
+          <li>Al menos <strong>una letra</strong> (A-Z o a-z)</li>
+          <li>Al menos <strong>un número</strong> (0-9)</li>
+        </ul>
+      </div>
     </div>
 
     <div class="form-group">
       <label class="form-label">
-        Dirección <span class="required-note">*</span>
+        Repetir Contraseña <span class="required-note">*</span>
       </label>
       <input 
         class="form-control" 
-        name="direccion" 
-        type="text"
-        minlength="5"
-        maxlength="200"
-        placeholder="Ej: Calle Principal 123, Apt 4B"
+        id="password2"
+        name="password2" 
+        type="password"
+        minlength="6"
+        placeholder="Confirmar contraseña"
         required
       >
-      <div class="help-text">Mínimo 5 caracteres</div>
+      <div class="help-text">Debe coincidir con la contraseña anterior</div>
     </div>
 
     <div class="form-buttons">
@@ -212,14 +282,48 @@
 </div>
 
 <script>
+  // Validar que las contraseñas coincidan en tiempo real
+  const password1 = document.getElementById('password');
+  const password2 = document.getElementById('password2');
+
+  password2.addEventListener('input', function() {
+    if (password2.value === '') {
+      password2.classList.remove('password-match', 'password-no-match');
+    } else if (password1.value === password2.value) {
+      password2.classList.remove('password-no-match');
+      password2.classList.add('password-match');
+    } else {
+      password2.classList.remove('password-match');
+      password2.classList.add('password-no-match');
+    }
+  });
+
+  password1.addEventListener('input', function() {
+    if (password2.value !== '') {
+      if (password1.value === password2.value) {
+        password2.classList.remove('password-no-match');
+        password2.classList.add('password-match');
+      } else {
+        password2.classList.remove('password-match');
+        password2.classList.add('password-no-match');
+      }
+    }
+  });
+
   function validarFormulario(event) {
     const nombre = document.querySelector('[name="nombre"]').value.trim();
+    const username = document.querySelector('[name="username"]').value.trim();
     const email = document.querySelector('[name="email"]').value.trim();
-    const telefono = document.querySelector('[name="telefono"]').value.trim();
-    const direccion = document.querySelector('[name="direccion"]').value.trim();
+    const password = document.querySelector('[name="password"]').value.trim();
+    const password2 = document.querySelector('[name="password2"]').value.trim();
 
     if (nombre.length < 3) {
       alert('El nombre debe tener al menos 3 caracteres.');
+      return false;
+    }
+
+    if (username.length < 3) {
+      alert('El username debe tener al menos 3 caracteres.');
       return false;
     }
 
@@ -228,13 +332,25 @@
       return false;
     }
 
-    if (telefono.length < 7) {
-      alert('El teléfono debe tener al menos 7 dígitos.');
+    if (password.length < 6) {
+      alert('La contraseña debe tener al menos 6 caracteres.');
       return false;
     }
 
-    if (direccion.length < 5) {
-      alert('La dirección debe tener al menos 5 caracteres.');
+    // Validar que tenga al menos una letra
+    if (!/[a-zA-Z]/.test(password)) {
+      alert('La contraseña debe contener al menos una letra.');
+      return false;
+    }
+
+    // Validar que tenga al menos un número
+    if (!/[0-9]/.test(password)) {
+      alert('La contraseña debe contener al menos un número.');
+      return false;
+    }
+
+    if (password !== password2) {
+      alert('Las contraseñas no coinciden.');
       return false;
     }
 

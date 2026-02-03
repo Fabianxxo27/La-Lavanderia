@@ -934,9 +934,10 @@ def agregar_cliente():
     
     if request.method == 'POST':
         nombre = request.form.get('nombre', '').strip()
+        username = request.form.get('username', '').strip()
         email = request.form.get('email', '').strip()
-        telefono = request.form.get('telefono', '').strip()
-        direccion = request.form.get('direccion', '').strip()
+        password = request.form.get('password', '').strip()
+        password2 = request.form.get('password2', '').strip()
         
         # Validación
         errores = []
@@ -944,24 +945,46 @@ def agregar_cliente():
         if not nombre or len(nombre) < 3:
             errores.append("El nombre debe tener al menos 3 caracteres.")
         
-        if not email or '@' not in email or len(email) < 5:
+        if not username or len(username) < 3:
+            errores.append("El username debe tener al menos 3 caracteres.")
+        
+        if not validar_email(email):
             errores.append("Por favor ingresa un email válido.")
         
-        if not telefono or len(telefono) < 7:
-            errores.append("El teléfono debe tener al menos 7 dígitos.")
+        # Validar contraseña
+        validacion_password = validar_contrasena(password)
+        if validacion_password != True:
+            errores.append(validacion_password)
         
-        if not direccion or len(direccion) < 5:
-            errores.append("La dirección debe tener al menos 5 caracteres.")
+        if password != password2:
+            errores.append("Las contraseñas no coinciden.")
+        
+        # Verificar si el username o email ya existen
+        if not errores:
+            usuario_existente = run_query(
+                "SELECT id_usuario FROM usuario WHERE username = :u OR email = :e",
+                {"u": username, "e": email},
+                fetchone=True
+            )
+            if usuario_existente:
+                errores.append("El username o email ya están registrados.")
         
         if errores:
             for error in errores:
                 flash(error, 'warning')
-            return redirect(url_for('agregar_cliente'))
+            return render_template('agregar_cliente.html', 
+                                 nombre=nombre, 
+                                 username=username, 
+                                 email=email)
         
         try:
+            # Hashear la contraseña
+            hashed_password = generate_password_hash(password)
+            
+            # Insertar en la tabla usuario
             run_query(
-                "INSERT INTO cliente (nombre, email, telefono, direccion) VALUES (:n, :e, :t, :d)",
-                {"n": nombre, "e": email, "t": telefono, "d": direccion},
+                "INSERT INTO usuario (nombre, username, email, password, rol) VALUES (:n, :u, :e, :p, 'cliente')",
+                {"n": nombre, "u": username, "e": email, "p": hashed_password},
                 commit=True
             )
             flash('✅ Cliente agregado correctamente.', 'success')
