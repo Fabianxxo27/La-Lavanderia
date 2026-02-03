@@ -115,9 +115,6 @@
                         <button type="button" class="btn btn-outline-light" onclick="cambiarTipoGrafico('pedidosDiaChart', 'bar')">
                             <i class="fas fa-chart-bar"></i>
                         </button>
-                        <button type="button" class="btn btn-outline-light" onclick="exportarGrafico('pedidosDiaChart')">
-                            <i class="fas fa-download"></i>
-                        </button>
                     </div>
                 </div>
                 <div class="card-body position-relative">
@@ -138,9 +135,6 @@
                         </button>
                         <button type="button" class="btn btn-outline-light" onclick="cambiarTipoGrafico('clientesNuevosChart', 'line')">
                             <i class="fas fa-chart-line"></i>
-                        </button>
-                        <button type="button" class="btn btn-outline-light" onclick="exportarGrafico('clientesNuevosChart')">
-                            <i class="fas fa-download"></i>
                         </button>
                     </div>
                 </div>
@@ -855,20 +849,6 @@
             const buttons = document.querySelectorAll(`#${chartId}`).item(0).closest('.card').querySelectorAll('.btn-group button');
             buttons.forEach(btn => btn.classList.remove('active'));
             event.target.closest('button').classList.add('active');
-        }
-    }
-
-    // Exportar gráfico como imagen
-    function exportarGrafico(chartId) {
-        const chart = chartInstances[chartId];
-        if (chart) {
-            const url = chart.toBase64Image();
-            const link = document.createElement('a');
-            link.download = `${chartId}_${new Date().toISOString().split('T')[0]}.png`;
-            link.href = url;
-            link.click();
-            
-            mostrarNotificacion('Gráfico exportado exitosamente', 'success');
         }
     }
 
