@@ -242,6 +242,69 @@
       flex-direction: column;
     }
   }
+
+  /* Estilos de paginación */
+  .pagination {
+    margin-top: 2rem;
+    padding: 1.5rem;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    border: 2px solid #e8f0d4;
+  }
+
+  .pagination-info {
+    text-align: center;
+    color: #666;
+    font-size: 0.95rem;
+    margin-bottom: 1rem;
+  }
+
+  .pagination-controls {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  .btn-pagina {
+    padding: 0.6rem 1rem;
+    background: white;
+    color: #1a4e7b;
+    border: 2px solid #e8f0d4;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 600;
+    transition: all 0.2s ease;
+    min-width: 40px;
+    text-align: center;
+  }
+
+  .btn-pagina:hover {
+    background: #a6cc48;
+    color: white;
+    border-color: #a6cc48;
+    text-decoration: none;
+    transform: translateY(-2px);
+  }
+
+  .btn-pagina.active {
+    background: linear-gradient(135deg, #1a4e7b 0%, #2d5f8d 100%);
+    color: white;
+    border-color: #1a4e7b;
+  }
+
+  @media (max-width: 768px) {
+    .pagination-controls {
+      font-size: 0.9rem;
+    }
+    
+    .btn-pagina {
+      padding: 0.5rem 0.8rem;
+      min-width: 35px;
+    }
+  }
 </style>
 
 <div class="clientes-container">
@@ -315,5 +378,33 @@
     </div>
     {% endif %}
   </div>
+
+  <!-- Paginación -->
+  {% if total_paginas > 1 %}
+  <div class="pagination">
+    <div class="pagination-info">
+      Mostrando página {{ pagina }} de {{ total_paginas }} ({{ total_count }} clientes)
+    </div>
+    <div class="pagination-controls">
+      {% if pagina > 1 %}
+        <a href="{{ url_for('clientes', pagina=1, orden=orden) }}" class="btn-pagina">« Primera</a>
+        <a href="{{ url_for('clientes', pagina=pagina-1, orden=orden) }}" class="btn-pagina">‹ Anterior</a>
+      {% endif %}
+      
+      {% for p in range([pagina-2, 1]|max, [pagina+3, total_paginas+1]|min) %}
+        {% if p == pagina %}
+          <span class="btn-pagina active">{{ p }}</span>
+        {% else %}
+          <a href="{{ url_for('clientes', pagina=p, orden=orden) }}" class="btn-pagina">{{ p }}</a>
+        {% endif %}
+      {% endfor %}
+      
+      {% if pagina < total_paginas %}
+        <a href="{{ url_for('clientes', pagina=pagina+1, orden=orden) }}" class="btn-pagina">Siguiente ›</a>
+        <a href="{{ url_for('clientes', pagina=total_paginas, orden=orden) }}" class="btn-pagina">Última »</a>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
 </div>
 {% endblock %}

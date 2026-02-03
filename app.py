@@ -720,19 +720,28 @@ def cliente_pedidos():
 @login_requerido
 @admin_requerido
 def pedidos():
-    """Mostrar todos los pedidos con búsqueda y filtrado (para administrador)."""
+    """Mostrar todos los pedidos con búsqueda, filtrado y paginación (para administrador)."""
     if not _admin_only():
         flash('Acceso denegado.', 'danger')
         return redirect(url_for('index'))
     
-    # Obtener parámetros de filtrado
+    # Obtener parámetros de filtrado y paginación
     cliente_filter = request.args.get('cliente', '').strip()
     estado_filter = request.args.get('estado', '').strip()
     fecha_desde = request.args.get('desde', '').strip()
     fecha_hasta = request.args.get('hasta', '').strip()
     orden = request.args.get('orden', 'desc').strip().lower()  # 'asc' o 'desc'
+    pagina = request.args.get('pagina', 1, type=int)
+    por_pagina = 10
     
-    # Construir query base
+    # Construir query base para contar
+    count_query = """
+        SELECT COUNT(*) FROM pedido p
+        LEFT JOIN cliente c ON p.id_cliente = c.id_cliente
+        WHERE 1=1
+    """
+    
+    # Construir query base para datos
     query = """
         SELECT p.id_pedido, p.fecha_ingreso, p.fecha_entrega, p.estado, c.nombre, p.codigo_barras
         FROM pedido p
@@ -742,8 +751,9 @@ def pedidos():
     params = {}
     
     # Agregar filtros dinámicamente
+    filtro_where = ""
     if cliente_filter:
-        query += " AND (LOWER(c.nombre) LIKE LOWER(:cliente) OR c.id_cliente = :cliente_id)"
+        filtro_where += " AND (LOWER(c.nombre) LIKE LOWER(:cliente) OR c.id_cliente = :cliente_id)"
         params['cliente'] = f"%{cliente_filter}%"
         try:
             params['cliente_id'] = int(cliente_filter)
@@ -751,24 +761,52 @@ def pedidos():
             params['cliente_id'] = -1
     
     if estado_filter:
-        query += " AND p.estado = :estado"
+        filtro_where += " AND p.estado = :estado"
         params['estado'] = estado_filter
     
     if fecha_desde:
-        query += " AND DATE(p.fecha_ingreso) >= :desde"
+        filtro_where += " AND DATE(p.fecha_ingreso) >= :desde"
         params['desde'] = fecha_desde
     
     if fecha_hasta:
-        query += " AND DATE(p.fecha_ingreso) <= :hasta"
+        filtro_where += " AND DATE(p.fecha_ingreso) <= :hasta"
         params['hasta'] = fecha_hasta
     
-    # Agregar orden (último a primero o primero a último)
+    # Aplicar filtros a ambas queries
+    count_query += filtro_where
+    query += filtro_where
+    
+    # Contar total de registros
+    total_result = run_query(count_query, params, fetchall=True)
+    total_count = total_result[0][0] if total_result else 0
+    total_paginas = (total_count + por_pagina - 1) // por_pagina
+    
+    # Ajustar página si está fuera de rango
+    if pagina < 1:
+        pagina = 1
+    if pagina > total_paginas and total_paginas > 0:
+        pagina = total_paginas
+    
+    # Agregar orden
     if orden == 'asc':
         query += " ORDER BY p.id_pedido ASC"
     else:
         query += " ORDER BY p.id_pedido DESC"
     
+    # Agregar paginación
+    offset = (pagina - 1) * por_pagina
+    query += f" LIMIT {por_pagina} OFFSET {offset}"
+    
     pedidos = run_query(query, params, fetchall=True)
+    
+    # Obtener todos los pedidos para el calendario (sin paginación)
+    calendar_query = """
+        SELECT p.id_pedido, p.fecha_ingreso, p.fecha_entrega, p.estado, c.nombre
+        FROM pedido p
+        LEFT JOIN cliente c ON p.id_cliente = c.id_cliente
+        ORDER BY p.fecha_ingreso
+    """
+    pedidos_calendario = run_query(calendar_query, fetchall=True)
     
     # Obtener opciones de estado únicas
     estados = run_query("""
@@ -778,12 +816,16 @@ def pedidos():
     
     return render_template('pedidos.html', 
                          pedidos=pedidos,
+                         pedidos_calendario=pedidos_calendario,
                          cliente_filter=cliente_filter,
                          estado_filter=estado_filter,
                          fecha_desde=fecha_desde,
                          fecha_hasta=fecha_hasta,
                          estados=estados,
-                         orden=orden)
+                         orden=orden,
+                         pagina=pagina,
+                         total_paginas=total_paginas,
+                         total_count=total_count)
 
 
 # -----------------------------------------------
@@ -794,27 +836,67 @@ def pedidos():
 @admin_requerido
 def clientes():
     """
-    Mostrar todos los clientes basados en la tabla usuario (rol='cliente').
+    Mostrar todos los clientes basados en la tabla usuario (rol='cliente') con paginación.
     """
-    # Obtener parámetro de orden
+    # Obtener parámetros de orden y paginación
     orden = request.args.get('orden', 'desc').strip().lower()  # 'asc' o 'desc'
+    pagina = request.args.get('pagina', 1, type=int)
+    por_pagina = 10
+    orden_sql = "ASC" if orden == 'asc' else "DESC"
     
     if request.method == 'POST':
         q = request.form.get('q', '').strip()
-        # Agregar orden a la búsqueda también
-        orden_sql = "ASC" if orden == 'asc' else "DESC"
+        
+        # Contar total de resultados
+        count_result = run_query(
+            "SELECT COUNT(*) FROM usuario WHERE rol = 'cliente' AND (nombre LIKE :q OR email LIKE :q OR username LIKE :q)",
+            {"q": f"%{q}%"},
+            fetchall=True
+        )
+        total_count = count_result[0][0] if count_result else 0
+        total_paginas = (total_count + por_pagina - 1) // por_pagina
+        
+        # Ajustar página si está fuera de rango
+        if pagina < 1:
+            pagina = 1
+        if pagina > total_paginas and total_paginas > 0:
+            pagina = total_paginas
+        
+        # Obtener datos con paginación
+        offset = (pagina - 1) * por_pagina
         data = run_query(
-            f"SELECT id_usuario, nombre, username, email FROM usuario WHERE rol = 'cliente' AND (nombre LIKE :q OR email LIKE :q OR username LIKE :q) ORDER BY id_usuario {orden_sql}",
+            f"SELECT id_usuario, nombre, username, email FROM usuario WHERE rol = 'cliente' AND (nombre LIKE :q OR email LIKE :q OR username LIKE :q) ORDER BY id_usuario {orden_sql} LIMIT {por_pagina} OFFSET {offset}",
             {"q": f"%{q}%"},
             fetchall=True
         )
     else:
-        orden_sql = "ASC" if orden == 'asc' else "DESC"
-        data = run_query(
-            f"SELECT id_usuario, nombre, username, email FROM usuario WHERE rol = 'cliente' ORDER BY id_usuario {orden_sql}",
+        # Contar total de clientes
+        count_result = run_query(
+            "SELECT COUNT(*) FROM usuario WHERE rol = 'cliente'",
             fetchall=True
         )
-    return render_template('clientes.html', clients=data, orden=orden)
+        total_count = count_result[0][0] if count_result else 0
+        total_paginas = (total_count + por_pagina - 1) // por_pagina
+        
+        # Ajustar página si está fuera de rango
+        if pagina < 1:
+            pagina = 1
+        if pagina > total_paginas and total_paginas > 0:
+            pagina = total_paginas
+        
+        # Obtener datos con paginación
+        offset = (pagina - 1) * por_pagina
+        data = run_query(
+            f"SELECT id_usuario, nombre, username, email FROM usuario WHERE rol = 'cliente' ORDER BY id_usuario {orden_sql} LIMIT {por_pagina} OFFSET {offset}",
+            fetchall=True
+        )
+    
+    return render_template('clientes.html', 
+                         clients=data, 
+                         orden=orden,
+                         pagina=pagina,
+                         total_paginas=total_paginas,
+                         total_count=total_count)
 
 
 # -----------------------------------------------
