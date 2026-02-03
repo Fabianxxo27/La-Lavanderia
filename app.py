@@ -1053,22 +1053,66 @@ def lector_barcode():
             return jsonify({'success': False, 'error': 'No se seleccionó ningún archivo'}), 400
         
         try:
+            # Validar que el archivo sea una imagen
+            allowed_extensions = {'png', 'jpg', 'jpeg', 'gif', 'bmp', 'webp'}
+            file_ext = file.filename.rsplit('.', 1)[1].lower() if '.' in file.filename else ''
+            
+            if file_ext not in allowed_extensions:
+                return jsonify({
+                    'success': False, 
+                    'error': 'Formato de archivo no válido. Por favor sube una imagen (PNG, JPG, JPEG, GIF, BMP, WEBP)'
+                }), 400
+            
             # Leer imagen
             image_bytes = file.read()
+            
+            if len(image_bytes) == 0:
+                return jsonify({'success': False, 'error': 'El archivo está vacío o corrupto'}), 400
+            
+            # Intentar decodificar la imagen
             nparr = np.frombuffer(image_bytes, np.uint8)
             img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
             
+            if img is None:
+                return jsonify({
+                    'success': False, 
+                    'error': 'No se pudo leer la imagen. Asegúrate de que el archivo sea una imagen válida'
+                }), 400
+            
+            # Verificar que la imagen tenga un tamaño razonable
+            height, width = img.shape[:2]
+            if width < 50 or height < 50:
+                return jsonify({
+                    'success': False, 
+                    'error': 'La imagen es demasiado pequeña. Por favor usa una imagen de mejor calidad'
+                }), 400
+            
             # Convertir a PIL Image para pyzbar
-            img_pil = PILImage.fromarray(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
+            try:
+                img_pil = PILImage.fromarray(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
+            except Exception as conv_error:
+                return jsonify({
+                    'success': False, 
+                    'error': 'Error al procesar la imagen. Intenta con otra imagen'
+                }), 400
             
             # Decodificar código de barras
             decoded_objects = decode(img_pil)
             
-            if not decoded_objects:
-                return jsonify({'success': False, 'error': 'No se detectó ningún código de barras en la imagen'}), 400
+            if not decoded_objects or len(decoded_objects) == 0:
+                return jsonify({
+                    'success': False, 
+                    'error': 'No se detectó ningún código de barras en la imagen. Asegúrate de que la imagen contenga un código de barras visible y bien enfocado'
+                }), 400
             
             # Obtener el primer código detectado
-            barcode_data = decoded_objects[0].data.decode('utf-8')
+            try:
+                barcode_data = decoded_objects[0].data.decode('utf-8')
+            except UnicodeDecodeError:
+                return jsonify({
+                    'success': False, 
+                    'error': 'El código de barras detectado no es válido o está corrupto'
+                }), 400
             
             # Buscar pedido por código de barras
             pedido = run_query("""
@@ -1123,9 +1167,34 @@ def lector_barcode():
             }
             
             return jsonify(response_data), 200
+        
+        except cv2.error as cv_error:
+            return jsonify({
+                'success': False, 
+                'error': f'Error al procesar la imagen con OpenCV: {str(cv_error)}'
+            }), 500
+        
+        except ValueError as val_error:
+            return jsonify({
+                'success': False, 
+                'error': f'Datos inválidos en la imagen: {str(val_error)}'
+            }), 400
+        
+        except MemoryError:
+            return jsonify({
+                'success': False, 
+                'error': 'La imagen es demasiado grande. Por favor usa una imagen más pequeña'
+            }), 400
             
         except Exception as e:
-            return jsonify({'success': False, 'error': f'Error al procesar la imagen: {str(e)}'}), 500
+            # Log del error para debugging (puedes ver esto en los logs de Render)
+            import traceback
+            print(f"Error inesperado en lector_barcode: {traceback.format_exc()}")
+            
+            return jsonify({
+                'success': False, 
+                'error': f'Error inesperado al procesar la imagen. Por favor intenta de nuevo con otra imagen'
+            }), 500
     
     # GET request - mostrar página
     return render_template('lector_barcode.html')
