@@ -275,33 +275,45 @@ def login():
 # -----------------------------------------------
 @app.route("/registro", methods=["GET", "POST"])
 def registro():
+    # Variables para mantener datos del formulario
+    form_data = {
+        'nombre': '',
+        'username': '',
+        'email': ''
+    }
+    
     if request.method == "POST":
         nombre = limpiar_texto(request.form.get("nombre", ""), 200)
         username = limpiar_texto(request.form.get("username", "").strip().lower(), 100)
         email = limpiar_texto(request.form.get("email", "").strip().lower(), 200)
         password = request.form.get("password", "")
         password2 = request.form.get("password2", "")
+        
+        # Guardar datos para repoblar el formulario en caso de error
+        form_data['nombre'] = nombre
+        form_data['username'] = username
+        form_data['email'] = email
 
         # Validaciones básicas
         if not all([nombre, username, email, password]):
             flash("Todos los campos son obligatorios.", "warning")
-            return render_template("registro.html")
+            return render_template("registro.html", form_data=form_data)
         
         # Validar email
         if not validar_email(email):
-            flash("Email inválido.", "danger")
-            return render_template("registro.html")
+            flash("El email no tiene un formato válido.", "danger")
+            return render_template("registro.html", form_data=form_data)
         
         # Validar contraseña
         es_valida, mensaje = validar_contrasena(password)
         if not es_valida:
             flash(mensaje, "danger")
-            return render_template("registro.html")
+            return render_template("registro.html", form_data=form_data)
 
         # Verificar confirmación de contraseña
         if password != password2:
             flash("Las contraseñas no coinciden.", "warning")
-            return render_template("registro.html")
+            return render_template("registro.html", form_data=form_data)
 
         hashed_password = generate_password_hash(password, method='pbkdf2:sha256')
 
@@ -319,11 +331,11 @@ def registro():
                 fetchone=True
             )
             if existing_email:
-                flash("El correo ya está registrado.", "danger")
-                return render_template("registro.html")
+                flash("Este correo ya está registrado.", "danger")
+                return render_template("registro.html", form_data=form_data)
             if existing_user:
-                flash("El nombre de usuario ya existe.", "danger")
-                return render_template("registro.html")
+                flash("Este nombre de usuario ya existe. Por favor elige otro.", "danger")
+                return render_template("registro.html", form_data=form_data)
 
             # Insertar el nuevo usuario
             result = run_query(
@@ -353,15 +365,15 @@ def registro():
                     commit=True
                 )
 
-            flash("Registro exitoso. Inicia sesión.", "success")
+            flash("¡Registro exitoso! Ya puedes iniciar sesión.", "success")
             return redirect(url_for("login"))
 
         except Exception as e:
             print(f"Error en registro: {e}")
-            flash("Error al registrar. Intenta de nuevo.", "danger")
-            return redirect(url_for("registro"))
+            flash("Error al registrar. Por favor intenta de nuevo.", "danger")
+            return render_template("registro.html", form_data=form_data)
 
-    return render_template("registro.html")
+    return render_template("registro.html", form_data=form_data)
 
 
 # -----------------------------------------------
