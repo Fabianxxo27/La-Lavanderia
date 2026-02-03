@@ -832,10 +832,6 @@ def pedidos():
 @admin_requerido
 def calendario_pedidos():
     """Mostrar calendario interactivo de pedidos."""
-    if not _admin_only():
-        flash('Acceso denegado.', 'danger')
-        return redirect(url_for('index'))
-    
     # Obtener todos los pedidos para el calendario
     pedidos_calendario = run_query("""
         SELECT p.id_pedido, p.fecha_ingreso, p.fecha_entrega, p.estado, c.nombre
