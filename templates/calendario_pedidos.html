@@ -199,18 +199,18 @@ document.addEventListener('DOMContentLoaded', function() {
   var eventos = [];
   
   pedidosData.forEach(function(pedido) {
-    // id_pedido, fecha_ingreso, fecha_entrega, estado, nombre
-    var id = pedido[0];
-    var fechaIngreso = pedido[1];
-    var fechaEntrega = pedido[2];
-    var estado = pedido[3] || 'Sin estado';
-    var cliente = pedido[4] || 'Sin cliente';
+    // Usar nombres de campos del diccionario
+    var id = pedido.id_pedido;
+    var fechaIngreso = pedido.fecha_ingreso;
+    var fechaEntrega = pedido.fecha_entrega;
+    var estado = pedido.estado || 'Sin estado';
+    var cliente = pedido.nombre_cliente || 'Sin cliente';
     
     // Evento de ingreso
     if (fechaIngreso) {
       eventos.push({
         title: '🔵 Ingreso: ' + cliente,
-        start: fechaIngreso.split(' ')[0], // Solo la fecha
+        start: fechaIngreso.split('T')[0], // Solo la fecha (formato ISO)
         backgroundColor: '#3498db',
         borderColor: '#2980b9',
         extendedProps: {
@@ -226,7 +226,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (fechaEntrega) {
       eventos.push({
         title: '🟢 Entrega: ' + cliente,
-        start: fechaEntrega.split(' ')[0], // Solo la fecha
+        start: fechaEntrega.split('T')[0], // Solo la fecha (formato ISO)
         backgroundColor: '#27ae60',
         borderColor: '#229954',
         extendedProps: {

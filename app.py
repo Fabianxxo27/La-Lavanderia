@@ -835,12 +835,23 @@ def pedidos():
 def calendario_pedidos():
     """Mostrar calendario interactivo de pedidos."""
     # Obtener todos los pedidos para el calendario
-    pedidos_calendario = run_query("""
+    pedidos_raw = run_query("""
         SELECT p.id_pedido, p.fecha_ingreso, p.fecha_entrega, p.estado, u.nombre
         FROM pedido p
         LEFT JOIN usuario u ON p.id_cliente = u.id_usuario
         ORDER BY p.fecha_ingreso
     """, fetchall=True)
+    
+    # Convertir Row objects a diccionarios para serialización JSON
+    pedidos_calendario = []
+    for row in pedidos_raw:
+        pedidos_calendario.append({
+            'id_pedido': row[0],
+            'fecha_ingreso': row[1].isoformat() if row[1] else None,
+            'fecha_entrega': row[2].isoformat() if row[2] else None,
+            'estado': row[3],
+            'nombre_cliente': row[4] or 'Sin nombre'
+        })
     
     return render_template('calendario_pedidos.html', pedidos_calendario=pedidos_calendario)
 
