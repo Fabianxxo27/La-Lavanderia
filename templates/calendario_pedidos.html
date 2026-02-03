@@ -143,17 +143,154 @@
     margin: 0;
   }
 
+  /* Mejoras de responsividad móvil */
   @media (max-width: 768px) {
-    .calendar-section {
-      padding: 1rem;
+    .calendario-container {
+      padding: 0.5rem 0;
+    }
+
+    .header-section {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 0.8rem;
+      margin-bottom: 1rem;
     }
 
     .page-title {
       font-size: 1.5rem;
+      text-align: center;
+    }
+
+    .btn-volver {
+      width: 100%;
+      justify-content: center;
+      padding: 0.8rem 1rem;
+      font-size: 0.9rem;
+    }
+
+    .info-card {
+      padding: 1rem;
+      margin-bottom: 1rem;
+      font-size: 0.9rem;
+    }
+
+    .info-card h4 {
+      font-size: 1rem;
+    }
+
+    .calendar-section {
+      padding: 0.5rem;
+      border-radius: 8px;
+    }
+
+    /* Ajustes para FullCalendar en móvil */
+    .fc .fc-toolbar {
+      flex-direction: column;
+      gap: 0.5rem;
+      padding: 0.5rem 0;
+    }
+
+    .fc .fc-toolbar-chunk {
+      display: flex;
+      justify-content: center;
+      width: 100%;
     }
 
     .fc .fc-toolbar-title {
-      font-size: 1.2rem;
+      font-size: 1rem;
+      text-align: center;
+      padding: 0.5rem 0;
+    }
+
+    .fc .fc-button {
+      padding: 0.4rem 0.6rem;
+      font-size: 0.8rem;
+    }
+
+    .fc .fc-button .fc-icon {
+      font-size: 0.9rem;
+    }
+
+    /* Ocultar texto de botones en móvil, solo mostrar iconos */
+    .fc .fc-prev-button,
+    .fc .fc-next-button {
+      min-width: 40px;
+    }
+
+    /* Ajustar vista del calendario */
+    .fc-daygrid-event {
+      font-size: 0.7rem;
+      padding: 2px 3px;
+    }
+
+    .fc-daygrid-day-number {
+      font-size: 0.85rem;
+      padding: 0.3rem;
+    }
+
+    .fc-col-header-cell-cushion {
+      padding: 0.4rem 0.2rem;
+      font-size: 0.8rem;
+    }
+
+    .fc-daygrid-day-frame {
+      min-height: 60px;
+    }
+
+    /* Ajustar leyenda */
+    .calendar-legend {
+      flex-direction: column;
+      gap: 0.8rem;
+      margin-top: 1rem;
+      padding: 0 0.5rem;
+    }
+
+    .legend-item {
+      font-size: 0.85rem;
+    }
+
+    .legend-color {
+      width: 20px;
+      height: 20px;
+    }
+  }
+
+  /* Ajustes adicionales para pantallas muy pequeñas */
+  @media (max-width: 480px) {
+    .calendario-container {
+      padding: 0;
+    }
+
+    .page-title {
+      font-size: 1.3rem;
+    }
+
+    .calendar-section {
+      padding: 0.3rem;
+      margin: 0 -0.5rem;
+    }
+
+    .fc .fc-toolbar-title {
+      font-size: 0.9rem;
+    }
+
+    .fc .fc-button {
+      padding: 0.3rem 0.5rem;
+      font-size: 0.75rem;
+    }
+
+    .fc-daygrid-day-frame {
+      min-height: 50px;
+    }
+
+    .fc-daygrid-event {
+      font-size: 0.65rem;
+      padding: 1px 2px;
+    }
+
+    /* Limitar número de eventos mostrados por día en móvil */
+    .fc-daygrid-day-events {
+      margin-top: 2px;
     }
   }
 </style>
@@ -240,12 +377,12 @@ document.addEventListener('DOMContentLoaded', function() {
   });
   
   var calendar = new FullCalendar.Calendar(calendarEl, {
-    initialView: 'dayGridMonth',
+    initialView: window.innerWidth <= 768 ? 'listMonth' : 'dayGridMonth',
     locale: 'es',
     headerToolbar: {
       left: 'prev,next today',
       center: 'title',
-      right: 'dayGridMonth,timeGridWeek,listMonth'
+      right: window.innerWidth <= 768 ? 'listMonth,dayGridMonth' : 'dayGridMonth,timeGridWeek,listMonth'
     },
     buttonText: {
       today: 'Hoy',
@@ -275,11 +412,23 @@ document.addEventListener('DOMContentLoaded', function() {
         'Ingreso de pedido' : 'Fecha de entrega';
     },
     height: 'auto',
-    contentHeight: 650,
+    contentHeight: window.innerWidth <= 768 ? 'auto' : 650,
     eventDisplay: 'block',
-    dayMaxEvents: 3,
+    dayMaxEvents: window.innerWidth <= 768 ? 2 : 3,
     moreLinkText: function(num) {
       return '+ ' + num + ' más';
+    },
+    // Responsividad adicional
+    windowResize: function(view) {
+      if (window.innerWidth <= 768) {
+        calendar.changeView('listMonth');
+        calendar.setOption('contentHeight', 'auto');
+        calendar.setOption('dayMaxEvents', 2);
+      } else {
+        calendar.changeView('dayGridMonth');
+        calendar.setOption('contentHeight', 650);
+        calendar.setOption('dayMaxEvents', 3);
+      }
     }
   });
   

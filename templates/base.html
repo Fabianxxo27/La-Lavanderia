@@ -149,6 +149,100 @@
         text-align: center;
         margin-top: 3rem;
       }
+
+      /* Mejoras de responsividad móvil */
+      @media (max-width: 768px) {
+        body {
+          font-size: 14px;
+        }
+
+        .navbar {
+          padding: 0.8rem 1rem;
+          flex-wrap: wrap;
+        }
+
+        .navbar-brand {
+          font-size: 1rem;
+        }
+
+        .navbar-logo {
+          width: 36px;
+          height: 36px;
+        }
+
+        .navbar-buttons {
+          width: 100%;
+          margin-top: 0.8rem;
+          justify-content: space-between;
+          flex-wrap: wrap;
+        }
+
+        .navbar-buttons .btn {
+          font-size: 0.85rem;
+          padding: 0.5rem 0.8rem;
+        }
+
+        .btn-back {
+          font-size: 0.85rem;
+          padding: 0.5rem 0.8rem;
+        }
+
+        .btn-back img {
+          width: 16px;
+          height: 16px;
+        }
+
+        .container {
+          max-width: 100%;
+          margin: 1rem auto;
+          padding: 0 0.8rem;
+        }
+
+        .alert {
+          font-size: 0.9rem;
+          padding: 0.8rem;
+          margin-bottom: 0.8rem;
+        }
+
+        footer {
+          font-size: 0.85rem;
+          padding: 0.8rem 0;
+          margin-top: 2rem;
+        }
+
+        /* Ajustar dropdowns en móvil */
+        .dropdown-menu {
+          font-size: 0.9rem;
+        }
+      }
+
+      @media (max-width: 480px) {
+        .navbar {
+          padding: 0.6rem 0.8rem;
+        }
+
+        .navbar-brand strong {
+          font-size: 0.9rem;
+        }
+
+        .navbar-logo {
+          width: 32px;
+          height: 32px;
+        }
+
+        .navbar-buttons .btn {
+          font-size: 0.8rem;
+          padding: 0.4rem 0.6rem;
+        }
+
+        .container {
+          padding: 0 0.5rem;
+        }
+
+        .btn-back span {
+          display: none;
+        }
+      }
     </style>
 
     {% block head %}{% endblock %}
