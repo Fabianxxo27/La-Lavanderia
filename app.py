@@ -166,8 +166,9 @@ def admin_requerido(f):
         if 'id_usuario' not in session:
             flash('Debes iniciar sesión', 'warning')
             return redirect(url_for('login'))
-        if session.get('rol') != 'administrador':
-            flash('No tienes permisos', 'danger')
+        rol = str(session.get('rol', '')).strip().lower()
+        if rol != 'administrador':
+            flash('No tienes permisos para acceder a esta página', 'danger')
             return redirect(url_for('cliente_inicio'))
         return f(*args, **kwargs)
     return decorador
@@ -254,13 +255,14 @@ def login():
             session.clear()
             session['id_usuario'] = user[0]
             session['username'] = user[1]
-            session['rol'] = user[3]
+            session['rol'] = str(user[3]).strip().lower()  # Normalizar rol
+            session['nombre'] = user[1]  # Guardar nombre también
             session.permanent = True
             
             flash(f"Bienvenido {username}", "success")
 
             # Redirigir según rol
-            if str(user[3]).strip().lower() == 'administrador':
+            if session['rol'] == 'administrador':
                 return redirect(url_for('inicio'))
             else:
                 return redirect(url_for('cliente_inicio'))
@@ -834,9 +836,9 @@ def calendario_pedidos():
     """Mostrar calendario interactivo de pedidos."""
     # Obtener todos los pedidos para el calendario
     pedidos_calendario = run_query("""
-        SELECT p.id_pedido, p.fecha_ingreso, p.fecha_entrega, p.estado, c.nombre
+        SELECT p.id_pedido, p.fecha_ingreso, p.fecha_entrega, p.estado, u.nombre
         FROM pedido p
-        LEFT JOIN cliente c ON p.id_cliente = c.id_cliente
+        LEFT JOIN usuario u ON p.id_cliente = u.id_usuario
         ORDER BY p.fecha_ingreso
     """, fetchall=True)
     
@@ -2328,13 +2330,27 @@ def agregar_headers_seguridad(response):
 @app.errorhandler(404)
 def pagina_no_encontrada(error):
     flash('Página no encontrada', 'warning')
-    return redirect(url_for('index')), 404
+    rol = str(session.get('rol', '')).strip().lower()
+    if rol == 'administrador':
+        return redirect(url_for('inicio')), 404
+    elif 'id_usuario' in session:
+        return redirect(url_for('cliente_inicio')), 404
+    else:
+        return redirect(url_for('index')), 404
 
 @app.errorhandler(500)
 def error_servidor(error):
     print(f"Error 500: {error}")
+    import traceback
+    traceback.print_exc()  # Imprimir traceback completo
     flash('Ha ocurrido un error. Intenta de nuevo.', 'danger')
-    return redirect(url_for('index')), 500
+    rol = str(session.get('rol', '')).strip().lower()
+    if rol == 'administrador':
+        return redirect(url_for('inicio')), 500
+    elif 'id_usuario' in session:
+        return redirect(url_for('cliente_inicio')), 500
+    else:
+        return redirect(url_for('index')), 500
 
 
 # -----------------------------------------------
