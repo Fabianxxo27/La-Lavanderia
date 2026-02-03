@@ -20,13 +20,28 @@ from pyzbar.pyzbar import decode
 from PIL import Image as PILImage
 import cv2
 import numpy as np
+import secrets
+import re
+from functools import wraps
 
 # Cargar variables de entorno desde .env (si existe)
 load_dotenv()
 
 # Configuración de la app
 app = Flask(__name__)
-app.secret_key = os.getenv('SECRET_KEY', '1379')
+
+# Secret key segura
+secret_key = os.getenv('SECRET_KEY')
+if not secret_key or len(secret_key) < 16:
+    secret_key = secrets.token_hex(32)
+    print("⚠️ Usando SECRET_KEY generada automáticamente")
+app.secret_key = secret_key
+
+# Configuración de sesión segura
+app.config['PERMANENT_SESSION_LIFETIME'] = datetime.timedelta(hours=2)
+app.config['SESSION_COOKIE_HTTPONLY'] = True
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB máximo
 
 # Configuración de la base de datos
 # En Render: usar DATABASE_URL desde variables de entorno (PostgreSQL)
@@ -106,6 +121,59 @@ def run_query(query, params=None, fetchone=False, fetchall=False, commit=False, 
 
 
 # -----------------------------------------------
+# FUNCIONES DE SEGURIDAD BÁSICAS
+# -----------------------------------------------
+def limpiar_texto(texto, max_length=500):
+    """Limpiar entrada de texto para prevenir XSS"""
+    if not texto:
+        return ""
+    # Eliminar caracteres peligrosos
+    texto = str(texto).strip()
+    # Eliminar etiquetas HTML básicas
+    texto = re.sub(r'<[^>]+>', '', texto)
+    # Limitar longitud
+    return texto[:max_length]
+
+def validar_email(email):
+    """Validar formato de email"""
+    patron = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+    return bool(re.match(patron, email))
+
+def validar_contrasena(password):
+    """Validar que la contraseña sea fuerte"""
+    if len(password) < 6:
+        return False, "La contraseña debe tener al menos 6 caracteres"
+    if not re.search(r'[A-Za-z]', password):
+        return False, "La contraseña debe contener letras"
+    if not re.search(r'\d', password):
+        return False, "La contraseña debe contener números"
+    return True, ""
+
+def login_requerido(f):
+    """Decorador para rutas que necesitan autenticación"""
+    @wraps(f)
+    def decorador(*args, **kwargs):
+        if 'id_usuario' not in session:
+            flash('Debes iniciar sesión', 'warning')
+            return redirect(url_for('login'))
+        return f(*args, **kwargs)
+    return decorador
+
+def admin_requerido(f):
+    """Decorador para rutas de administrador"""
+    @wraps(f)
+    def decorador(*args, **kwargs):
+        if 'id_usuario' not in session:
+            flash('Debes iniciar sesión', 'warning')
+            return redirect(url_for('login'))
+        if session.get('rol') != 'administrador':
+            flash('No tienes permisos', 'danger')
+            return redirect(url_for('cliente_inicio'))
+        return f(*args, **kwargs)
+    return decorador
+
+
+# -----------------------------------------------
 # FUNCIÓN AUXILIAR: Garantizar que existe registro en cliente
 # -----------------------------------------------
 def ensure_cliente_exists(id_usuario):
@@ -157,29 +225,42 @@ def index():
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
-        username = request.form.get('username', '').strip().lower()
+        username = limpiar_texto(request.form.get('username', '').strip().lower(), 100)
         password = request.form.get('password', '').strip()
         
+        # Validaciones básicas
+        if not username or not password:
+            flash('Usuario y contraseña son obligatorios', 'danger')
+            return render_template('login.html')
+        
+        if len(password) > 200:
+            flash('Datos inválidos', 'danger')
+            return render_template('login.html')
+        
         user = run_query(
-            "SELECT username, password, rol FROM usuario WHERE LOWER(username) = :u",
+            "SELECT id_usuario, username, password, rol FROM usuario WHERE LOWER(username) = :u",
             {"u": username},
             fetchone=True
         )
  
         try:
-            password_ok = bool(user) and check_password_hash(user[1], password)
-        except ValueError:
-            # Hash malformado en la base de datos (p. ej. contraseña sin hashear)
-            flash("La contraseña almacenada para este usuario tiene un formato inválido. Pide restablecer la contraseña.", "danger")
+            password_ok = bool(user) and check_password_hash(user[2], password)
+        except (ValueError, TypeError):
+            flash("Error de autenticación", "danger")
             return redirect(url_for('login'))
 
         if password_ok:
-            session['username'] = user[0]
-            session['rol'] = user[2]
+            # Limpiar sesión anterior y crear nueva
+            session.clear()
+            session['id_usuario'] = user[0]
+            session['username'] = user[1]
+            session['rol'] = user[3]
+            session.permanent = True
+            
             flash(f"Bienvenido {username}", "success")
 
             # Redirigir según rol
-            if str(user[2]).strip().lower() == 'administrador':
+            if str(user[3]).strip().lower() == 'administrador':
                 return redirect(url_for('inicio'))
             else:
                 return redirect(url_for('cliente_inicio'))
@@ -195,22 +276,34 @@ def login():
 @app.route("/registro", methods=["GET", "POST"])
 def registro():
     if request.method == "POST":
-        nombre = request.form.get("nombre")
-        username = request.form.get("username").strip().lower()
-        email = request.form.get("email").strip().lower()
-        password = request.form.get("password")
-        password2 = request.form.get("password2")
+        nombre = limpiar_texto(request.form.get("nombre", ""), 200)
+        username = limpiar_texto(request.form.get("username", "").strip().lower(), 100)
+        email = limpiar_texto(request.form.get("email", "").strip().lower(), 200)
+        password = request.form.get("password", "")
+        password2 = request.form.get("password2", "")
+
+        # Validaciones básicas
+        if not all([nombre, username, email, password]):
+            flash("Todos los campos son obligatorios.", "warning")
+            return render_template("registro.html")
+        
+        # Validar email
+        if not validar_email(email):
+            flash("Email inválido.", "danger")
+            return render_template("registro.html")
+        
+        # Validar contraseña
+        es_valida, mensaje = validar_contrasena(password)
+        if not es_valida:
+            flash(mensaje, "danger")
+            return render_template("registro.html")
 
         # Verificar confirmación de contraseña
         if password != password2:
             flash("Las contraseñas no coinciden.", "warning")
-            return redirect(url_for("registro"))
+            return render_template("registro.html")
 
-        if not all([nombre, username, email, password]):
-            flash("Por favor, completa todos los campos.", "warning")
-            return redirect(url_for("registro"))
-
-        hashed_password = generate_password_hash(password)
+        hashed_password = generate_password_hash(password, method='pbkdf2:sha256')
 
         try:
             # Verificar si el username ya existe (case-insensitive)
@@ -226,11 +319,11 @@ def registro():
                 fetchone=True
             )
             if existing_email:
-                flash("El correo ya está registrado. Usa otro correo o recupera la cuenta.", "danger")
-                return redirect(url_for("registro"))
+                flash("El correo ya está registrado.", "danger")
+                return render_template("registro.html")
             if existing_user:
-                flash("❗ El nombre de usuario ya está registrado. Elige otro.", "danger")
-                return redirect(url_for("registro"))
+                flash("El nombre de usuario ya existe.", "danger")
+                return render_template("registro.html")
 
             # Insertar el nuevo usuario
             result = run_query(
@@ -260,11 +353,12 @@ def registro():
                     commit=True
                 )
 
-            flash("Usuario registrado exitosamente.", "success")
+            flash("Registro exitoso. Inicia sesión.", "success")
             return redirect(url_for("login"))
 
         except Exception as e:
-            flash(f"Error al registrar: {e}", "danger")
+            print(f"Error en registro: {e}")
+            flash("Error al registrar. Intenta de nuevo.", "danger")
             return redirect(url_for("registro"))
 
     return render_template("registro.html")
@@ -274,6 +368,7 @@ def registro():
 # LOGOUT
 # -----------------------------------------------
 @app.route('/logout')
+@login_requerido
 def logout():
     session.clear()
     flash("Sesión cerrada.", "success")
@@ -281,9 +376,11 @@ def logout():
 
 
 # -----------------------------------------------
-# PÁGINA PRINCIPAL DEL PANEL
+# PÁGINA PRINCIPAL DEL PANEL (administrador)
 # -----------------------------------------------
 @app.route('/inicio')
+@login_requerido
+@admin_requerido
 def inicio():
     return render_template('inicio.html')
 
@@ -291,6 +388,7 @@ def inicio():
 # PÁGINA PRINCIPAL DEL PANEL (cliente)
 # -----------------------------------------------
 @app.route('/cliente_inicio')
+@login_requerido
 def cliente_inicio():
     """Dashboard del cliente con estadísticas y próximo nivel de descuento."""
     username = session.get('username')
@@ -607,6 +705,8 @@ def cliente_pedidos():
 # LISTAR PEDIDOS (Administrador)
 # -----------------------------------------------
 @app.route('/pedidos')
+@login_requerido
+@admin_requerido
 def pedidos():
     """Mostrar todos los pedidos con búsqueda y filtrado (para administrador)."""
     if not _admin_only():
@@ -672,6 +772,8 @@ def pedidos():
 # LISTAR CLIENTES
 # -----------------------------------------------
 @app.route('/clientes', methods=['GET', 'POST'])
+@login_requerido
+@admin_requerido
 def clientes():
     """
     Mostrar todos los clientes basados en la tabla usuario (rol='cliente').
@@ -695,6 +797,8 @@ def clientes():
 # AGREGAR CLIENTE
 # -----------------------------------------------
 @app.route('/agregar_cliente', methods=['GET', 'POST'])
+@login_requerido
+@admin_requerido
 def agregar_cliente():
     """Agregar un nuevo cliente con validación."""
     if not _admin_only():
@@ -808,6 +912,8 @@ def eliminar_cliente(id_cliente):
 # REPORTES
 # -----------------------------------------------
 @app.route('/reportes')
+@login_requerido
+@admin_requerido
 def reportes():
     """Página de reportes avanzados para administrador."""
     if not _admin_only():
@@ -1037,6 +1143,8 @@ def reportes():
 # LECTOR DE CÓDIGOS DE BARRAS
 # -----------------------------------------------
 @app.route('/lector_barcode', methods=['GET', 'POST'])
+@login_requerido
+@admin_requerido
 def lector_barcode():
     """Escanear código de barras y mostrar detalles del pedido."""
     if not _admin_only():
@@ -2057,8 +2165,33 @@ def descargar_recibo_pdf(id_pedido):
 
 
 # -----------------------------------------------
+# MIDDLEWARE DE SEGURIDAD
+# -----------------------------------------------
+@app.after_request
+def agregar_headers_seguridad(response):
+    """Agregar headers de seguridad básicos"""
+    response.headers['X-Content-Type-Options'] = 'nosniff'
+    response.headers['X-Frame-Options'] = 'DENY'
+    response.headers['X-XSS-Protection'] = '1; mode=block'
+    return response
+
+@app.errorhandler(404)
+def pagina_no_encontrada(error):
+    flash('Página no encontrada', 'warning')
+    return redirect(url_for('index')), 404
+
+@app.errorhandler(500)
+def error_servidor(error):
+    print(f"Error 500: {error}")
+    flash('Ha ocurrido un error. Intenta de nuevo.', 'danger')
+    return redirect(url_for('index')), 500
+
+
+# -----------------------------------------------
 # MAIN
 # -----------------------------------------------
 if __name__ == '__main__':
     from waitress import serve
+    print("🔒 Servidor iniciado con medidas de seguridad")
+    print("📡 Escuchando en http://0.0.0.0:8080")
     serve(app, host='0.0.0.0', port=8080)
