@@ -796,19 +796,25 @@ def clientes():
     """
     Mostrar todos los clientes basados en la tabla usuario (rol='cliente').
     """
+    # Obtener parámetro de orden
+    orden = request.args.get('orden', 'desc').strip().lower()  # 'asc' o 'desc'
+    
     if request.method == 'POST':
         q = request.form.get('q', '').strip()
+        # Agregar orden a la búsqueda también
+        orden_sql = "ASC" if orden == 'asc' else "DESC"
         data = run_query(
-            "SELECT id_usuario, nombre, username, email FROM usuario WHERE rol = 'cliente' AND (nombre LIKE :q OR email LIKE :q OR username LIKE :q)",
+            f"SELECT id_usuario, nombre, username, email FROM usuario WHERE rol = 'cliente' AND (nombre LIKE :q OR email LIKE :q OR username LIKE :q) ORDER BY id_usuario {orden_sql}",
             {"q": f"%{q}%"},
             fetchall=True
         )
     else:
+        orden_sql = "ASC" if orden == 'asc' else "DESC"
         data = run_query(
-            "SELECT id_usuario, nombre, username, email FROM usuario WHERE rol = 'cliente' ORDER BY id_usuario DESC",
+            f"SELECT id_usuario, nombre, username, email FROM usuario WHERE rol = 'cliente' ORDER BY id_usuario {orden_sql}",
             fetchall=True
         )
-    return render_template('clientes.html', clients=data)
+    return render_template('clientes.html', clients=data, orden=orden)
 
 
 # -----------------------------------------------
