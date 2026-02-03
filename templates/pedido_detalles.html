@@ -284,25 +284,112 @@
   }
 
   @media (max-width: 768px) {
+    .pedido-header {
+      padding: 1.5rem;
+    }
+
+    .pedido-title {
+      font-size: 1.4rem;
+    }
+
     .info-grid {
       grid-template-columns: 1fr;
+      gap: 0.8rem;
+    }
+
+    .section {
+      padding: 1.5rem;
+    }
+
+    .section-title {
+      font-size: 1.1rem;
     }
 
     .prendas-table {
-      font-size: 0.9rem;
+      font-size: 0.85rem;
+      display: block;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .prendas-table thead,
+    .prendas-table tbody,
+    .prendas-table tr {
+      display: table;
+      width: 100%;
+      table-layout: fixed;
+    }
+
+    .prendas-table th,
+    .prendas-table td {
+      padding: 0.6rem 0.4rem;
+      font-size: 0.85rem;
     }
 
     .estado-select {
       grid-template-columns: 1fr;
+      gap: 0.6rem;
+    }
+
+    .estado-option {
+      padding: 0.8rem;
     }
 
     .form-buttons {
       flex-direction: column;
+      gap: 0.6rem;
     }
 
     .btn {
       width: 100%;
       text-align: center;
+      padding: 0.8rem 1rem;
+      font-size: 0.9rem;
+    }
+
+    /* Botones de navegación también en columna */
+    .pedido-navigation {
+      flex-direction: column !important;
+      gap: 0.6rem !important;
+    }
+
+    .pedido-navigation .btn {
+      width: 100% !important;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .pedido-header {
+      padding: 1rem;
+    }
+
+    .pedido-title {
+      font-size: 1.2rem;
+    }
+
+    .section {
+      padding: 1rem;
+    }
+
+    .section-title {
+      font-size: 1rem;
+    }
+
+    .btn {
+      font-size: 0.85rem;
+      padding: 0.7rem 0.8rem;
+    }
+
+    .info-item {
+      padding: 0.8rem;
+    }
+
+    .info-label {
+      font-size: 0.8rem;
+    }
+
+    .info-value {
+      font-size: 1rem;
     }
   }
 </style>
@@ -409,7 +496,7 @@
 {% endif %}
 
 <!-- Botones de navegación -->
-<div style="display: flex; gap: 0.8rem; margin-top: 2rem; flex-wrap: wrap;">
+<div class="pedido-navigation" style="display: flex; gap: 0.8rem; margin-top: 2rem; flex-wrap: wrap;">
   <button class="btn btn-back" onclick="history.back()">Volver Atrás</button>
   <a href="{{ url_for('pedidos') if session.get('rol') and session.get('rol')|lower in ['administrador','admin'] else url_for('cliente_pedidos') }}" class="btn btn-secondary">
     Volver a la Lista
