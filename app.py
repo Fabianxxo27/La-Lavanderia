@@ -921,7 +921,7 @@ def eliminar_cliente(id_cliente):
     
     try:
         run_query(
-            "DELETE FROM cliente WHERE id_cliente = :id",
+            "DELETE FROM usuario WHERE id_usuario = :id AND rol = 'cliente'",
             {"id": id_cliente},
             commit=True
         )
