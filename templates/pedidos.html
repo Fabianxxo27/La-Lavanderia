@@ -251,6 +251,27 @@
     box-shadow: 0 4px 12px rgba(26, 78, 123, 0.3);
   }
 
+  .btn-calendario {
+    background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%) !important;
+    color: white !important;
+    padding: 0.8rem 1.8rem;
+    border: none;
+    border-radius: 8px;
+    font-weight: 700;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+  }
+
+  .btn-calendario:hover {
+    background: linear-gradient(135deg, #8e44ad 0%, #6c3483 100%) !important;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(142, 68, 173, 0.3);
+  }
+
   .empty-state {
     text-align: center;
     padding: 3rem;
@@ -305,148 +326,6 @@
       text-align: center;
     }
   }
-
-  /* Estilos de paginación */
-  .pagination {
-    margin: 2rem 0;
-    padding: 1.5rem;
-    background: white;
-    border-radius: 12px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-    border: 2px solid #e8f0d4;
-  }
-
-  .pagination-info {
-    text-align: center;
-    color: #666;
-    font-size: 0.95rem;
-    margin-bottom: 1rem;
-  }
-
-  .pagination-controls {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 0.5rem;
-    flex-wrap: wrap;
-  }
-
-  .btn-pagina {
-    padding: 0.6rem 1rem;
-    background: white;
-    color: #1a4e7b;
-    border: 2px solid #e8f0d4;
-    border-radius: 8px;
-    text-decoration: none;
-    font-weight: 600;
-    transition: all 0.2s ease;
-    min-width: 40px;
-    text-align: center;
-  }
-
-  .btn-pagina:hover {
-    background: #a6cc48;
-    color: white;
-    border-color: #a6cc48;
-    text-decoration: none;
-    transform: translateY(-2px);
-  }
-
-  .btn-pagina.active {
-    background: linear-gradient(135deg, #1a4e7b 0%, #2d5f8d 100%);
-    color: white;
-    border-color: #1a4e7b;
-  }
-
-  /* Estilos del calendario */
-  .calendar-section {
-    margin: 2rem 0;
-    padding: 2rem;
-    background: white;
-    border-radius: 12px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-    border: 2px solid #e8f0d4;
-  }
-
-  .calendar-title {
-    color: #1a4e7b;
-    font-weight: 700;
-    font-size: 1.5rem;
-    margin-bottom: 1.5rem;
-    text-align: center;
-  }
-
-  #calendar {
-    background: white;
-  }
-
-  .calendar-legend {
-    display: flex;
-    justify-content: center;
-    gap: 2rem;
-    margin-top: 1.5rem;
-    flex-wrap: wrap;
-  }
-
-  .legend-item {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    color: #666;
-    font-size: 0.9rem;
-  }
-
-  .legend-color {
-    width: 20px;
-    height: 20px;
-    border-radius: 4px;
-    display: inline-block;
-  }
-
-  /* Personalización de FullCalendar */
-  .fc {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  }
-
-  .fc .fc-button-primary {
-    background: linear-gradient(135deg, #a6cc48 0%, #84af1d 100%);
-    border: none;
-    font-weight: 600;
-  }
-
-  .fc .fc-button-primary:hover {
-    background: linear-gradient(135deg, #84af1d 0%, #6a8f17 100%);
-  }
-
-  .fc .fc-button-primary:not(:disabled).fc-button-active {
-    background: linear-gradient(135deg, #1a4e7b 0%, #2d5f8d 100%);
-  }
-
-  .fc-daygrid-event {
-    cursor: pointer;
-    font-size: 0.85rem;
-    padding: 2px 4px;
-    white-space: nowrap;
-  }
-
-  @media (max-width: 768px) {
-    .pagination-controls {
-      font-size: 0.9rem;
-    }
-    
-    .btn-pagina {
-      padding: 0.5rem 0.8rem;
-      min-width: 35px;
-    }
-
-    .calendar-section {
-      padding: 1rem;
-    }
-
-    .calendar-title {
-      font-size: 1.2rem;
-    }
-  }
 </style>
 
 <div class="header-section">
@@ -459,6 +338,13 @@
     <a href="{{ url_for('pedidos', cliente=cliente_filter, estado=estado_filter, desde=fecha_desde, hasta=fecha_hasta, orden=nuevo_orden) }}" class="btn-orden">
       <span style="font-size: 1.2rem;">{{ icono_orden }}</span>
       {{ texto_orden }}
+    </a>
+
+    <a href="{{ url_for('calendario_pedidos') }}" class="btn-calendario">
+      <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+        <path d="M3.5 0a.5.5 0 0 1 .5.5V1h8V.5a.5.5 0 0 1 1 0V1h1a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h1V.5a.5.5 0 0 1 .5-.5zM1 4v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V4H1z"/>
+      </svg>
+      📅 Ver Calendario
     </a>
     
     <a href="{{ url_for('agregar_pedido') }}" class="btn-crear">
@@ -583,127 +469,5 @@
   </div>
   {% endif %}
 </div>
-
-<!-- Paginación -->
-{% if total_paginas > 1 %}
-<div class="pagination">
-  <div class="pagination-info">
-    Mostrando página {{ pagina }} de {{ total_paginas }} ({{ total_count }} pedidos)
-  </div>
-  <div class="pagination-controls">
-    {% if pagina > 1 %}
-      <a href="{{ url_for('pedidos', pagina=1, orden=orden, cliente=cliente_filter, estado=estado_filter, desde=fecha_desde, hasta=fecha_hasta) }}" class="btn-pagina">« Primera</a>
-      <a href="{{ url_for('pedidos', pagina=pagina-1, orden=orden, cliente=cliente_filter, estado=estado_filter, desde=fecha_desde, hasta=fecha_hasta) }}" class="btn-pagina">‹ Anterior</a>
-    {% endif %}
-    
-    {% for p in range([pagina-2, 1]|max, [pagina+3, total_paginas+1]|min) %}
-      {% if p == pagina %}
-        <span class="btn-pagina active">{{ p }}</span>
-      {% else %}
-        <a href="{{ url_for('pedidos', pagina=p, orden=orden, cliente=cliente_filter, estado=estado_filter, desde=fecha_desde, hasta=fecha_hasta) }}" class="btn-pagina">{{ p }}</a>
-      {% endif %}
-    {% endfor %}
-    
-    {% if pagina < total_paginas %}
-      <a href="{{ url_for('pedidos', pagina=pagina+1, orden=orden, cliente=cliente_filter, estado=estado_filter, desde=fecha_desde, hasta=fecha_hasta) }}" class="btn-pagina">Siguiente ›</a>
-      <a href="{{ url_for('pedidos', pagina=total_paginas, orden=orden, cliente=cliente_filter, estado=estado_filter, desde=fecha_desde, hasta=fecha_hasta) }}" class="btn-pagina">Última »</a>
-    {% endif %}
-  </div>
-</div>
-{% endif %}
-
-<!-- Calendario de Pedidos -->
-<div class="calendar-section">
-  <h3 class="calendar-title">📅 Calendario de Pedidos</h3>
-  <div id="calendar"></div>
-  <div class="calendar-legend">
-    <div class="legend-item"><span class="legend-color" style="background: #3498db;"></span> Fecha de Ingreso</div>
-    <div class="legend-item"><span class="legend-color" style="background: #27ae60;"></span> Fecha de Entrega</div>
-  </div>
-</div>
-
-<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-  var calendarEl = document.getElementById('calendar');
-  
-  // Convertir datos de pedidos a eventos
-  var pedidosData = {{ pedidos_calendario|tojson|safe }};
-  var eventos = [];
-  
-  pedidosData.forEach(function(pedido) {
-    // id_pedido, fecha_ingreso, fecha_entrega, estado, nombre
-    var id = pedido[0];
-    var fechaIngreso = pedido[1];
-    var fechaEntrega = pedido[2];
-    var estado = pedido[3] || 'Sin estado';
-    var cliente = pedido[4] || 'Sin cliente';
-    
-    // Evento de ingreso
-    if (fechaIngreso) {
-      eventos.push({
-        title: '🔵 Ingreso: ' + cliente,
-        start: fechaIngreso.split(' ')[0], // Solo la fecha
-        backgroundColor: '#3498db',
-        borderColor: '#2980b9',
-        extendedProps: {
-          tipo: 'ingreso',
-          pedidoId: id,
-          estado: estado
-        }
-      });
-    }
-    
-    // Evento de entrega
-    if (fechaEntrega) {
-      eventos.push({
-        title: '🟢 Entrega: ' + cliente,
-        start: fechaEntrega.split(' ')[0], // Solo la fecha
-        backgroundColor: '#27ae60',
-        borderColor: '#229954',
-        extendedProps: {
-          tipo: 'entrega',
-          pedidoId: id,
-          estado: estado
-        }
-      });
-    }
-  });
-  
-  var calendar = new FullCalendar.Calendar(calendarEl, {
-    initialView: 'dayGridMonth',
-    locale: 'es',
-    headerToolbar: {
-      left: 'prev,next today',
-      center: 'title',
-      right: 'dayGridMonth,timeGridWeek,listWeek'
-    },
-    buttonText: {
-      today: 'Hoy',
-      month: 'Mes',
-      week: 'Semana',
-      list: 'Lista'
-    },
-    events: eventos,
-    eventClick: function(info) {
-      var pedidoId = info.event.extendedProps.pedidoId;
-      var tipo = info.event.extendedProps.tipo;
-      var estado = info.event.extendedProps.estado;
-      
-      alert('Pedido #' + pedidoId + '\n' + 
-            'Tipo: ' + tipo + '\n' + 
-            'Estado: ' + estado + '\n' +
-            'Cliente: ' + info.event.title.split(': ')[1]);
-    },
-    eventDidMount: function(info) {
-      info.el.style.cursor = 'pointer';
-    },
-    height: 'auto',
-    contentHeight: 600
-  });
-  
-  calendar.render();
-});
-</script>
 
 {% endblock %}

@@ -1,0 +1,290 @@
+{% extends "base.html" %}
+{% block title %}Calendario de Pedidos - La Lavandería{% endblock %}
+
+{% block content %}
+<style>
+  .calendario-container {
+    padding: 2rem 0;
+  }
+
+  .header-section {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+
+  .page-title {
+    color: #1a4e7b;
+    font-weight: 800;
+    font-size: 2rem;
+    margin: 0;
+  }
+
+  .btn-volver {
+    background: linear-gradient(135deg, #1a4e7b 0%, #2d5f8d 100%);
+    color: white;
+    padding: 0.8rem 1.8rem;
+    border: none;
+    border-radius: 8px;
+    font-weight: 700;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .btn-volver:hover {
+    background: linear-gradient(135deg, #0d1d2a 0%, #1a4e7b 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(26, 78, 123, 0.3);
+    text-decoration: none;
+    color: white;
+  }
+
+  .calendar-section {
+    padding: 2rem;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    border: 2px solid #e8f0d4;
+  }
+
+  #calendar {
+    background: white;
+  }
+
+  .calendar-legend {
+    display: flex;
+    justify-content: center;
+    gap: 2rem;
+    margin-top: 1.5rem;
+    flex-wrap: wrap;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: #666;
+    font-size: 0.95rem;
+    font-weight: 600;
+  }
+
+  .legend-color {
+    width: 24px;
+    height: 24px;
+    border-radius: 6px;
+    display: inline-block;
+  }
+
+  /* Personalización de FullCalendar */
+  .fc {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+
+  .fc .fc-button-primary {
+    background: linear-gradient(135deg, #a6cc48 0%, #84af1d 100%);
+    border: none;
+    font-weight: 600;
+    padding: 0.6rem 1rem;
+  }
+
+  .fc .fc-button-primary:hover {
+    background: linear-gradient(135deg, #84af1d 0%, #6a8f17 100%);
+  }
+
+  .fc .fc-button-primary:not(:disabled).fc-button-active {
+    background: linear-gradient(135deg, #1a4e7b 0%, #2d5f8d 100%);
+  }
+
+  .fc .fc-toolbar-title {
+    color: #1a4e7b;
+    font-weight: 700;
+    font-size: 1.5rem;
+  }
+
+  .fc-daygrid-event {
+    cursor: pointer;
+    font-size: 0.85rem;
+    padding: 3px 5px;
+    white-space: nowrap;
+    border-radius: 4px;
+  }
+
+  .fc-daygrid-day-number {
+    color: #1a4e7b;
+    font-weight: 600;
+  }
+
+  .fc-day-today {
+    background-color: #f9fdf5 !important;
+  }
+
+  .info-card {
+    background: linear-gradient(135deg, #e8f0d4 0%, #f9fdf5 100%);
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+    border: 2px solid #a6cc48;
+  }
+
+  .info-card h4 {
+    color: #1a4e7b;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+  }
+
+  .info-card p {
+    color: #666;
+    margin: 0;
+  }
+
+  @media (max-width: 768px) {
+    .calendar-section {
+      padding: 1rem;
+    }
+
+    .page-title {
+      font-size: 1.5rem;
+    }
+
+    .fc .fc-toolbar-title {
+      font-size: 1.2rem;
+    }
+  }
+</style>
+
+<div class="calendario-container">
+  <div class="header-section">
+    <h1 class="page-title">📅 Calendario de Pedidos</h1>
+    <a href="{{ url_for('pedidos') }}" class="btn-volver">
+      <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+        <path fill-rule="evenodd" d="M15 8a.5.5 0 0 0-.5-.5H2.707l3.147-3.146a.5.5 0 1 0-.708-.708l-4 4a.5.5 0 0 0 0 .708l4 4a.5.5 0 0 0 .708-.708L2.707 8.5H14.5A.5.5 0 0 0 15 8z"/>
+      </svg>
+      Volver a Pedidos
+    </a>
+  </div>
+
+  <div class="info-card">
+    <h4>ℹ️ Acerca del Calendario</h4>
+    <p>Visualiza las fechas de ingreso y entrega de todos los pedidos. Haz clic en cualquier evento para ver más detalles.</p>
+  </div>
+
+  <div class="calendar-section">
+    <div id="calendar"></div>
+    <div class="calendar-legend">
+      <div class="legend-item">
+        <span class="legend-color" style="background: #3498db;"></span>
+        Fecha de Ingreso
+      </div>
+      <div class="legend-item">
+        <span class="legend-color" style="background: #27ae60;"></span>
+        Fecha de Entrega
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  var calendarEl = document.getElementById('calendar');
+  
+  // Convertir datos de pedidos a eventos
+  var pedidosData = {{ pedidos_calendario|tojson|safe }};
+  var eventos = [];
+  
+  pedidosData.forEach(function(pedido) {
+    // id_pedido, fecha_ingreso, fecha_entrega, estado, nombre
+    var id = pedido[0];
+    var fechaIngreso = pedido[1];
+    var fechaEntrega = pedido[2];
+    var estado = pedido[3] || 'Sin estado';
+    var cliente = pedido[4] || 'Sin cliente';
+    
+    // Evento de ingreso
+    if (fechaIngreso) {
+      eventos.push({
+        title: '🔵 Ingreso: ' + cliente,
+        start: fechaIngreso.split(' ')[0], // Solo la fecha
+        backgroundColor: '#3498db',
+        borderColor: '#2980b9',
+        extendedProps: {
+          tipo: 'ingreso',
+          pedidoId: id,
+          estado: estado,
+          cliente: cliente
+        }
+      });
+    }
+    
+    // Evento de entrega
+    if (fechaEntrega) {
+      eventos.push({
+        title: '🟢 Entrega: ' + cliente,
+        start: fechaEntrega.split(' ')[0], // Solo la fecha
+        backgroundColor: '#27ae60',
+        borderColor: '#229954',
+        extendedProps: {
+          tipo: 'entrega',
+          pedidoId: id,
+          estado: estado,
+          cliente: cliente
+        }
+      });
+    }
+  });
+  
+  var calendar = new FullCalendar.Calendar(calendarEl, {
+    initialView: 'dayGridMonth',
+    locale: 'es',
+    headerToolbar: {
+      left: 'prev,next today',
+      center: 'title',
+      right: 'dayGridMonth,timeGridWeek,listMonth'
+    },
+    buttonText: {
+      today: 'Hoy',
+      month: 'Mes',
+      week: 'Semana',
+      list: 'Lista'
+    },
+    events: eventos,
+    eventClick: function(info) {
+      var pedidoId = info.event.extendedProps.pedidoId;
+      var tipo = info.event.extendedProps.tipo;
+      var estado = info.event.extendedProps.estado;
+      var cliente = info.event.extendedProps.cliente;
+      
+      var mensaje = '🔔 Pedido #' + pedidoId + '\n\n' +
+                   '👤 Cliente: ' + cliente + '\n' +
+                   '📋 Tipo: ' + (tipo === 'ingreso' ? 'Fecha de Ingreso' : 'Fecha de Entrega') + '\n' +
+                   '📊 Estado: ' + estado;
+      
+      if (confirm(mensaje + '\n\n¿Deseas ver los detalles completos del pedido?')) {
+        window.location.href = '/pedido_detalles/' + pedidoId;
+      }
+    },
+    eventDidMount: function(info) {
+      info.el.style.cursor = 'pointer';
+      info.el.title = info.event.extendedProps.tipo === 'ingreso' ? 
+        'Ingreso de pedido' : 'Fecha de entrega';
+    },
+    height: 'auto',
+    contentHeight: 650,
+    eventDisplay: 'block',
+    dayMaxEvents: 3,
+    moreLinkText: function(num) {
+      return '+ ' + num + ' más';
+    }
+  });
+  
+  calendar.render();
+});
+</script>
+
+{% endblock %}
