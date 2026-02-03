@@ -690,9 +690,9 @@ document.addEventListener('DOMContentLoaded', function() {
       var tipo = info.event.extendedProps.tipo;
       var estado = info.event.extendedProps.estado;
       
-      alert('Pedido #' + pedidoId + '\\n' + 
-            'Tipo: ' + tipo + '\\n' + 
-            'Estado: ' + estado + '\\n' +
+      alert('Pedido #' + pedidoId + '\n' + 
+            'Tipo: ' + tipo + '\n' + 
+            'Estado: ' + estado + '\n' +
             'Cliente: ' + info.event.title.split(': ')[1]);
     },
     eventDidMount: function(info) {
