@@ -718,6 +718,7 @@ def pedidos():
     estado_filter = request.args.get('estado', '').strip()
     fecha_desde = request.args.get('desde', '').strip()
     fecha_hasta = request.args.get('hasta', '').strip()
+    orden = request.args.get('orden', 'desc').strip().lower()  # 'asc' o 'desc'
     
     # Construir query base
     query = """
@@ -749,7 +750,11 @@ def pedidos():
         query += " AND DATE(p.fecha_ingreso) <= :hasta"
         params['hasta'] = fecha_hasta
     
-    query += " ORDER BY p.id_pedido ASC"
+    # Agregar orden (último a primero o primero a último)
+    if orden == 'asc':
+        query += " ORDER BY p.id_pedido ASC"
+    else:
+        query += " ORDER BY p.id_pedido DESC"
     
     pedidos = run_query(query, params, fetchall=True)
     
@@ -765,7 +770,8 @@ def pedidos():
                          estado_filter=estado_filter,
                          fecha_desde=fecha_desde,
                          fecha_hasta=fecha_hasta,
-                         estados=estados)
+                         estados=estados,
+                         orden=orden)
 
 
 # -----------------------------------------------

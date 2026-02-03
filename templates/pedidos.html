@@ -230,6 +230,27 @@
     box-shadow: 0 4px 12px rgba(166, 204, 72, 0.3);
   }
 
+  .btn-orden {
+    background: linear-gradient(135deg, #1a4e7b 0%, #2d5f8d 100%) !important;
+    color: white !important;
+    padding: 0.8rem 1.8rem;
+    border: none;
+    border-radius: 8px;
+    font-weight: 700;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+  }
+
+  .btn-orden:hover {
+    background: linear-gradient(135deg, #0d1d2a 0%, #1a4e7b 100%) !important;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(26, 78, 123, 0.3);
+  }
+
   .empty-state {
     text-align: center;
     padding: 3rem;
@@ -288,18 +309,30 @@
 
 <div class="header-section">
   <h2 style="color: #1a4e7b; font-weight: 800;">Administrar Pedidos</h2>
-  <a href="{{ url_for('agregar_pedido') }}" class="btn-crear">
-    <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-      <path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4z"/>
-    </svg>
-    Crear Pedido
-  </a>
+  <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+    {% set nuevo_orden = 'asc' if orden == 'desc' else 'desc' %}
+    {% set icono_orden = '↑' if orden == 'asc' else '↓' %}
+    {% set texto_orden = 'Más antiguos primero' if orden == 'desc' else 'Más recientes primero' %}
+    
+    <a href="{{ url_for('pedidos', cliente=cliente_filter, estado=estado_filter, desde=fecha_desde, hasta=fecha_hasta, orden=nuevo_orden) }}" class="btn-orden">
+      <span style="font-size: 1.2rem;">{{ icono_orden }}</span>
+      {{ texto_orden }}
+    </a>
+    
+    <a href="{{ url_for('agregar_pedido') }}" class="btn-crear">
+      <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+        <path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4z"/>
+      </svg>
+      Crear Pedido
+    </a>
+  </div>
 </div>
 
 <!-- Filtros -->
 <div class="filter-section">
   <div class="filter-title">Filtrar Pedidos</div>
   <form method="get" action="{{ url_for('pedidos') }}">
+    <input type="hidden" name="orden" value="{{ orden }}">
     <div class="filter-row">
       <div class="filter-group">
         <label>Cliente</label>
