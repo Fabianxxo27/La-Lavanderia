@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, send_file, session, Response
+from flask import Flask, render_template, request, redirect, url_for, flash, send_file, session, Response, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import text
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -1046,11 +1046,11 @@ def lector_barcode():
     if request.method == 'POST':
         # Verificar si se subió una imagen
         if 'barcode_image' not in request.files:
-            return {'success': False, 'error': 'No se subió ninguna imagen'}, 400
+            return jsonify({'success': False, 'error': 'No se subió ninguna imagen'}), 400
         
         file = request.files['barcode_image']
         if file.filename == '':
-            return {'success': False, 'error': 'No se seleccionó ningún archivo'}, 400
+            return jsonify({'success': False, 'error': 'No se seleccionó ningún archivo'}), 400
         
         try:
             # Leer imagen
@@ -1065,7 +1065,7 @@ def lector_barcode():
             decoded_objects = decode(img_pil)
             
             if not decoded_objects:
-                return {'success': False, 'error': 'No se detectó ningún código de barras en la imagen'}, 400
+                return jsonify({'success': False, 'error': 'No se detectó ningún código de barras en la imagen'}), 400
             
             # Obtener el primer código detectado
             barcode_data = decoded_objects[0].data.decode('utf-8')
@@ -1082,7 +1082,7 @@ def lector_barcode():
             """, {"codigo": barcode_data}, fetchone=True)
             
             if not pedido:
-                return {'success': False, 'error': f'No se encontró ningún pedido con el código: {barcode_data}'}, 404
+                return jsonify({'success': False, 'error': f'No se encontró ningún pedido con el código: {barcode_data}'}), 404
             
             # Obtener prendas del pedido
             prendas = run_query("""
@@ -1124,10 +1124,10 @@ def lector_barcode():
                 } if recibo else None
             }
             
-            return response_data, 200
+            return jsonify(response_data), 200
             
         except Exception as e:
-            return {'success': False, 'error': f'Error al procesar la imagen: {str(e)}'}, 500
+            return jsonify({'success': False, 'error': f'Error al procesar la imagen: {str(e)}'}), 500
     
     # GET request - mostrar página
     return render_template('lector_barcode.html')
