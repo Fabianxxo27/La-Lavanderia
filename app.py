@@ -1115,56 +1115,108 @@ def lector_barcode():
                 }), 400
             
             # Buscar pedido por código de barras
-            pedido = run_query("""
-                SELECT p.id_pedido, p.id_cliente, p.fecha_ingreso, p.fecha_entrega, 
-                       p.estado, c.nombre, c.telefono, c.direccion, u.email
-                FROM pedido p
-                JOIN cliente c ON p.id_cliente = c.id_cliente
-                LEFT JOIN usuario u ON c.id_cliente = u.id_usuario
-                WHERE p.codigo_barras = :codigo
-            """, {"codigo": barcode_data}, fetchone=True)
+            try:
+                pedido = run_query("""
+                    SELECT p.id_pedido, p.id_cliente, p.fecha_ingreso, p.fecha_entrega, 
+                           p.estado, c.nombre, c.telefono, c.direccion, u.email
+                    FROM pedido p
+                    JOIN cliente c ON p.id_cliente = c.id_cliente
+                    LEFT JOIN usuario u ON c.id_cliente = u.id_usuario
+                    WHERE p.codigo_barras = :codigo
+                """, {"codigo": barcode_data}, fetchone=True)
+            except Exception as db_error:
+                print(f"Error en consulta de pedido: {str(db_error)}")
+                return jsonify({
+                    'success': False, 
+                    'error': 'Error al buscar el pedido en la base de datos'
+                }), 500
             
             if not pedido:
                 return jsonify({'success': False, 'error': f'No se encontró ningún pedido con el código: {barcode_data}'}), 404
             
             # Obtener prendas del pedido
-            prendas = run_query("""
-                SELECT tipo, estado
-                FROM prenda
-                WHERE id_pedido = :id
-            """, {"id": pedido[0]}, fetchall=True)
+            try:
+                prendas = run_query("""
+                    SELECT tipo, estado
+                    FROM prenda
+                    WHERE id_pedido = :id
+                """, {"id": pedido[0]}, fetchall=True)
+            except Exception as prendas_error:
+                print(f"Error al obtener prendas: {str(prendas_error)}")
+                prendas = []
             
             # Obtener recibo del pedido
-            recibo = run_query("""
-                SELECT monto, descuento, fecha
-                FROM recibo
-                WHERE id_pedido = :id
-            """, {"id": pedido[0]}, fetchone=True)
+            try:
+                recibo = run_query("""
+                    SELECT monto, descuento, fecha
+                    FROM recibo
+                    WHERE id_pedido = :id
+                """, {"id": pedido[0]}, fetchone=True)
+            except Exception as recibo_error:
+                print(f"Error al obtener recibo: {str(recibo_error)}")
+                recibo = None
             
-            # Preparar respuesta
-            response_data = {
-                'success': True,
-                'codigo_barras': barcode_data,
-                'pedido': {
-                    'id': pedido[0],
-                    'fecha_ingreso': pedido[2].strftime('%d/%m/%Y %H:%M') if pedido[2] else 'N/A',
-                    'fecha_entrega': pedido[3].strftime('%d/%m/%Y') if pedido[3] else 'Pendiente',
-                    'estado': pedido[4],
-                },
-                'cliente': {
-                    'id': pedido[1],
-                    'nombre': pedido[5],
-                    'telefono': pedido[6] or 'No registrado',
-                    'direccion': pedido[7] or 'No registrada',
-                    'email': pedido[8] or 'No registrado'
-                },
-                'prendas': [{'tipo': p[0], 'estado': p[1]} for p in prendas] if prendas else [],
-                'recibo': {
-                    'monto': float(recibo[0]) if recibo and recibo[0] else 0,
-                    'descuento': float(recibo[1]) if recibo and recibo[1] else 0,
-                    'fecha': recibo[2].strftime('%d/%m/%Y') if recibo and recibo[2] else 'N/A'
-                } if recibo else None
-            }
+            # Preparar respuesta con manejo seguro de fechas
+            try:
+                fecha_ingreso_str = 'N/A'
+                if pedido[2]:
+                    try:
+                        fecha_ingreso_str = pedido[2].strftime('%d/%m/%Y %H:%M')
+                    except:
+                        fecha_ingreso_str = str(pedido[2])
+                
+                fecha_entrega_str = 'Pendiente'
+                if pedido[3]:
+                    try:
+                        fecha_entrega_str = pedido[3].strftime('%d/%m/%Y')
+                    except:
+                        fecha_entrega_str = str(pedido[3])
+                
+                response_data = {
+                    'success': True,
+                    'codigo_barras': barcode_data,
+                    'pedido': {
+                        'id': pedido[0],
+                        'fecha_ingreso': fecha_ingreso_str,
+                        'fecha_entrega': fecha_entrega_str,
+                        'estado': pedido[4] or 'Desconocido',
+                    },
+                    'cliente': {
+                        'id': pedido[1],
+                        'nombre': pedido[5] or 'No registrado',
+                        'telefono': pedido[6] or 'No registrado',
+                        'direccion': pedido[7] or 'No registrada',
+                        'email': pedido[8] or 'No registrado'
+                    },
+                    'prendas': [{'tipo': p[0], 'estado': p[1]} for p in prendas] if prendas else [],
+                    'recibo': None
+                }
+                
+                # Agregar información del recibo si existe
+                if recibo:
+                    try:
+                        fecha_recibo_str = 'N/A'
+                        if recibo[2]:
+                            try:
+                                fecha_recibo_str = recibo[2].strftime('%d/%m/%Y')
+                            except:
+                                fecha_recibo_str = str(recibo[2])
+                        
+                        response_data['recibo'] = {
+                            'monto': float(recibo[0]) if recibo[0] else 0,
+                            'descuento': float(recibo[1]) if recibo[1] else 0,
+                            'fecha': fecha_recibo_str
+                        }
+                    except Exception as recibo_format_error:
+                        print(f"Error al formatear recibo: {str(recibo_format_error)}")
+                        response_data['recibo'] = None
+                
+            except Exception as format_error:
+                print(f"Error al formatear respuesta: {str(format_error)}")
+                return jsonify({
+                    'success': False, 
+                    'error': 'Error al procesar los datos del pedido'
+                }), 500
             
             return jsonify(response_data), 200
         
@@ -1189,11 +1241,24 @@ def lector_barcode():
         except Exception as e:
             # Log del error para debugging (puedes ver esto en los logs de Render)
             import traceback
-            print(f"Error inesperado en lector_barcode: {traceback.format_exc()}")
+            error_trace = traceback.format_exc()
+            print(f"Error inesperado en lector_barcode:")
+            print(error_trace)
+            
+            # Intentar obtener más detalles del error
+            error_details = str(e)
+            if 'psycopg2' in error_trace:
+                error_msg = 'Error de base de datos. Por favor contacta al administrador'
+            elif 'decode' in error_trace.lower():
+                error_msg = 'Error al decodificar el código de barras'
+            elif 'image' in error_trace.lower():
+                error_msg = 'Error al procesar la imagen'
+            else:
+                error_msg = f'Error: {error_details[:100]}'
             
             return jsonify({
                 'success': False, 
-                'error': f'Error inesperado al procesar la imagen. Por favor intenta de nuevo con otra imagen'
+                'error': error_msg
             }), 500
     
     # GET request - mostrar página
