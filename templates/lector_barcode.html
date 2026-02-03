@@ -659,7 +659,8 @@
       prendasHTML = data.prendas.map(prenda => `
         <div class="prenda-item">
           <div class="prenda-tipo">${prenda.tipo}</div>
-          <div class="prenda-estado">${prenda.estado}</div>
+          ${prenda.descripcion ? `<div class="prenda-estado">${prenda.descripcion}</div>` : ''}
+          ${prenda.observaciones ? `<div class="prenda-estado" style="font-size: 0.85rem; color: #999;">${prenda.observaciones}</div>` : ''}
         </div>
       `).join('');
     } else {

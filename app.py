@@ -1137,7 +1137,7 @@ def lector_barcode():
             # Obtener prendas del pedido
             try:
                 prendas = run_query("""
-                    SELECT tipo, estado
+                    SELECT tipo, descripcion, observaciones
                     FROM prenda
                     WHERE id_pedido = :id
                 """, {"id": pedido[0]}, fetchall=True)
@@ -1191,7 +1191,7 @@ def lector_barcode():
                         'direccion': pedido[7] or 'No registrada',
                         'email': pedido[8] or 'No registrado'
                     },
-                    'prendas': [{'tipo': p[0], 'estado': p[1]} for p in (prendas or [])],
+                    'prendas': [{'tipo': p[0], 'descripcion': p[1] or '', 'observaciones': p[2] or ''} for p in (prendas or [])],
                     'recibo': None
                 }
                 
