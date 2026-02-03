@@ -147,7 +147,7 @@
                         <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="collapse" data-bs-target="#prendas{{ p[0] }}">
                             <i class="fas fa-chevron-down"></i> Ver Prendas ({{ p[4] }})
                         </button>
-                        <a href="{{ url_for('ver_prendas_pedido', id_pedido=p[0]) }}" class="btn btn-sm btn-outline-info">
+                        <a href="{{ url_for('ver_prendas_pedido', id_pedido=p[0], ref=request.url) }}" class="btn btn-sm btn-outline-info">
                             <i class="fas fa-expand"></i> Detalles
                         </a>
                     </div>

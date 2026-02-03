@@ -403,7 +403,7 @@ document.addEventListener('DOMContentLoaded', function() {
                    '📊 Estado: ' + estado;
       
       if (confirm(mensaje + '\n\n¿Deseas ver los detalles completos del pedido?')) {
-        window.location.href = '/pedido_detalles/' + pedidoId;
+        window.location.href = '/pedido_detalles/' + pedidoId + '?ref=' + encodeURIComponent(window.location.href);
       }
     },
     eventDidMount: function(info) {

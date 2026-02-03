@@ -1827,7 +1827,11 @@ def pedido_detalles(id_pedido):
         fetchall=True
     )
     
-    return render_template('pedido_detalles.html', pedido=pedido, prendas=prendas)
+    # Obtener la página de origen para el botón regresar
+    referer = request.args.get('ref') or request.referrer or ''
+    return_url = referer if referer and referer != request.url else None
+    
+    return render_template('pedido_detalles.html', pedido=pedido, prendas=prendas, return_url=return_url)
 
 
 # -----------------------------------------------
@@ -1970,12 +1974,17 @@ def ver_prendas_pedido(id_pedido):
         precio_dict[tipo] = float(precio)
         total_costo += float(precio) * cantidad
     
+    # Obtener la página de origen para el botón regresar
+    referer = request.args.get('ref') or request.referrer or ''
+    return_url = referer if referer and referer != request.url else None
+    
     return render_template('pedido_prendas.html',
                          pedido=pedido,
                          prendas=prendas,
                          precio_dict=precio_dict,
                          total_costo=total_costo,
-                         rol=rol)
+                         rol=rol,
+                         return_url=return_url)
 
 
 # -----------------------------------------------

@@ -497,10 +497,15 @@
 
 <!-- Botones de navegación -->
 <div class="pedido-navigation" style="display: flex; gap: 0.8rem; margin-top: 2rem; flex-wrap: wrap;">
-  <button class="btn btn-back" onclick="history.back()">Volver Atrás</button>
-  <a href="{{ url_for('pedidos') if session.get('rol') and session.get('rol')|lower in ['administrador','admin'] else url_for('cliente_pedidos') }}" class="btn btn-secondary">
-    Volver a la Lista
-  </a>
+  {% if return_url %}
+    <a href="{{ return_url }}" class="btn btn-back">
+      <i class="fas fa-arrow-left"></i> Regresar
+    </a>
+  {% else %}
+    <a href="{{ url_for('pedidos') if session.get('rol') and session.get('rol')|lower in ['administrador','admin'] else url_for('cliente_pedidos') }}" class="btn btn-back">
+      <i class="fas fa-arrow-left"></i> Volver a la Lista
+    </a>
+  {% endif %}
   <a href="{{ url_for('descargar_recibo_pdf', id_pedido=pedido[0]) }}" class="btn" style="background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%); color: white;">
     <i class="fas fa-file-pdf"></i> Descargar Recibo PDF
   </a>

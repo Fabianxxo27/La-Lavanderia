@@ -600,7 +600,7 @@
         <td>{{ p[4] or 'Sin cliente' }}</td>
         <td>
           <div class="action-buttons">
-            <a href="{{ url_for('pedido_detalles', id_pedido=p[0]) }}" class="btn btn-sm btn-accion btn-ver">Ver</a>
+            <a href="{{ url_for('pedido_detalles', id_pedido=p[0], ref=request.url) }}" class="btn btn-sm btn-accion btn-ver">Ver</a>
             <a href="{{ url_for('descargar_recibo_pdf', id_pedido=p[0]) }}" class="btn btn-sm btn-accion" style="background: #e74c3c; color: white;" title="Descargar Recibo PDF">
               <i class="fas fa-file-pdf"></i> PDF
             </a>
