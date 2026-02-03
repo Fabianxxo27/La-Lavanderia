@@ -2054,6 +2054,72 @@ def api_prendas_pedido(id_pedido):
 
 
 # -----------------------------------------------
+# API: AUTOCOMPLETADO DE CLIENTES
+# -----------------------------------------------
+@app.route('/api/autocomplete/clientes')
+@login_requerido
+@admin_requerido
+def api_autocomplete_clientes():
+    """API para autocompletado de clientes."""
+    from flask import jsonify
+    
+    query = request.args.get('q', '').strip()
+    
+    if not query or len(query) < 2:
+        return jsonify([])
+    
+    # Buscar clientes que coincidan con el query
+    clientes = run_query("""
+        SELECT id_usuario, nombre, email, username
+        FROM usuario
+        WHERE rol = 'cliente' 
+        AND (
+            LOWER(nombre) LIKE LOWER(:q) OR
+            LOWER(email) LIKE LOWER(:q) OR
+            LOWER(username) LIKE LOWER(:q) OR
+            CAST(id_usuario AS TEXT) LIKE :q
+        )
+        ORDER BY nombre
+        LIMIT 10
+    """, {"q": f"%{query}%"}, fetchall=True)
+    
+    resultados = []
+    for cliente in clientes:
+        resultados.append({
+            'id': cliente[0],
+            'nombre': cliente[1],
+            'email': cliente[2] or '',
+            'username': cliente[3] or '',
+            'label': f"{cliente[1]} ({cliente[2] or cliente[3]})"
+        })
+    
+    return jsonify(resultados)
+
+
+# -----------------------------------------------
+# API: AUTOCOMPLETADO DE ESTADOS
+# -----------------------------------------------
+@app.route('/api/autocomplete/estados')
+@login_requerido
+def api_autocomplete_estados():
+    """API para autocompletado de estados de pedidos."""
+    from flask import jsonify
+    
+    query = request.args.get('q', '').strip().lower()
+    
+    # Estados posibles
+    todos_estados = ['Pendiente', 'En proceso', 'Completado', 'Cancelado', 'Entregado']
+    
+    if not query:
+        return jsonify(todos_estados)
+    
+    # Filtrar estados que coincidan
+    estados_filtrados = [e for e in todos_estados if query in e.lower()]
+    
+    return jsonify(estados_filtrados)
+
+
+# -----------------------------------------------
 # FUNCIONES AUXILIARES (ej. _admin_only)
 # -----------------------------------------------
 def _admin_only():
