@@ -1073,8 +1073,7 @@ def lector_barcode():
             # Buscar pedido por código de barras
             pedido = run_query("""
                 SELECT p.id_pedido, p.id_cliente, p.fecha_ingreso, p.fecha_entrega, 
-                       p.estado, p.instrucciones, c.nombre, c.telefono, c.direccion,
-                       u.email
+                       p.estado, c.nombre, c.telefono, c.direccion, u.email
                 FROM pedido p
                 JOIN cliente c ON p.id_cliente = c.id_cliente
                 LEFT JOIN usuario u ON c.id_cliente = u.id_usuario
@@ -1107,14 +1106,13 @@ def lector_barcode():
                     'fecha_ingreso': pedido[2].strftime('%d/%m/%Y %H:%M') if pedido[2] else 'N/A',
                     'fecha_entrega': pedido[3].strftime('%d/%m/%Y') if pedido[3] else 'Pendiente',
                     'estado': pedido[4],
-                    'instrucciones': pedido[5] or 'Sin instrucciones',
                 },
                 'cliente': {
                     'id': pedido[1],
-                    'nombre': pedido[6],
-                    'telefono': pedido[7] or 'No registrado',
-                    'direccion': pedido[8] or 'No registrada',
-                    'email': pedido[9] or 'No registrado'
+                    'nombre': pedido[5],
+                    'telefono': pedido[6] or 'No registrado',
+                    'direccion': pedido[7] or 'No registrada',
+                    'email': pedido[8] or 'No registrado'
                 },
                 'prendas': [{'tipo': p[0], 'estado': p[1]} for p in prendas] if prendas else [],
                 'recibo': {
