@@ -1141,6 +1141,9 @@ def lector_barcode():
                     FROM prenda
                     WHERE id_pedido = :id
                 """, {"id": pedido[0]}, fetchall=True)
+                print(f"DEBUG - Pedido ID: {pedido[0]}, Prendas encontradas: {len(prendas) if prendas else 0}")
+                if prendas:
+                    print(f"DEBUG - Prendas: {prendas}")
             except Exception as prendas_error:
                 print(f"Error al obtener prendas: {str(prendas_error)}")
                 prendas = []
@@ -1188,9 +1191,11 @@ def lector_barcode():
                         'direccion': pedido[7] or 'No registrada',
                         'email': pedido[8] or 'No registrado'
                     },
-                    'prendas': [{'tipo': p[0], 'estado': p[1]} for p in prendas] if prendas else [],
+                    'prendas': [{'tipo': p[0], 'estado': p[1]} for p in (prendas or [])],
                     'recibo': None
                 }
+                
+                print(f"DEBUG - Response data prendas: {response_data['prendas']}")
                 
                 # Agregar información del recibo si existe
                 if recibo:
