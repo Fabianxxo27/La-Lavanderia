@@ -1257,7 +1257,8 @@ def eliminar_cliente(id_cliente):
 @app.route('/terminos-descuentos')
 def terminos_descuentos():
     """Página de términos y condiciones del programa de descuentos."""
-    return render_template('terminos_descuentos.html')
+    fecha_actual = datetime.datetime.now()
+    return render_template('terminos_descuentos.html', fecha_actual=fecha_actual)
 
 
 # -----------------------------------------------
