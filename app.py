@@ -2174,14 +2174,28 @@ def agregar_pedido():
                     descuento_porcentaje_aplicado = 5
                     nivel_descuento_aplicado = "Bronce"
             
-            # 5.2. Ahora SÍ crear el pedido CON EL DESCUENTO GUARDADO
-            result = run_query(
-                """INSERT INTO pedido (fecha_ingreso, fecha_entrega, estado, id_cliente, direccion_recogida, direccion_entrega, porcentaje_descuento, nivel_descuento) 
-                   VALUES (:fi, :fe, :e, :ic, :dr, :de, :pd, :nd) RETURNING id_pedido""",
-                {"fi": fecha_ingreso, "fe": fecha_entrega, "e": "Pendiente", "ic": id_cliente, "dr": direccion_recogida, "de": direccion_entrega, "pd": descuento_porcentaje_aplicado, "nd": nivel_descuento_aplicado},
-                commit=True,
-                fetchone=True
-            )
+            # 5.2. Crear el pedido (compatible con BD con o sin columnas de descuento)
+            try:
+                # Intentar con columnas de descuento (nueva estructura)
+                result = run_query(
+                    """INSERT INTO pedido (fecha_ingreso, fecha_entrega, estado, id_cliente, direccion_recogida, direccion_entrega, porcentaje_descuento, nivel_descuento) 
+                       VALUES (:fi, :fe, :e, :ic, :dr, :de, :pd, :nd) RETURNING id_pedido""",
+                    {"fi": fecha_ingreso, "fe": fecha_entrega, "e": "Pendiente", "ic": id_cliente, "dr": direccion_recogida, "de": direccion_entrega, "pd": descuento_porcentaje_aplicado, "nd": nivel_descuento_aplicado},
+                    commit=True,
+                    fetchone=True
+                )
+            except Exception as e:
+                # Si falla (columnas no existen), usar estructura antigua
+                if "porcentaje_descuento" in str(e) or "does not exist" in str(e):
+                    result = run_query(
+                        """INSERT INTO pedido (fecha_ingreso, fecha_entrega, estado, id_cliente, direccion_recogida, direccion_entrega) 
+                           VALUES (:fi, :fe, :e, :ic, :dr, :de) RETURNING id_pedido""",
+                        {"fi": fecha_ingreso, "fe": fecha_entrega, "e": "Pendiente", "ic": id_cliente, "dr": direccion_recogida, "de": direccion_entrega},
+                        commit=True,
+                        fetchone=True
+                    )
+                else:
+                    raise e
             
             if not result or len(result) == 0:
                 flash('Error al crear el pedido.', 'danger')
@@ -2886,14 +2900,27 @@ def descargar_barcode(codigo):
 def descargar_recibo_pdf(id_pedido):
     """Genera y descarga el recibo en formato PDF."""
     try:
-        # Obtener datos del pedido (INCLUYE DESCUENTO GUARDADO)
-        pedido = run_query("""
-            SELECT p.id_pedido, p.fecha_ingreso, p.fecha_entrega, p.estado, c.nombre, p.codigo_barras, u.email, p.direccion_recogida, p.direccion_entrega, p.porcentaje_descuento, p.nivel_descuento
-            FROM pedido p
-            LEFT JOIN cliente c ON p.id_cliente = c.id_cliente
-            LEFT JOIN usuario u ON c.id_cliente = u.id_usuario
-            WHERE p.id_pedido = :id
-        """, {"id": id_pedido}, fetchone=True)
+        # Obtener datos del pedido (compatible con o sin columnas de descuento)
+        try:
+            # Intentar con columnas de descuento
+            pedido = run_query("""
+                SELECT p.id_pedido, p.fecha_ingreso, p.fecha_entrega, p.estado, c.nombre, p.codigo_barras, u.email, p.direccion_recogida, p.direccion_entrega, p.porcentaje_descuento, p.nivel_descuento
+                FROM pedido p
+                LEFT JOIN cliente c ON p.id_cliente = c.id_cliente
+                LEFT JOIN usuario u ON c.id_cliente = u.id_usuario
+                WHERE p.id_pedido = :id
+            """, {"id": id_pedido}, fetchone=True)
+            tiene_columnas_descuento = True
+        except Exception as e:
+            # Si falla, usar sin columnas de descuento
+            pedido = run_query("""
+                SELECT p.id_pedido, p.fecha_ingreso, p.fecha_entrega, p.estado, c.nombre, p.codigo_barras, u.email, p.direccion_recogida, p.direccion_entrega
+                FROM pedido p
+                LEFT JOIN cliente c ON p.id_cliente = c.id_cliente
+                LEFT JOIN usuario u ON c.id_cliente = u.id_usuario
+                WHERE p.id_pedido = :id
+            """, {"id": id_pedido}, fetchone=True)
+            tiene_columnas_descuento = False
         
         if not pedido:
             return "Pedido no encontrado", 404
@@ -2928,10 +2955,32 @@ def descargar_recibo_pdf(id_pedido):
             SELECT r.monto, r.fecha, r.id_cliente FROM recibo r WHERE id_pedido = :id
         """, {"id": id_pedido}, fetchone=True)
         
-        # USAR el descuento GUARDADO en el pedido (no recalcular)
+        # Calcular descuento (usar guardado si existe, sino calcular)
         subtotal = sum(p[2] for p in prendas)
-        descuento_porcentaje = pedido[9] or 0  # porcentaje_descuento guardado
-        nivel_descuento = pedido[10] or "Sin nivel"  # nivel_descuento guardado
+        
+        if tiene_columnas_descuento and len(pedido) >= 11:
+            # Usar descuento guardado en el pedido
+            descuento_porcentaje = pedido[9] or 0
+            nivel_descuento = pedido[10] or "Sin nivel"
+        else:
+            # Calcular descuento (método antiguo para compatibilidad)
+            descuento_monto_calculado = 0
+            descuento_porcentaje = 0
+            nivel_descuento = "Sin nivel"
+            
+            if recibo and subtotal > 0:
+                descuento_monto_calculado = subtotal - recibo[0]
+                if descuento_monto_calculado > 0:
+                    descuento_porcentaje = int((descuento_monto_calculado / subtotal) * 100)
+                    
+                    # Determinar nivel según porcentaje
+                    if descuento_porcentaje >= 15:
+                        nivel_descuento = "Oro"
+                    elif descuento_porcentaje >= 10:
+                        nivel_descuento = "Plata"
+                    elif descuento_porcentaje >= 5:
+                        nivel_descuento = "Bronce"
+        
         descuento_monto = (subtotal * descuento_porcentaje) / 100 if descuento_porcentaje > 0 else 0
         
         # Crear PDF
