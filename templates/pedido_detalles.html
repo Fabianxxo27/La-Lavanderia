@@ -425,6 +425,18 @@
       <div class="info-label">Estado Actual</div>
       <div class="info-value">{{ pedido[3] }}</div>
     </div>
+    {% if pedido[6] %}
+    <div class="info-item">
+      <div class="info-label">Dirección de Recogida</div>
+      <div class="info-value">{{ pedido[6] }}</div>
+    </div>
+    {% endif %}
+    {% if pedido[7] %}
+    <div class="info-item">
+      <div class="info-label">Dirección de Entrega</div>
+      <div class="info-value">{{ pedido[7] }}</div>
+    </div>
+    {% endif %}
   </div>
 </div>
 

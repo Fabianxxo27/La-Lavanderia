@@ -90,6 +90,23 @@ def verificar_tabla_descuentos(conn):
         print(f"⚠️ Error al verificar tabla: {e}")
         return False
 
+def verificar_columnas_descuento_pedido(conn):
+    """Verificar si las columnas de descuento en pedido existen"""
+    try:
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT column_name 
+            FROM information_schema.columns 
+            WHERE table_name = 'pedido' 
+            AND column_name IN ('porcentaje_descuento', 'nivel_descuento')
+        """)
+        columnas = cursor.fetchall()
+        cursor.close()
+        return len(columnas) == 2
+    except Exception as e:
+        print(f"⚠️ Error al verificar columnas: {e}")
+        return False
+
 def main():
     print("=" * 70)
     print("🚀 EJECUTANDO MIGRACIONES DE BASE DE DATOS")
@@ -127,6 +144,20 @@ def main():
             print("   ✗ Falló la migración de descuentos")
     
     print()
+    
+    # Verificar migración 3: Columnas de descuento en pedido
+    tiene_descuento_pedido = verificar_columnas_descuento_pedido(conn)
+    if tiene_descuento_pedido:
+        print("ℹ️  Las columnas de descuento en pedido ya existen, se omitirá esta migración")
+    else:
+        print("📝 Ejecutando migración: add_descuento_to_pedido.sql")
+        if ejecutar_sql_file(conn, 'add_descuento_to_pedido.sql'):
+            print("   ✓ Columnas porcentaje_descuento y nivel_descuento agregadas a pedido")
+            print("   ✓ Ahora los descuentos se guardan al crear el pedido")
+        else:
+            print("   ✗ Falló la migración de descuento en pedido")
+    
+    print()
     print("=" * 70)
     print("🎉 PROCESO COMPLETADO")
     print("=" * 70)
@@ -137,6 +168,11 @@ def main():
         print("   ✅ Columnas de dirección: OK")
     else:
         print("   ❌ Columnas de dirección: FALTAN")
+    
+    if verificar_columnas_descuento_pedido(conn):
+        print("   ✅ Columnas de descuento en pedido: OK")
+    else:
+        print("   ❌ Columnas de descuento en pedido: FALTAN")
     
     if verificar_tabla_descuentos(conn):
         print("   ✅ Tabla descuento_config: OK")

@@ -1301,7 +1301,7 @@ def ejecutar_migraciones_admin():
         flash('Acceso denegado.', 'danger')
         return redirect(url_for('index'))
 
-    archivos = ['add_direcciones_to_pedido.sql', 'create_descuento_config.sql']
+    archivos = ['add_direcciones_to_pedido.sql', 'create_descuento_config.sql', 'add_descuento_to_pedido.sql']
     errores = []
 
     for archivo in archivos:
@@ -2120,9 +2120,55 @@ def agregar_pedido():
             fecha_entrega = (datetime.now() + timedelta(days=dias_entrega)).strftime('%Y-%m-%d')
             
             # 5. Crear pedido con código de barras y direcciones
+            # IMPORTANTE: Primero calcular el descuento ANTES de crear el pedido
+            
+            # 5.1. Calcular descuento según la cantidad de pedidos del cliente
+            pedidos_count = run_query(
+                "SELECT COUNT(*) FROM pedido WHERE id_cliente = :id",
+                {"id": id_cliente},
+                fetchone=True
+            )[0] or 0
+            
+            # Obtener configuración de descuentos desde la base de datos
+            descuentos_config = run_query("""
+                SELECT nivel, porcentaje, pedidos_minimos, pedidos_maximos
+                FROM descuento_config
+                WHERE activo = true
+                ORDER BY pedidos_minimos DESC
+            """, fetchall=True)
+            
+            # Determinar nivel y descuento basado en la configuración ACTUAL
+            descuento_porcentaje_aplicado = 0
+            nivel_descuento_aplicado = None
+            
+            if descuentos_config:
+                for config in descuentos_config:
+                    nivel, porcentaje, minimos, maximos = config
+                    if pedidos_count >= minimos:
+                        if maximos is None or pedidos_count <= maximos:
+                            descuento_porcentaje_aplicado = int(porcentaje)
+                            nivel_descuento_aplicado = nivel
+                            break
+            else:
+                # Configuración por defecto si no existe tabla o está vacía
+                if pedidos_count >= 15:
+                    descuento_porcentaje_aplicado = 20
+                    nivel_descuento_aplicado = "Platino"
+                elif pedidos_count >= 10:
+                    descuento_porcentaje_aplicado = 15
+                    nivel_descuento_aplicado = "Oro"
+                elif pedidos_count >= 6:
+                    descuento_porcentaje_aplicado = 10
+                    nivel_descuento_aplicado = "Plata"
+                elif pedidos_count >= 3:
+                    descuento_porcentaje_aplicado = 5
+                    nivel_descuento_aplicado = "Bronce"
+            
+            # 5.2. Ahora SÍ crear el pedido CON EL DESCUENTO GUARDADO
             result = run_query(
-                "INSERT INTO pedido (fecha_ingreso, fecha_entrega, estado, id_cliente, direccion_recogida, direccion_entrega) VALUES (:fi, :fe, :e, :ic, :dr, :de) RETURNING id_pedido",
-                {"fi": fecha_ingreso, "fe": fecha_entrega, "e": "Pendiente", "ic": id_cliente, "dr": direccion_recogida, "de": direccion_entrega},
+                """INSERT INTO pedido (fecha_ingreso, fecha_entrega, estado, id_cliente, direccion_recogida, direccion_entrega, porcentaje_descuento, nivel_descuento) 
+                   VALUES (:fi, :fe, :e, :ic, :dr, :de, :pd, :nd) RETURNING id_pedido""",
+                {"fi": fecha_ingreso, "fe": fecha_entrega, "e": "Pendiente", "ic": id_cliente, "dr": direccion_recogida, "de": direccion_entrega, "pd": descuento_porcentaje_aplicado, "nd": nivel_descuento_aplicado},
                 commit=True,
                 fetchone=True
             )
@@ -2201,51 +2247,11 @@ def agregar_pedido():
                     )
                     prendas_insertadas += 1
             
-            # 8. Calcular descuento según la cantidad de pedidos del cliente
-            
-            pedidos_count = run_query(
-                "SELECT COUNT(*) FROM pedido WHERE id_cliente = :id",
-                {"id": id_cliente},
-                fetchone=True
-            )[0] or 0
-            
-            # Obtener configuración de descuentos desde la base de datos
-            descuentos_config = run_query("""
-                SELECT nivel, porcentaje, pedidos_minimos, pedidos_maximos
-                FROM descuento_config
-                WHERE activo = true
-                ORDER BY pedidos_minimos DESC
-            """, fetchall=True)
-            
-            # Determinar nivel y descuento basado en la configuración
-            descuento_porcentaje = 0
-            nivel_descuento = "Sin nivel"
-            
-            if descuentos_config:
-                for config in descuentos_config:
-                    nivel, porcentaje, minimos, maximos = config
-                    if pedidos_count >= minimos:
-                        if maximos is None or pedidos_count <= maximos:
-                            descuento_porcentaje = float(porcentaje)
-                            nivel_descuento = nivel
-                            break
-            else:
-                # Configuración por defecto si no existe tabla o está vacía
-                if pedidos_count >= 15:
-                    descuento_porcentaje = 20
-                    nivel_descuento = "Platino"
-                elif pedidos_count >= 10:
-                    descuento_porcentaje = 15
-                    nivel_descuento = "Oro"
-                elif pedidos_count >= 6:
-                    descuento_porcentaje = 10
-                    nivel_descuento = "Plata"
-                elif pedidos_count >= 3:
-                    descuento_porcentaje = 5
-                    nivel_descuento = "Bronce"
+            # 8. Usar el descuento ya guardado en el pedido (no recalcular)
+            # El descuento ya está en descuento_porcentaje_aplicado y nivel_descuento_aplicado
             
             # Calcular monto con descuento
-            monto_descuento = (total_costo * descuento_porcentaje) / 100
+            monto_descuento = (total_costo * descuento_porcentaje_aplicado) / 100
             monto_final = total_costo - monto_descuento
             
             # 9. Crear recibo con descuento
@@ -2296,7 +2302,7 @@ def agregar_pedido():
                             <div style="background: white; border-left: 4px solid #4CAF50; padding: 20px; margin: 20px 0; border-radius: 5px;">
                                 <h3 style="color: #1a4e7b; margin-top: 0;">👕 Prendas: {prendas_insertadas}</h3>
                                 <p><strong>Subtotal:</strong> ${total_costo:,.0f}</p>
-                                {"<p><strong>Descuento (" + str(descuento_porcentaje) + "%):</strong> -${:,.0f}</p>".format(monto_descuento) if descuento_porcentaje > 0 else ""}
+                                {"<p><strong>Descuento (" + str(descuento_porcentaje_aplicado) + "%):</strong> -${:,.0f}</p>".format(monto_descuento) if descuento_porcentaje_aplicado > 0 else ""}
                                 <p style="font-size: 18px; color: #a6cc48;"><strong>Total:</strong> ${monto_final:,.0f}</p>
                             </div>
                             
@@ -2314,8 +2320,8 @@ def agregar_pedido():
                 send_email_async(email_cliente, f"✅ Pedido #{id_pedido} Creado - La Lavandería", html_pedido)
             
             # Mensaje con descuento aplicado y código de barras
-            if descuento_porcentaje > 0:
-                msg_descuento = f" | Nivel {nivel_descuento}: Descuento {descuento_porcentaje}% (-${monto_descuento:,.0f})"
+            if descuento_porcentaje_aplicado > 0:
+                msg_descuento = f" | Nivel {nivel_descuento_aplicado}: Descuento {descuento_porcentaje_aplicado}% (-${monto_descuento:,.0f})"
             else:
                 msg_descuento = ""
             
@@ -2376,7 +2382,7 @@ def agregar_pedido():
 def pedido_detalles(id_pedido):
     """Ver detalles de un pedido."""
     pedido = run_query(
-        "SELECT id_pedido, fecha_ingreso, fecha_entrega, estado, id_cliente, codigo_barras FROM pedido WHERE id_pedido = :id",
+        "SELECT id_pedido, fecha_ingreso, fecha_entrega, estado, id_cliente, codigo_barras, direccion_recogida, direccion_entrega FROM pedido WHERE id_pedido = :id",
         {"id": id_pedido},
         fetchone=True
     )
@@ -2870,9 +2876,9 @@ def descargar_barcode(codigo):
 def descargar_recibo_pdf(id_pedido):
     """Genera y descarga el recibo en formato PDF."""
     try:
-        # Obtener datos del pedido
+        # Obtener datos del pedido (INCLUYE DESCUENTO GUARDADO)
         pedido = run_query("""
-            SELECT p.id_pedido, p.fecha_ingreso, p.fecha_entrega, p.estado, c.nombre, p.codigo_barras, u.email
+            SELECT p.id_pedido, p.fecha_ingreso, p.fecha_entrega, p.estado, c.nombre, p.codigo_barras, u.email, p.direccion_recogida, p.direccion_entrega, p.porcentaje_descuento, p.nivel_descuento
             FROM pedido p
             LEFT JOIN cliente c ON p.id_cliente = c.id_cliente
             LEFT JOIN usuario u ON c.id_cliente = u.id_usuario
@@ -2912,24 +2918,11 @@ def descargar_recibo_pdf(id_pedido):
             SELECT r.monto, r.fecha, r.id_cliente FROM recibo r WHERE id_pedido = :id
         """, {"id": id_pedido}, fetchone=True)
         
-        # Calcular descuento aplicado
+        # USAR el descuento GUARDADO en el pedido (no recalcular)
         subtotal = sum(p[2] for p in prendas)
-        descuento_monto = 0
-        descuento_porcentaje = 0
-        nivel_descuento = "Sin nivel"
-        
-        if recibo and subtotal > 0:
-            descuento_monto = subtotal - recibo[0]
-            if descuento_monto > 0:
-                descuento_porcentaje = int((descuento_monto / subtotal) * 100)
-                
-                # Determinar nivel según porcentaje
-                if descuento_porcentaje >= 15:
-                    nivel_descuento = "Oro (10+ pedidos en ciclo)"
-                elif descuento_porcentaje >= 10:
-                    nivel_descuento = "Plata (6-9 pedidos en ciclo)"
-                elif descuento_porcentaje >= 5:
-                    nivel_descuento = "Bronce (3-5 pedidos en ciclo)"
+        descuento_porcentaje = pedido[9] or 0  # porcentaje_descuento guardado
+        nivel_descuento = pedido[10] or "Sin nivel"  # nivel_descuento guardado
+        descuento_monto = (subtotal * descuento_porcentaje) / 100 if descuento_porcentaje > 0 else 0
         
         # Crear PDF
         buffer = BytesIO()
@@ -2951,6 +2944,12 @@ def descargar_recibo_pdf(id_pedido):
             ['Fecha Entrega:', str(pedido[2]) if pedido[2] else 'Por definir'],
             ['Estado:', pedido[3]],
         ]
+        
+        # Agregar direcciones si existen
+        if pedido[7]:  # direccion_recogida
+            info_data.append(['Dirección Recogida:', pedido[7]])
+        if pedido[8]:  # direccion_entrega
+            info_data.append(['Dirección Entrega:', pedido[8]])
         
         info_table = Table(info_data, colWidths=[2*inch, 4*inch])
         info_table.setStyle(TableStyle([
