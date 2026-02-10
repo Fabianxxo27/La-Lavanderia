@@ -1272,14 +1272,23 @@ def configurar_descuentos():
         flash('Acceso denegado.', 'danger')
         return redirect(url_for('index'))
     
-    # Obtener todos los niveles de descuento configurados
-    descuentos = run_query("""
-        SELECT id_config, nivel, porcentaje, pedidos_minimos, pedidos_maximos, activo
-        FROM descuento_config
-        ORDER BY pedidos_minimos ASC
-    """, fetchall=True)
+    tabla_existe = _tabla_descuento_existe()
+    if not tabla_existe:
+        flash('La tabla de descuentos no existe. Ejecuta las migraciones para habilitar el panel.', 'warning')
+        return render_template('admin_configurar_descuentos.html', descuentos=[], tabla_descuentos_existe=False)
     
-    return render_template('admin_configurar_descuentos.html', descuentos=descuentos)
+    # Obtener todos los niveles de descuento configurados
+    try:
+        descuentos = run_query("""
+            SELECT id_config, nivel, porcentaje, pedidos_minimos, pedidos_maximos, activo
+            FROM descuento_config
+            ORDER BY pedidos_minimos ASC
+        """, fetchall=True)
+    except Exception as e:
+        flash(f'Error al cargar descuentos: {e}', 'danger')
+        descuentos = []
+    
+    return render_template('admin_configurar_descuentos.html', descuentos=descuentos, tabla_descuentos_existe=tabla_existe)
 
 
 @app.route('/admin/descuento/crear', methods=['POST'])
@@ -1290,6 +1299,10 @@ def crear_descuento():
     if not _admin_only():
         flash('Acceso denegado.', 'danger')
         return redirect(url_for('index'))
+    
+    if not _tabla_descuento_existe():
+        flash('La tabla de descuentos no existe. Ejecuta las migraciones antes de crear niveles.', 'warning')
+        return redirect(url_for('configurar_descuentos'))
     
     nivel = request.form.get('nivel', '').strip()
     porcentaje = request.form.get('porcentaje', '').strip()
@@ -1339,6 +1352,10 @@ def editar_descuento(id_config):
     if not _admin_only():
         flash('Acceso denegado.', 'danger')
         return redirect(url_for('index'))
+    
+    if not _tabla_descuento_existe():
+        flash('La tabla de descuentos no existe. Ejecuta las migraciones antes de editar niveles.', 'warning')
+        return redirect(url_for('configurar_descuentos'))
     
     nivel = request.form.get('nivel', '').strip()
     porcentaje = request.form.get('porcentaje', '').strip()
@@ -1390,6 +1407,10 @@ def eliminar_descuento(id_config):
     if not _admin_only():
         flash('Acceso denegado.', 'danger')
         return redirect(url_for('index'))
+    
+    if not _tabla_descuento_existe():
+        flash('La tabla de descuentos no existe. Ejecuta las migraciones antes de eliminar niveles.', 'warning')
+        return redirect(url_for('configurar_descuentos'))
     
     try:
         run_query("""
@@ -2704,6 +2725,17 @@ def _admin_only():
     if not rol:
         return False
     return str(rol).strip().lower() == 'administrador'
+
+
+def _tabla_descuento_existe():
+    try:
+        result = run_query(
+            "SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'descuento_config')",
+            fetchone=True
+        )
+        return bool(result[0]) if result else False
+    except Exception:
+        return False
 
 def _get_safe_redirect():
     """Obtiene una URL segura para redireccionar, priorizando el referrer."""
