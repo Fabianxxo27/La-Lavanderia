@@ -107,6 +107,23 @@ def verificar_columnas_descuento_pedido(conn):
         print(f"⚠️ Error al verificar columnas: {e}")
         return False
 
+def verificar_tabla_esquema_cliente(conn):
+    """Verificar si la tabla cliente_esquema_descuento existe"""
+    try:
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT EXISTS (
+                SELECT FROM information_schema.tables 
+                WHERE table_name = 'cliente_esquema_descuento'
+            )
+        """)
+        existe = cursor.fetchone()[0]
+        cursor.close()
+        return existe
+    except Exception as e:
+        print(f"⚠️ Error al verificar tabla: {e}")
+        return False
+
 def main():
     print("=" * 70)
     print("🚀 EJECUTANDO MIGRACIONES DE BASE DE DATOS")
@@ -158,6 +175,20 @@ def main():
             print("   ✗ Falló la migración de descuento en pedido")
     
     print()
+    
+    # Verificar migración 4: Tabla de esquema de cliente
+    tiene_esquema_cliente = verificar_tabla_esquema_cliente(conn)
+    if tiene_esquema_cliente:
+        print("ℹ️  La tabla cliente_esquema_descuento ya existe, se omitirá esta migración")
+    else:
+        print("📝 Ejecutando migración: create_cliente_esquema_descuento.sql")
+        if ejecutar_sql_file(conn, 'create_cliente_esquema_descuento.sql'):
+            print("   ✓ Tabla cliente_esquema_descuento creada")
+            print("   ✓ Ahora los clientes mantienen su esquema de promociones hasta completar el ciclo")
+        else:
+            print("   ✗ Falló la migración de esquema cliente")
+    
+    print()
     print("=" * 70)
     print("🎉 PROCESO COMPLETADO")
     print("=" * 70)
@@ -173,6 +204,11 @@ def main():
         print("   ✅ Columnas de descuento en pedido: OK")
     else:
         print("   ❌ Columnas de descuento en pedido: FALTAN")
+    
+    if verificar_tabla_esquema_cliente(conn):
+        print("   ✅ Tabla cliente_esquema_descuento: OK")
+    else:
+        print("   ❌ Tabla cliente_esquema_descuento: FALTA")
     
     if verificar_tabla_descuentos(conn):
         print("   ✅ Tabla descuento_config: OK")

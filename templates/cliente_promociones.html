@@ -122,11 +122,20 @@
                         <strong>¡Felicidades!</strong> Has alcanzado el nivel máximo de lealtad
                     </div>
                     {% endif %}
+                    
+                    <!-- Alerta de esquema congelado -->
+                    {% if tiene_esquema_congelado %}
+                    <div class="alert alert-info mb-3">
+                        <i class="fas fa-lock"></i> <strong>Esquema congelado:</strong> Estás usando el esquema de descuentos desde 
+                        <strong>{{ fecha_inicio_esquema.strftime('%d/%m/%Y') if fecha_inicio_esquema else 'N/A' }}</strong>. 
+                        Completarás este ciclo y luego se actualizará a la configuración vigente.
+                    </div>
+                    {% endif %}
 
                     <!-- Tabla de Niveles -->
                     <div class="card mt-4">
                         <div class="card-header text-white lealtad-gradient">
-                            <h6 class="mb-0">Niveles de Lealtad</h6>
+                            <h6 class="mb-0">Tu Esquema de Niveles</h6>
                         </div>
                         <div class="card-body p-0">
                             <div class="table-responsive">
@@ -140,52 +149,32 @@
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        <tr class="{% if nivel == 'Bronce' %}table-active{% endif %}">
-                                            <td><span class="fs-5">🥉</span> Bronce</td>
-                                            <td>0 - 2 pedidos</td>
-                                            <td><span class="badge bg-secondary">0%</span></td>
+                                        {% for nivel_config in esquema_descuentos %}
+                                        <tr class="{% if nivel == nivel_config.nivel %}table-active{% endif %}">
+                                            <td><strong>{{ nivel_config.nivel }}</strong></td>
+                                            <td>{{ nivel_config.min }} - {{ nivel_config.max if nivel_config.max else '∞' }} pedidos</td>
+                                            <td><span class="badge bg-success">{{ nivel_config.porcentaje }}%</span></td>
                                             <td>
-                                                {% if pedidos_count < 3 %}
+                                                {% if pedidos_count >= nivel_config.min and (nivel_config.max is none or pedidos_count <= nivel_config.max) %}
                                                 <span class="badge bg-primary">Nivel Actual</span>
-                                                {% else %}
-                                                <i class="fas fa-check-circle text-success"></i> Completado
-                                                {% endif %}
-                                            </td>
-                                        </tr>
-                                        <tr class="{% if nivel == 'Plata' %}table-active{% endif %}">
-                                            <td><span class="fs-5">🥈</span> Plata</td>
-                                            <td>3 - 5 pedidos</td>
-                                            <td><span class="badge bg-info">5%</span></td>
-                                            <td>
-                                                {% if pedidos_count >= 3 and pedidos_count < 6 %}
-                                                <span class="badge bg-primary">Nivel Actual</span>
-                                                {% elif pedidos_count >= 6 %}
+                                                {% elif pedidos_count > (nivel_config.max or 999) %}
                                                 <i class="fas fa-check-circle text-success"></i> Completado
                                                 {% else %}
                                                 <i class="fas fa-lock text-muted"></i> Bloqueado
                                                 {% endif %}
                                             </td>
                                         </tr>
-                                        <tr class="{% if nivel == 'Oro' %}table-active{% endif %}">
-                                            <td><span class="fs-5">🥇</span> Oro</td>
-                                            <td>6 - 9 pedidos</td>
-                                            <td><span class="badge bg-warning text-dark">10%</span></td>
-                                            <td>
-                                                {% if pedidos_count >= 6 and pedidos_count < 10 %}
-                                                <span class="badge bg-primary">Nivel Actual</span>
-                                                {% elif pedidos_count >= 10 %}
-                                                <i class="fas fa-check-circle text-success"></i> Completado
-                                                {% else %}
-                                                <i class="fas fa-lock text-muted"></i> Bloqueado
-                                                {% endif %}
-                                            </td>
-                                        </tr>
-                                        <tr class="{% if nivel == 'Diamante' %}table-active{% endif %}">
-                                            <td><span class="fs-5">💎</span> Diamante</td>
-                                            <td>10+ pedidos</td>
-                                            <td><span class="badge bg-success">15%</span></td>
-                                            <td>
-                                                {% if pedidos_count >= 10 %}
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
                                                 <span class="badge bg-primary">Nivel Actual</span>
                                                 {% else %}
                                                 <i class="fas fa-lock text-muted"></i> Bloqueado

@@ -666,56 +666,87 @@ def cliente_promociones():
         fetchone=True
     )[0] or 0
     
-    # Calcular nivel de cliente y descuento (requisitos reducidos)
-    nivel = 'Bronce'
-    descuento_base = 0
-    icono = '🥉'
+    # Obtener esquema de descuento del cliente (congelado o actual)
+    esquema_cliente = _obtener_esquema_descuento_cliente(id_usuario)
+    
+    # Verificar si tiene esquema congelado
+    try:
+        esquema_info = run_query("""
+            SELECT fecha_inicio FROM cliente_esquema_descuento
+            WHERE id_cliente = :id AND activo = true
+        """, {"id": id_usuario}, fetchone=True)
+        tiene_esquema_congelado = esquema_info is not None
+        fecha_inicio_esquema = esquema_info[0] if esquema_info else None
+    except:
+        tiene_esquema_congelado = False
+        fecha_inicio_esquema = None
+    
+    # Determinar nivel actual del cliente según su esquema
+    nivel_actual = None
+    descuento_actual = 0
     progreso = 0
-    siguiente_nivel = 'Plata'
-    pedidos_faltantes = 3
+    siguiente_nivel = None
+    pedidos_faltantes = 0
     
-    if pedidos_count >= 10:
-        nivel = 'Diamante'
-        descuento_base = 15
-        icono = '💎'
-        progreso = 100
-        siguiente_nivel = 'Máximo nivel alcanzado'
-        pedidos_faltantes = 0
-    elif pedidos_count >= 6:
-        nivel = 'Oro'
-        descuento_base = 10
-        icono = '🥇'
-        progreso = ((pedidos_count - 6) / 4) * 100
-        siguiente_nivel = 'Diamante'
-        pedidos_faltantes = 10 - pedidos_count
-    elif pedidos_count >= 3:
-        nivel = 'Plata'
-        descuento_base = 5
-        icono = '🥈'
-        progreso = ((pedidos_count - 3) / 3) * 100
-        siguiente_nivel = 'Oro'
-        pedidos_faltantes = 6 - pedidos_count
-    else:
-        progreso = (pedidos_count / 3) * 100
-        pedidos_faltantes = 3 - pedidos_count
+    for i, nivel_config in enumerate(esquema_cliente):
+        min_ped = nivel_config.get("min", 0)
+        max_ped = nivel_config.get("max")
+        
+        if pedidos_count >= min_ped and (max_ped is None or pedidos_count <= max_ped):
+            nivel_actual = nivel_config.get("nivel")
+            descuento_actual = nivel_config.get("porcentaje", 0)
+            
+            # Calcular progreso
+            if max_ped is not None:
+                rango = max_ped - min_ped + 1
+                en_nivel = pedidos_count - min_ped
+                progreso = (en_nivel / rango) * 100
+                
+                # Siguiente nivel
+                if i + 1 < len(esquema_cliente):
+                    siguiente_nivel = esquema_cliente[i + 1].get("nivel")
+                    pedidos_faltantes = esquema_cliente[i + 1].get("min") - pedidos_count
+                else:
+                    siguiente_nivel = "Máximo nivel"
+                    pedidos_faltantes = 0
+            else:
+                progreso = 100
+                siguiente_nivel = "Máximo nivel"
+                pedidos_faltantes = 0
+            break
     
-    # Promociones generales activas
-    promociones = run_query("""
-        SELECT id_promocion, descripcion, descuento, fecha_inicio, fecha_fin
-        FROM promocion
-        WHERE fecha_fin >= CURRENT_DATE
-        ORDER BY fecha_inicio DESC
-    """, fetchall=True)
+    if not nivel_actual and esquema_cliente:
+        # Aún no alcanza el primer nivel
+        primer_nivel = esquema_cliente[0]
+        nivel_actual = "Sin nivel"
+        descuento_actual = 0
+        siguiente_nivel = primer_nivel.get("nivel")
+        pedidos_faltantes = primer_nivel.get("min", 0) - pedidos_count
+        if pedidos_faltantes < 0:
+            pedidos_faltantes = 0
+        progreso = (pedidos_count / primer_nivel.get("min", 1)) * 100 if primer_nivel.get("min", 0) > 0 else 0
+    
+    # Iconos por nivel
+    iconos = {
+        "Bronce": "🥉",
+        "Plata": "🥈",
+        "Oro": "🥇",
+        "Platino": "💎",
+        "Diamante": "💎"
+    }
+    icono = iconos.get(nivel_actual, "⭐")
     
     return render_template('cliente_promociones.html', 
-                         promociones=promociones,
                          pedidos_count=pedidos_count,
-                         nivel=nivel,
-                         descuento_base=descuento_base,
+                         nivel=nivel_actual,
+                         descuento_base=descuento_actual,
                          icono=icono,
                          progreso=progreso,
                          siguiente_nivel=siguiente_nivel,
-                         pedidos_faltantes=pedidos_faltantes)
+                         pedidos_faltantes=pedidos_faltantes,
+                         esquema_descuentos=esquema_cliente,
+                         tiene_esquema_congelado=tiene_esquema_congelado,
+                         fecha_inicio_esquema=fecha_inicio_esquema)
 
 
 # -----------------------------------------------
@@ -1311,7 +1342,7 @@ def ejecutar_migraciones_admin():
         flash('Acceso denegado.', 'danger')
         return redirect(url_for('index'))
 
-    archivos = ['add_direcciones_to_pedido.sql', 'create_descuento_config.sql', 'add_descuento_to_pedido.sql']
+    archivos = ['add_direcciones_to_pedido.sql', 'create_descuento_config.sql', 'add_descuento_to_pedido.sql', 'create_cliente_esquema_descuento.sql']
     errores = []
 
     for archivo in archivos:
@@ -2132,47 +2163,29 @@ def agregar_pedido():
             # 5. Crear pedido con código de barras y direcciones
             # IMPORTANTE: Primero calcular el descuento ANTES de crear el pedido
             
-            # 5.1. Calcular descuento según la cantidad de pedidos del cliente
+            # 5.1. Calcular descuento según ESQUEMA CONGELADO del cliente
             pedidos_count = run_query(
                 "SELECT COUNT(*) FROM pedido WHERE id_cliente = :id",
                 {"id": id_cliente},
                 fetchone=True
             )[0] or 0
             
-            # Obtener configuración de descuentos desde la base de datos
-            descuentos_config = run_query("""
-                SELECT nivel, porcentaje, pedidos_minimos, pedidos_maximos
-                FROM descuento_config
-                WHERE activo = true
-                ORDER BY pedidos_minimos DESC
-            """, fetchall=True)
+            # Obtener esquema de descuento del cliente (congelado o actual)
+            esquema_cliente = _obtener_esquema_descuento_cliente(id_cliente)
             
-            # Determinar nivel y descuento basado en la configuración ACTUAL
+            # Determinar nivel y descuento basado en el esquema del cliente
             descuento_porcentaje_aplicado = 0
             nivel_descuento_aplicado = None
             
-            if descuentos_config:
-                for config in descuentos_config:
-                    nivel, porcentaje, minimos, maximos = config
-                    if pedidos_count >= minimos:
-                        if maximos is None or pedidos_count <= maximos:
-                            descuento_porcentaje_aplicado = int(porcentaje)
-                            nivel_descuento_aplicado = nivel
-                            break
-            else:
-                # Configuración por defecto si no existe tabla o está vacía
-                if pedidos_count >= 15:
-                    descuento_porcentaje_aplicado = 20
-                    nivel_descuento_aplicado = "Platino"
-                elif pedidos_count >= 10:
-                    descuento_porcentaje_aplicado = 15
-                    nivel_descuento_aplicado = "Oro"
-                elif pedidos_count >= 6:
-                    descuento_porcentaje_aplicado = 10
-                    nivel_descuento_aplicado = "Plata"
-                elif pedidos_count >= 3:
-                    descuento_porcentaje_aplicado = 5
-                    nivel_descuento_aplicado = "Bronce"
+            for nivel_config in esquema_cliente:
+                min_pedidos = nivel_config.get("min", 0)
+                max_pedidos = nivel_config.get("max")
+                
+                if pedidos_count >= min_pedidos:
+                    if max_pedidos is None or pedidos_count <= max_pedidos:
+                        descuento_porcentaje_aplicado = nivel_config.get("porcentaje", 0)
+                        nivel_descuento_aplicado = nivel_config.get("nivel")
+                        break
             
             # 5.2. Crear el pedido (compatible con BD con o sin columnas de descuento)
             try:
@@ -2825,6 +2838,104 @@ def _ejecutar_sql_file(nombre_archivo):
         return True, None
     except Exception as e:
         return False, str(e)
+
+
+def _obtener_esquema_descuento_cliente(id_cliente):
+    """
+    Obtiene el esquema de descuento para un cliente específico.
+    - Si tiene esquema congelado activo, lo retorna
+    - Si no tiene o completó ciclo, obtiene el esquema actual y lo congela
+    - Retorna: lista de dicts con nivel, porcentaje, min, max
+    """
+    import json
+    
+    # Verificar si tiene esquema activo
+    try:
+        esquema_guardado = run_query("""
+            SELECT id_esquema, esquema_json, fecha_inicio
+            FROM cliente_esquema_descuento
+            WHERE id_cliente = :id AND activo = true
+        """, {"id": id_cliente}, fetchone=True)
+    except:
+        # Si la tabla no existe, usar esquema actual
+        esquema_guardado = None
+    
+    # Obtener configuración actual
+    config_actual = run_query("""
+        SELECT nivel, porcentaje, pedidos_minimos, pedidos_maximos
+        FROM descuento_config
+        WHERE activo = true
+        ORDER BY pedidos_minimos ASC
+    """, fetchall=True)
+    
+    if not config_actual:
+        # Valores por defecto si no hay configuración
+        return [
+            {"nivel": "Bronce", "porcentaje": 5, "min": 0, "max": 2},
+            {"nivel": "Plata", "porcentaje": 10, "min": 3, "max": 5},
+            {"nivel": "Oro", "porcentaje": 15, "min": 6, "max": 9},
+            {"nivel": "Platino", "porcentaje": 20, "min": 10, "max": None}
+        ]
+    
+    esquema_actual = [
+        {
+            "nivel": c[0],
+            "porcentaje": int(c[1]),
+            "min": int(c[2]),
+            "max": int(c[3]) if c[3] is not None else None
+        }
+        for c in config_actual
+    ]
+    
+    if esquema_guardado:
+        # Tiene esquema congelado, verificar si completó ciclo
+        try:
+            esquema_json = json.loads(esquema_guardado[1])
+            
+            # Contar pedidos del cliente
+            pedidos_count = run_query(
+                "SELECT COUNT(*) FROM pedido WHERE id_cliente = :id",
+                {"id": id_cliente},
+                fetchone=True
+            )[0] or 0
+            
+            # Encontrar nivel máximo del esquema guardado
+            nivel_maximo = max((n.get("max") or 999) for n in esquema_json)
+            
+            # Si completó el ciclo, actualizar a esquema actual
+            if pedidos_count > nivel_maximo:
+                # Desactivar esquema anterior
+                run_query("""
+                    UPDATE cliente_esquema_descuento
+                    SET activo = false
+                    WHERE id_esquema = :id
+                """, {"id": esquema_guardado[0]}, commit=True)
+                
+                # Crear nuevo esquema con config actual
+                run_query("""
+                    INSERT INTO cliente_esquema_descuento (id_cliente, esquema_json, activo)
+                    VALUES (:id, :json, true)
+                """, {"id": id_cliente, "json": json.dumps(esquema_actual)}, commit=True)
+                
+                return esquema_actual
+            
+            return esquema_json
+        except:
+            # Error parseando JSON, usar actual
+            return esquema_actual
+    else:
+        # No tiene esquema, congelar el actual
+        try:
+            run_query("""
+                INSERT INTO cliente_esquema_descuento (id_cliente, esquema_json, activo)
+                VALUES (:id, :json, true)
+            """, {"id": id_cliente, "json": json.dumps(esquema_actual)}, commit=True)
+        except:
+            # Si falla (tabla no existe), continuar sin guardar
+            pass
+        
+        return esquema_actual
+
 
 def _get_safe_redirect():
     """Obtiene una URL segura para redireccionar, priorizando el referrer."""
