@@ -98,7 +98,13 @@ def send_email_async(destinatario, asunto, cuerpo_html):
             smtp_password = os.getenv('SMTP_PASSWORD', '')
             
             if not smtp_password:
-                print("⚠️ SMTP_PASSWORD no configurado, correo no enviado")
+                print("⚠️ SMTP_PASSWORD no configurado en las variables de entorno")
+                print("⚠️ Para habilitar correos, configura SMTP_PASSWORD en Render:")
+                print("   Dashboard > Environment > Add Variable > SMTP_PASSWORD = tu_app_password_16_caracteres")
+                return
+            
+            if not destinatario or '@' not in destinatario:
+                print(f"⚠️ Email destinatario inválido: {destinatario}")
                 return
             
             # Crear mensaje
@@ -117,9 +123,13 @@ def send_email_async(destinatario, asunto, cuerpo_html):
                 server.login(smtp_user, smtp_password)
                 server.send_message(mensaje)
             
-            print(f"✅ Correo enviado a {destinatario}")
+            print(f"✅ Correo enviado exitosamente a {destinatario}: {asunto}")
+        except smtplib.SMTPAuthenticationError as e:
+            print(f"❌ Error de autenticación SMTP: {e}")
+            print("   Verifica que SMTP_USER y SMTP_PASSWORD sean correctos")
+            print("   Usa App Password de Gmail (16 caracteres sin espacios)")
         except Exception as e:
-            print(f"❌ Error enviando correo: {e}")
+            print(f"❌ Error enviando correo a {destinatario}: {e}")
     
     # Ejecutar en thread separado
     thread = threading.Thread(target=_send)

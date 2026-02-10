@@ -3,7 +3,6 @@
 {% block title %}Configurar Descuentos - Admin{% endblock %}
 
 {% block content %}
-{% set tabla_ok = tabla_descuentos_existe is not defined or tabla_descuentos_existe %}
 <div class="container mt-5">
     <div class="row">
         <div class="col-12">
@@ -13,7 +12,7 @@
                         <h2 class="mb-0">
                             <i class="bi bi-percent"></i> Panel de Configuración de Descuentos
                         </h2>
-                        {% if tabla_ok %}
+                        {% if tabla_descuentos_existe %}
                         <button class="btn btn-light btn-sm" data-bs-toggle="modal" data-bs-target="#crearDescuentoModal">
                             <i class="bi bi-plus-circle"></i> Nuevo Nivel
                         </button>
@@ -25,7 +24,7 @@
                     </div>
                 </div>
                 <div class="card-body p-4">
-                    {% if not tabla_ok %}
+                    {% if not tabla_descuentos_existe %}
                     <div class="alert alert-warning mb-4">
                         <i class="bi bi-exclamation-triangle"></i> No se encontró la tabla <strong>descuento_config</strong>.
                         Ejecuta las migraciones para habilitar este panel.
