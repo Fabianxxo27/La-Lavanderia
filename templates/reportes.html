@@ -12,10 +12,13 @@
                 <option value="90">Últimos 90 días</option>
                 <option value="365">Último año</option>
             </select>
+            <a href="{{ url_for('reportes_export_excel') }}" class="btn btn-sm btn-success">
+                <i class="fas fa-file-excel"></i> Exportar Excel
+            </a>
             <button class="btn btn-sm btn-primary" onclick="exportarReporte()">
                 <i class="fas fa-download"></i> Exportar PDF
             </button>
-            <button class="btn btn-sm btn-success" onclick="refrescarDatos()">
+            <button class="btn btn-sm btn-info text-white" onclick="refrescarDatos()">
                 <i class="fas fa-sync"></i> Actualizar
             </button>
         </div>

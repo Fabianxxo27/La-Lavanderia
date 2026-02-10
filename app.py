@@ -23,6 +23,10 @@ import numpy as np
 import secrets
 import re
 from functools import wraps
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+import threading
 
 # Cargar variables de entorno desde .env (si existe)
 load_dotenv()
@@ -78,6 +82,49 @@ db = SQLAlchemy(app)
 
 # Hacer disponible la función now() en todos los templates
 app.jinja_env.globals['now'] = datetime.datetime.now
+
+
+# -----------------------------------------------
+# FUNCIÓN PARA ENVÍO DE CORREOS (ASÍNCRONO)
+# -----------------------------------------------
+def send_email_async(destinatario, asunto, cuerpo_html):
+    """Envía un correo de forma asíncrona para no bloquear la aplicación."""
+    def _send():
+        try:
+            # Configuración SMTP
+            smtp_server = os.getenv('SMTP_SERVER', 'smtp.gmail.com')
+            smtp_port = int(os.getenv('SMTP_PORT', 587))
+            smtp_user = os.getenv('SMTP_USER', 'lalavanderiabogota@gmail.com')
+            smtp_password = os.getenv('SMTP_PASSWORD', '')
+            
+            if not smtp_password:
+                print("⚠️ SMTP_PASSWORD no configurado, correo no enviado")
+                return
+            
+            # Crear mensaje
+            mensaje = MIMEMultipart('alternative')
+            mensaje['From'] = f"La Lavandería <{smtp_user}>"
+            mensaje['To'] = destinatario
+            mensaje['Subject'] = asunto
+            
+            # Adjuntar HTML
+            parte_html = MIMEText(cuerpo_html, 'html')
+            mensaje.attach(parte_html)
+            
+            # Enviar
+            with smtplib.SMTP(smtp_server, smtp_port) as server:
+                server.starttls()
+                server.login(smtp_user, smtp_password)
+                server.send_message(mensaje)
+            
+            print(f"✅ Correo enviado a {destinatario}")
+        except Exception as e:
+            print(f"❌ Error enviando correo: {e}")
+    
+    # Ejecutar en thread separado
+    thread = threading.Thread(target=_send)
+    thread.daemon = True
+    thread.start()
 
 
 # -----------------------------------------------
@@ -366,6 +413,45 @@ def registro():
                     },
                     commit=True
                 )
+                
+                # Enviar correo de bienvenida (asíncrono)
+                html_bienvenida = f"""
+                <html>
+                    <body style="font-family: Arial, sans-serif; color: #333; max-width: 600px; margin: 0 auto;">
+                        <div style="background: linear-gradient(135deg, #a6cc48 0%, #8fb933 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+                            <h1 style="color: white; margin: 0;">¡Bienvenido a La Lavandería!</h1>
+                        </div>
+                        <div style="padding: 30px; background: #f9f9f9;">
+                            <h2 style="color: #1a4e7b;">Hola {nombre},</h2>
+                            <p style="font-size: 16px; line-height: 1.6;">
+                                Gracias por registrarte en <strong>La Lavandería</strong>, tu servicio de lavandería a domicilio de confianza.
+                            </p>
+                            <div style="background: white; border-left: 4px solid #a6cc48; padding: 20px; margin: 20px 0; border-radius: 5px;">
+                                <h3 style="color: #1a4e7b; margin-top: 0;">📋 Tu cuenta:</h3>
+                                <p style="margin: 10px 0;"><strong>Usuario:</strong> {username}</p>
+                                <p style="margin: 10px 0;"><strong>Email:</strong> {email}</p>
+                            </div>
+                            <div style="background: #e8f4f8; padding: 20px; margin: 20px 0; border-radius: 5px;">
+                                <h3 style="color: #1a4e7b; margin-top: 0;">🚀 ¿Qué puedes hacer ahora?</h3>
+                                <ul style="line-height: 1.8;">
+                                    <li>🏠 <strong>Crear pedidos a domicilio</strong> - Recogemos y entregamos en tu puerta</li>
+                                    <li>💰 <strong>Obtener descuentos</strong> - Acumula pedidos para recibir beneficios</li>
+                                    <li>📊 <strong>Ver historial</strong> - Consulta todos tus pedidos y recibos</li>
+                                    <li>🎁 <strong>Promociones exclusivas</strong> - Ofertas especiales para clientes registrados</li>
+                                </ul>
+                            </div>
+                            <div style="text-align: center; margin: 30px 0;">
+                                <p style="color: #666;">¡Estamos listos para cuidar tu ropa!</p>
+                            </div>
+                        </div>
+                        <div style="background: #1a4e7b; color: white; padding: 20px; text-align: center; border-radius: 0 0 10px 10px;">
+                            <p style="margin: 0;">La Lavandería - Servicio a Domicilio</p>
+                            <p style="margin: 5px 0; font-size: 14px;">lalavanderiabogota@gmail.com</p>
+                        </div>
+                    </body>
+                </html>
+                """
+                send_email_async(email, "🎉 ¡Bienvenido a La Lavandería!", html_bienvenida)
 
             flash("¡Registro exitoso! Ya puedes iniciar sesión.", "success")
             return redirect(url_for("login"))
@@ -936,6 +1022,100 @@ def clientes():
 # -----------------------------------------------
 # AGREGAR CLIENTE
 # -----------------------------------------------
+@app.route('/registro-rapido', methods=['POST'])
+@login_requerido
+@admin_requerido
+def registro_rapido():
+    """Registro rápido de cliente desde búsqueda."""
+    if not _admin_only():
+        flash('Acceso denegado.', 'danger')
+        return redirect(url_for('index'))
+    
+    nombre = request.form.get('nombre', '').strip()
+    username = request.form.get('username', '').strip()
+    email = request.form.get('email', '').strip()
+    
+    # Generar contraseña automática
+    import secrets
+    import string
+    alphabet = string.ascii_letters + string.digits
+    password_auto = ''.join(secrets.choice(alphabet) for _ in range(12))
+    
+    # Validación
+    errores = []
+    
+    if not nombre or len(nombre) < 3:
+        errores.append("El nombre debe tener al menos 3 caracteres.")
+    
+    if not username or len(username) < 3:
+        errores.append("El username debe tener al menos 3 caracteres.")
+    
+    if not validar_email(email):
+        errores.append("Email inválido.")
+    
+    # Verificar si el username o email ya existen
+    if not errores:
+        usuario_existente = run_query(
+            "SELECT id_usuario FROM usuario WHERE username = :u OR email = :e",
+            {"u": username, "e": email},
+            fetchone=True
+        )
+        if usuario_existente:
+            errores.append("El username o email ya están registrados.")
+    
+    if errores:
+        for error in errores:
+            flash(error, 'danger')
+        return redirect(url_for('clientes'))
+    
+    try:
+        # Hash de la contraseña generada
+        hashed = generate_password_hash(password_auto, method='pbkdf2:sha256')
+        
+        # Insertar en usuario
+        usuario_id = run_query(
+            "INSERT INTO usuario (username, email, password, rol) VALUES (:u, :e, :p, 'cliente') RETURNING id_usuario",
+            {"u": username, "e": email, "p": hashed},
+            fetchone=True,
+            commit=True
+        )[0]
+        
+        # Insertar en cliente
+        run_query(
+            "INSERT INTO cliente (id_usuario, nombre) VALUES (:uid, :n)",
+            {"uid": usuario_id, "n": nombre},
+            commit=True
+        )
+        
+        # Enviar email con contraseña
+        html = f"""
+        <html>
+            <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                <div style="background: linear-gradient(135deg, #a6cc48 0%, #84af1d 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+                    <h1 style="color: white; margin: 0;">¡Bienvenido a La Lavandería!</h1>
+                </div>
+                <div style="padding: 30px; background: #f9f9f9;">
+                    <h2 style="color: #1a4e7b;">Hola {nombre},</h2>
+                    <p>Tu cuenta ha sido creada exitosamente por nuestro equipo.</p>
+                    <div style="background: white; padding: 20px; border-radius: 8px; border-left: 4px solid #a6cc48; margin: 20px 0;">
+                        <h3 style="margin-top: 0; color: #1a4e7b;">Tus credenciales de acceso:</h3>
+                        <p><strong>Usuario:</strong> {username}</p>
+                        <p><strong>Contraseña temporal:</strong> <code style="background: #f0f0f0; padding: 4px 8px; border-radius: 4px;">{password_auto}</code></p>
+                    </div>
+                    <p><strong>Importante:</strong> Te recomendamos cambiar tu contraseña después del primer inicio de sesión.</p>
+                    <p>Gracias por confiar en nosotros.</p>
+                </div>
+            </body>
+        </html>
+        """
+        send_email_async(email, "Bienvenido a La Lavandería - Credenciales de Acceso", html)
+        
+        flash(f'Cliente {nombre} registrado exitosamente. Contraseña enviada por correo.', 'success')
+    except Exception as e:
+        flash(f'Error al registrar cliente: {e}', 'danger')
+    
+    return redirect(url_for('clientes'))
+
 @app.route('/agregar_cliente', methods=['GET', 'POST'])
 @login_requerido
 @admin_requerido
@@ -1069,6 +1249,158 @@ def eliminar_cliente(id_cliente):
         flash(f'Error al eliminar cliente: {e}', 'danger')
     
     return redirect(_get_safe_redirect())
+
+
+# -----------------------------------------------
+# TÉRMINOS Y CONDICIONES DE DESCUENTOS
+# -----------------------------------------------
+@app.route('/terminos-descuentos')
+def terminos_descuentos():
+    """Página de términos y condiciones del programa de descuentos."""
+    return render_template('terminos_descuentos.html')
+
+
+# -----------------------------------------------
+# ADMINISTRACIÓN DE DESCUENTOS
+# -----------------------------------------------
+@app.route('/admin/configurar-descuentos')
+@login_requerido
+@admin_requerido
+def configurar_descuentos():
+    """Panel de administración de configuración de descuentos."""
+    if not _admin_only():
+        flash('Acceso denegado.', 'danger')
+        return redirect(url_for('index'))
+    
+    # Obtener todos los niveles de descuento configurados
+    descuentos = run_query("""
+        SELECT id_config, nivel, porcentaje, pedidos_minimos, pedidos_maximos, activo
+        FROM descuento_config
+        ORDER BY pedidos_minimos ASC
+    """, fetchall=True)
+    
+    return render_template('admin_configurar_descuentos.html', descuentos=descuentos)
+
+
+@app.route('/admin/descuento/crear', methods=['POST'])
+@login_requerido
+@admin_requerido
+def crear_descuento():
+    """Crear un nuevo nivel de descuento."""
+    if not _admin_only():
+        flash('Acceso denegado.', 'danger')
+        return redirect(url_for('index'))
+    
+    nivel = request.form.get('nivel', '').strip()
+    porcentaje = request.form.get('porcentaje', '').strip()
+    pedidos_minimos = request.form.get('pedidos_minimos', '').strip()
+    pedidos_maximos = request.form.get('pedidos_maximos', '').strip()
+    activo = request.form.get('activo') == 'on'
+    
+    # Validación
+    try:
+        porcentaje = float(porcentaje)
+        pedidos_minimos = int(pedidos_minimos)
+        pedidos_maximos = int(pedidos_maximos) if pedidos_maximos else None
+        
+        if porcentaje < 0 or porcentaje > 100:
+            raise ValueError("El porcentaje debe estar entre 0 y 100")
+        
+        if pedidos_minimos < 0:
+            raise ValueError("Los pedidos mínimos deben ser positivos")
+        
+        if pedidos_maximos and pedidos_maximos < pedidos_minimos:
+            raise ValueError("Los pedidos máximos deben ser mayores o iguales a los mínimos")
+        
+        # Insertar en base de datos
+        run_query("""
+            INSERT INTO descuento_config (nivel, porcentaje, pedidos_minimos, pedidos_maximos, activo)
+            VALUES (:n, :p, :min, :max, :a)
+        """, {
+            "n": nivel,
+            "p": porcentaje,
+            "min": pedidos_minimos,
+            "max": pedidos_maximos,
+            "a": activo
+        }, commit=True)
+        
+        flash(f'Nivel de descuento "{nivel}" creado exitosamente.', 'success')
+    except Exception as e:
+        flash(f'Error al crear descuento: {e}', 'danger')
+    
+    return redirect(url_for('configurar_descuentos'))
+
+
+@app.route('/admin/descuento/editar/<int:id_config>', methods=['POST'])
+@login_requerido
+@admin_requerido
+def editar_descuento(id_config):
+    """Editar un nivel de descuento existente."""
+    if not _admin_only():
+        flash('Acceso denegado.', 'danger')
+        return redirect(url_for('index'))
+    
+    nivel = request.form.get('nivel', '').strip()
+    porcentaje = request.form.get('porcentaje', '').strip()
+    pedidos_minimos = request.form.get('pedidos_minimos', '').strip()
+    pedidos_maximos = request.form.get('pedidos_maximos', '').strip()
+    activo = request.form.get('activo') == 'on'
+    
+    try:
+        porcentaje = float(porcentaje)
+        pedidos_minimos = int(pedidos_minimos)
+        pedidos_maximos = int(pedidos_maximos) if pedidos_maximos else None
+        
+        if porcentaje < 0 or porcentaje > 100:
+            raise ValueError("El porcentaje debe estar entre 0 y 100")
+        
+        if pedidos_minimos < 0:
+            raise ValueError("Los pedidos mínimos deben ser positivos")
+        
+        if pedidos_maximos and pedidos_maximos < pedidos_minimos:
+            raise ValueError("Los pedidos máximos deben ser mayores o iguales a los mínimos")
+        
+        # Actualizar en base de datos
+        run_query("""
+            UPDATE descuento_config
+            SET nivel = :n, porcentaje = :p, pedidos_minimos = :min, 
+                pedidos_maximos = :max, activo = :a, fecha_modificacion = CURRENT_TIMESTAMP
+            WHERE id_config = :id
+        """, {
+            "n": nivel,
+            "p": porcentaje,
+            "min": pedidos_minimos,
+            "max": pedidos_maximos,
+            "a": activo,
+            "id": id_config
+        }, commit=True)
+        
+        flash(f'Nivel de descuento "{nivel}" actualizado exitosamente.', 'success')
+    except Exception as e:
+        flash(f'Error al editar descuento: {e}', 'danger')
+    
+    return redirect(url_for('configurar_descuentos'))
+
+
+@app.route('/admin/descuento/eliminar/<int:id_config>', methods=['POST'])
+@login_requerido
+@admin_requerido
+def eliminar_descuento(id_config):
+    """Eliminar un nivel de descuento."""
+    if not _admin_only():
+        flash('Acceso denegado.', 'danger')
+        return redirect(url_for('index'))
+    
+    try:
+        run_query("""
+            DELETE FROM descuento_config WHERE id_config = :id
+        """, {"id": id_config}, commit=True)
+        
+        flash('Nivel de descuento eliminado exitosamente.', 'success')
+    except Exception as e:
+        flash(f'Error al eliminar descuento: {e}', 'danger')
+    
+    return redirect(url_for('configurar_descuentos'))
 
 
 # -----------------------------------------------
@@ -1300,6 +1632,112 @@ def reportes():
                          promedio_gasto=round(float(promedio_gasto), 0),
                          pedidos_pendientes=pedidos_pendientes,
                          promedio_dias=round(float(promedio_dias), 1))
+
+
+@app.route('/reportes/export_excel')
+@login_requerido
+@admin_requerido
+def reportes_export_excel():
+    """Exportar todos los reportes a un archivo Excel."""
+    if not _admin_only():
+        flash('Acceso denegado.', 'danger')
+        return redirect(url_for('index'))
+    
+    from io import BytesIO
+    import pandas as pd
+    from datetime import datetime
+    
+    # Crear un buffer en memoria
+    output = BytesIO()
+    
+    # Crear el archivo Excel con múltiples hojas
+    with pd.ExcelWriter(output, engine='openpyxl') as writer:
+        
+        # Hoja 1: Resumen General
+        resumen_data = {
+            'Métrica': [
+                'Total Pedidos',
+                'Total Ingresos (COP)',
+                'Total Prendas Procesadas',
+                'Promedio Prendas/Pedido',
+                'Tasa Completación (%)',
+                'Promedio Gasto/Cliente (COP)',
+                'Pedidos Pendientes',
+                'Promedio Días Completar'
+            ],
+            'Valor': [
+                run_query("SELECT COUNT(*) FROM pedido", fetchone=True)[0] or 0,
+                run_query("SELECT COALESCE(SUM(total), 0) FROM recibo", fetchone=True)[0] or 0,
+                run_query("SELECT COUNT(*) FROM prenda", fetchone=True)[0] or 0,
+                run_query("SELECT AVG(cnt) FROM (SELECT COUNT(*) as cnt FROM prenda GROUP BY id_pedido) subq", fetchone=True)[0] or 0,
+                (run_query("SELECT COUNT(*) FROM pedido WHERE estado = 'Completado'", fetchone=True)[0] or 0) / max(run_query("SELECT COUNT(*) FROM pedido", fetchone=True)[0] or 1, 1) * 100,
+                run_query("SELECT AVG(total) FROM recibo", fetchone=True)[0] or 0,
+                run_query("SELECT COUNT(*) FROM pedido WHERE estado IN ('Pendiente', 'En proceso')", fetchone=True)[0] or 0,
+                run_query("SELECT AVG((fecha_entrega - fecha_ingreso)::integer) FROM pedido WHERE estado = 'Completado' AND fecha_entrega IS NOT NULL", fetchone=True)[0] or 0
+            ]
+        }
+        df_resumen = pd.DataFrame(resumen_data)
+        df_resumen.to_excel(writer, sheet_name='Resumen General', index=False)
+        
+        # Hoja 2: Estado de Pedidos
+        estado_data = run_query("""
+            SELECT estado, COUNT(*) as cantidad
+            FROM pedido
+            GROUP BY estado
+            ORDER BY cantidad DESC
+        """, fetchall=True)
+        df_estado = pd.DataFrame(estado_data, columns=['Estado', 'Cantidad'])
+        df_estado.to_excel(writer, sheet_name='Estado Pedidos', index=False)
+        
+        # Hoja 3: Prendas Más Procesadas
+        prendas_data = run_query("""
+            SELECT tipo_prenda, COUNT(*) as cantidad
+            FROM prenda
+            GROUP BY tipo_prenda
+            ORDER BY cantidad DESC
+            LIMIT 15
+        """, fetchall=True)
+        df_prendas = pd.DataFrame(prendas_data, columns=['Tipo de Prenda', 'Cantidad'])
+        df_prendas.to_excel(writer, sheet_name='Prendas Top', index=False)
+        
+        # Hoja 4: Clientes Más Activos
+        clientes_data = run_query("""
+            SELECT c.nombre, c.email, COUNT(p.id_pedido) as total_pedidos,
+                   COALESCE(SUM(r.total), 0) as total_gastado
+            FROM cliente c
+            LEFT JOIN pedido p ON c.id_cliente = p.id_cliente
+            LEFT JOIN recibo r ON p.id_pedido = r.id_pedido
+            GROUP BY c.id_cliente, c.nombre, c.email
+            ORDER BY total_pedidos DESC
+            LIMIT 20
+        """, fetchall=True)
+        df_clientes = pd.DataFrame(clientes_data, columns=['Nombre', 'Email', 'Total Pedidos', 'Total Gastado (COP)'])
+        df_clientes.to_excel(writer, sheet_name='Clientes Activos', index=False)
+        
+        # Hoja 5: Pedidos por Fecha (últimos 30 días)
+        pedidos_fecha = run_query("""
+            SELECT fecha_ingreso::date as fecha, COUNT(*) as cantidad
+            FROM pedido
+            WHERE fecha_ingreso >= CURRENT_DATE - INTERVAL '30 days'
+            GROUP BY fecha_ingreso::date
+            ORDER BY fecha
+        """, fetchall=True)
+        df_fechas = pd.DataFrame(pedidos_fecha, columns=['Fecha', 'Cantidad Pedidos'])
+        df_fechas.to_excel(writer, sheet_name='Pedidos Últimos 30 Días', index=False)
+    
+    output.seek(0)
+    
+    # Preparar respuesta para descarga
+    from flask import send_file
+    fecha_actual = datetime.now().strftime('%Y-%m-%d_%H-%M')
+    filename = f'Reportes_LaLavanderia_{fecha_actual}.xlsx'
+    
+    return send_file(
+        output,
+        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        as_attachment=True,
+        download_name=filename
+    )
 
 
 # -----------------------------------------------
@@ -1598,6 +2036,19 @@ def agregar_pedido():
                 flash('Error al identificar el cliente.', 'danger')
                 return redirect(url_for('agregar_pedido'))
             
+            # 1.1 Obtener y validar direcciones (SERVICIO A DOMICILIO)
+            direccion_recogida = request.form.get('direccion_recogida', '').strip()
+            direccion_entrega = request.form.get('direccion_entrega', '').strip()
+            
+            # Validar que las direcciones no estén vacías
+            if not direccion_recogida or len(direccion_recogida) < 10:
+                flash('⚠️ Debes ingresar una dirección de recogida válida (mínimo 10 caracteres).', 'warning')
+                return redirect(url_for('agregar_pedido'))
+            
+            if not direccion_entrega or len(direccion_entrega) < 10:
+                flash('⚠️ Debes ingresar una dirección de entrega válida (mínimo 10 caracteres).', 'warning')
+                return redirect(url_for('agregar_pedido'))
+            
             # 2. Asegurar que existe en tabla cliente
             ensure_cliente_exists(id_cliente)
             
@@ -1621,10 +2072,10 @@ def agregar_pedido():
             fecha_ingreso = datetime.now().strftime('%Y-%m-%d')
             fecha_entrega = (datetime.now() + timedelta(days=dias_entrega)).strftime('%Y-%m-%d')
             
-            # 5. Crear pedido con código de barras
+            # 5. Crear pedido con código de barras y direcciones
             result = run_query(
-                "INSERT INTO pedido (fecha_ingreso, fecha_entrega, estado, id_cliente) VALUES (:fi, :fe, :e, :ic) RETURNING id_pedido",
-                {"fi": fecha_ingreso, "fe": fecha_entrega, "e": "Pendiente", "ic": id_cliente},
+                "INSERT INTO pedido (fecha_ingreso, fecha_entrega, estado, id_cliente, direccion_recogida, direccion_entrega) VALUES (:fi, :fe, :e, :ic, :dr, :de) RETURNING id_pedido",
+                {"fi": fecha_ingreso, "fe": fecha_entrega, "e": "Pendiente", "ic": id_cliente, "dr": direccion_recogida, "de": direccion_entrega},
                 commit=True,
                 fetchone=True
             )
@@ -1703,7 +2154,7 @@ def agregar_pedido():
                     )
                     prendas_insertadas += 1
             
-            # 8. Calcular descuento según la cantidad de pedidos del cliente (ciclo cada 10 pedidos)
+            # 8. Calcular descuento según la cantidad de pedidos del cliente
             
             pedidos_count = run_query(
                 "SELECT COUNT(*) FROM pedido WHERE id_cliente = :id",
@@ -1711,24 +2162,40 @@ def agregar_pedido():
                 fetchone=True
             )[0] or 0
             
-            # Determinar nivel y descuento (ciclo cada 10 pedidos)
-            pedidos_en_ciclo = pedidos_count % 10  # Resetea cada 10 pedidos
+            # Obtener configuración de descuentos desde la base de datos
+            descuentos_config = run_query("""
+                SELECT nivel, porcentaje, pedidos_minimos, pedidos_maximos
+                FROM descuento_config
+                WHERE activo = true
+                ORDER BY pedidos_minimos DESC
+            """, fetchall=True)
+            
+            # Determinar nivel y descuento basado en la configuración
             descuento_porcentaje = 0
             nivel_descuento = "Sin nivel"
             
-            if pedidos_en_ciclo == 0 and pedidos_count > 0:
-                # El pedido 10, 20, 30, etc. tiene 15%
-                descuento_porcentaje = 15
-                nivel_descuento = "Oro"
-            elif pedidos_en_ciclo >= 6 or (pedidos_en_ciclo == 0 and pedidos_count == 0):
-                descuento_porcentaje = 10
-                nivel_descuento = "Plata"
-            elif pedidos_en_ciclo >= 3:
-                descuento_porcentaje = 5
-                nivel_descuento = "Bronce"
+            if descuentos_config:
+                for config in descuentos_config:
+                    nivel, porcentaje, minimos, maximos = config
+                    if pedidos_count >= minimos:
+                        if maximos is None or pedidos_count <= maximos:
+                            descuento_porcentaje = float(porcentaje)
+                            nivel_descuento = nivel
+                            break
             else:
-                descuento_porcentaje = 0
-                nivel_descuento = "Sin nivel"
+                # Configuración por defecto si no existe tabla o está vacía
+                if pedidos_count >= 15:
+                    descuento_porcentaje = 20
+                    nivel_descuento = "Platino"
+                elif pedidos_count >= 10:
+                    descuento_porcentaje = 15
+                    nivel_descuento = "Oro"
+                elif pedidos_count >= 6:
+                    descuento_porcentaje = 10
+                    nivel_descuento = "Plata"
+                elif pedidos_count >= 3:
+                    descuento_porcentaje = 5
+                    nivel_descuento = "Bronce"
             
             # Calcular monto con descuento
             monto_descuento = (total_costo * descuento_porcentaje) / 100
@@ -1744,10 +2211,60 @@ def agregar_pedido():
             
             # 10. Obtener datos del cliente para el flash
             cliente_data = run_query(
-                "SELECT nombre FROM cliente WHERE id_cliente = :id",
+                "SELECT nombre, email FROM cliente WHERE id_cliente = :id",
                 {"id": id_cliente},
                 fetchone=True
             )
+            
+            # Enviar correo de confirmación de pedido creado (asíncrono)
+            if cliente_data:
+                nombre_cliente = cliente_data[0]
+                email_cliente = cliente_data[1]
+                
+                html_pedido = f"""
+                <html>
+                    <body style="font-family: Arial, sans-serif; color: #333; max-width: 600px; margin: 0 auto;">
+                        <div style="background: linear-gradient(135deg, #a6cc48 0%, #8fb933 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+                            <h1 style="color: white; margin: 0;">✅ Pedido Creado</h1>
+                        </div>
+                        <div style="padding: 30px; background: #f9f9f9;">
+                            <h2 style="color: #1a4e7b;">Hola {nombre_cliente},</h2>
+                            <p style="font-size: 16px;">Tu pedido ha sido creado exitosamente.</p>
+                            
+                            <div style="background: white; border-left: 4px solid #a6cc48; padding: 20px; margin: 20px 0; border-radius: 5px;">
+                                <h3 style="color: #1a4e7b; margin-top: 0;">📦 Información del Pedido</h3>
+                                <p><strong>Número:</strong> #{id_pedido}</p>
+                                <p><strong>Código:</strong> {codigo_barras}</p>
+                                <p><strong>Fecha de recogida:</strong> {fecha_ingreso}</p>
+                                <p><strong>Fecha estimada de entrega:</strong> {fecha_entrega}</p>
+                                <p><strong>Estado:</strong> Pendiente</p>
+                            </div>
+                            
+                            <div style="background: white; border-left: 4px solid #2196F3; padding: 20px; margin: 20px 0; border-radius: 5px;">
+                                <h3 style="color: #1a4e7b; margin-top: 0;">🏠 Direcciones</h3>
+                                <p><strong>Recogida:</strong> {direccion_recogida}</p>
+                                <p><strong>Entrega:</strong> {direccion_entrega}</p>
+                            </div>
+                            
+                            <div style="background: white; border-left: 4px solid #4CAF50; padding: 20px; margin: 20px 0; border-radius: 5px;">
+                                <h3 style="color: #1a4e7b; margin-top: 0;">👕 Prendas: {prendas_insertadas}</h3>
+                                <p><strong>Subtotal:</strong> ${total_costo:,.0f}</p>
+                                {"<p><strong>Descuento (" + str(descuento_porcentaje) + "%):</strong> -${:,.0f}</p>".format(monto_descuento) if descuento_porcentaje > 0 else ""}
+                                <p style="font-size: 18px; color: #a6cc48;"><strong>Total:</strong> ${monto_final:,.0f}</p>
+                            </div>
+                            
+                            <div style="background: #e8f4f8; padding: 20px; margin: 20px 0; border-radius: 5px; text-align: center;">
+                                <p><strong>🚚 Servicio a Domicilio</strong></p>
+                                <p>Recogeremos tu ropa en la dirección indicada y la entregaremos limpia en la fecha estimada.</p>
+                            </div>
+                        </div>
+                        <div style="background: #1a4e7b; color: white; padding: 20px; text-align: center; border-radius: 0 0 10px 10px;">
+                            <p style="margin: 0;">La Lavandería - Servicio a Domicilio</p>
+                        </div>
+                    </body>
+                </html>
+                """
+                send_email_async(email_cliente, f"✅ Pedido #{id_pedido} Creado - La Lavandería", html_pedido)
             
             # Mensaje con descuento aplicado y código de barras
             if descuento_porcentaje > 0:
@@ -1847,11 +2364,62 @@ def actualizar_pedido(id_pedido):
     estado = request.form.get('estado')
     
     try:
+        # Obtener datos del pedido y cliente antes de actualizar
+        pedido_data = run_query("""
+            SELECT p.id_pedido, p.codigo_barras, p.fecha_entrega, c.nombre, c.email
+            FROM pedido p
+            LEFT JOIN cliente c ON p.id_cliente = c.id_cliente
+            WHERE p.id_pedido = :id
+        """, {"id": id_pedido}, fetchone=True)
+        
+        # Actualizar estado
         run_query(
             "UPDATE pedido SET estado = :e WHERE id_pedido = :id",
             {"e": estado, "id": id_pedido},
             commit=True
         )
+        
+        # Enviar correo según el nuevo estado
+        if pedido_data and pedido_data[4]:  # Si tiene email
+            codigo = pedido_data[1] or f"#{id_pedido}"
+            fecha_entrega = pedido_data[2]
+            nombre_cliente = pedido_data[3]
+            email_cliente = pedido_data[4]
+            
+            if estado == "En proceso":
+                html = f"""
+                <html>
+                    <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                        <div style="background: linear-gradient(135deg, #2196F3 0%, #1976D2 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+                            <h1 style="color: white; margin: 0;">🔄 Pedido en Proceso</h1>
+                        </div>
+                        <div style="padding: 30px; background: #f9f9f9;">
+                            <h2 style="color: #1a4e7b;">Hola {nombre_cliente},</h2>
+                            <p>Tu pedido <strong>{codigo}</strong> está siendo procesado.</p>
+                            <p>Estamos lavando tu ropa con el mayor cuidado. La entregaremos el <strong>{fecha_entrega}</strong>.</p>
+                        </div>
+                    </body>
+                </html>
+                """
+                send_email_async(email_cliente, f"🔄 Pedido {codigo} en Proceso", html)
+            
+            elif estado == "Completado":
+                html = f"""
+                <html>
+                    <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                        <div style="background: linear-gradient(135deg, #4CAF50 0%, #388E3C 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+                            <h1 style="color: white; margin: 0;">✅ Pedido Completado</h1>
+                        </div>
+                        <div style="padding: 30px; background: #f9f9f9;">
+                            <h2 style="color: #1a4e7b;">Hola {nombre_cliente},</h2>
+                            <p>¡Buenas noticias! Tu pedido <strong>{codigo}</strong> está listo.</p>
+                            <p>Tu ropa está limpia y lista para ser entregada. La recibirás pronto en tu domicilio.</p>
+                        </div>
+                    </body>
+                </html>
+                """
+                send_email_async(email_cliente, f"✅ Pedido {codigo} Completado y Listo", html)
+        
         flash('Pedido actualizado correctamente.', 'success')
     except Exception as e:
         flash(f'Error al actualizar: {e}', 'danger')

@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+
+{% block title %}Términos y Condiciones - Programa de Descuentos{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <div class="card shadow-lg">
+                <div class="card-header bg-primary text-white">
+                    <h2 class="mb-0"><i class="bi bi-shield-check"></i> Términos y Condiciones - Programa de Descuentos</h2>
+                </div>
+                <div class="card-body p-4">
+                    
+                    <section class="mb-5">
+                        <h3 class="text-primary mb-3"><i class="bi bi-info-circle"></i> Información General</h3>
+                        <p class="lead">
+                            La Lavandería ofrece un programa de descuentos progresivos para premiar la fidelidad de nuestros clientes. 
+                            Los descuentos se aplican automáticamente según el nivel alcanzado por cada cliente.
+                        </p>
+                    </section>
+
+                    <section class="mb-5">
+                        <h3 class="text-primary mb-3"><i class="bi bi-graph-up"></i> Niveles de Descuento</h3>
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-hover">
+                                <thead class="table-primary">
+                                    <tr>
+                                        <th>Nivel</th>
+                                        <th>Pedidos Requeridos</th>
+                                        <th>Descuento Aplicado</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td><strong>Bronce</strong></td>
+                                        <td>3 - 5 pedidos</td>
+                                        <td><span class="badge bg-warning">5%</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Plata</strong></td>
+                                        <td>6 - 9 pedidos</td>
+                                        <td><span class="badge bg-secondary">10%</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Oro</strong></td>
+                                        <td>10 - 14 pedidos</td>
+                                        <td><span class="badge bg-warning text-dark">15%</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Platino</strong></td>
+                                        <td>15+ pedidos</td>
+                                        <td><span class="badge bg-info">20%</span></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </section>
+
+                    <section class="mb-5">
+                        <h3 class="text-primary mb-3"><i class="bi bi-calendar3"></i> Ciclo de Descuentos</h3>
+                        <ul class="list-group">
+                            <li class="list-group-item">
+                                <strong>Inicio del ciclo:</strong> El contador de pedidos comienza desde el primer pedido registrado.
+                            </li>
+                            <li class="list-group-item">
+                                <strong>Aplicación automática:</strong> El descuento se calcula y aplica automáticamente en cada nuevo pedido según el nivel actual.
+                            </li>
+                            <li class="list-group-item">
+                                <strong>Sin vencimiento:</strong> Los pedidos acumulados no expiran, el nivel se mantiene de por vida.
+                            </li>
+                            <li class="list-group-item">
+                                <strong>Progresión:</strong> Cada vez que alcanzas el siguiente nivel, el nuevo descuento se aplica inmediatamente.
+                            </li>
+                        </ul>
+                    </section>
+
+                    <section class="mb-5">
+                        <h3 class="text-primary mb-3"><i class="bi bi-clipboard-check"></i> Condiciones de Aplicación</h3>
+                        <div class="alert alert-info">
+                            <ul class="mb-0">
+                                <li>El descuento se aplica sobre el <strong>total del pedido</strong> antes de impuestos.</li>
+                                <li>Solo se cuentan pedidos <strong>completados y entregados</strong> para el nivel de descuento.</li>
+                                <li>Los pedidos cancelados o rechazados <strong>no cuentan</strong> para el acumulado.</li>
+                                <li>El descuento <strong>no es acumulable</strong> con otras promociones especiales salvo indicación contraria.</li>
+                                <li>Los niveles son <strong>personales e intransferibles</strong>, asociados al nombre de usuario registrado.</li>
+                            </ul>
+                        </div>
+                    </section>
+
+                    <section class="mb-5">
+                        <h3 class="text-primary mb-3"><i class="bi bi-exclamation-triangle"></i> Exclusiones y Restricciones</h3>
+                        <div class="alert alert-warning">
+                            <ul class="mb-0">
+                                <li>El programa puede ser <strong>modificado o suspendido</strong> en cualquier momento, con notificación previa de 15 días.</li>
+                                <li>La Lavandería se reserva el derecho de <strong>verificar</strong> la legitimidad de los pedidos acumulados.</li>
+                                <li>En caso de <strong>fraude o abuso</strong> del sistema, se procederá a la suspensión de la cuenta sin reembolso.</li>
+                                <li>Los descuentos no aplican a servicios de <strong>urgencia o express</strong> con recargo adicional.</li>
+                            </ul>
+                        </div>
+                    </section>
+
+                    <section class="mb-5">
+                        <h3 class="text-primary mb-3"><i class="bi bi-question-circle"></i> Consultas y Reclamaciones</h3>
+                        <p>
+                            Para consultas sobre tu nivel de descuento o cualquier duda relacionada con el programa, 
+                            puedes contactarnos a través de:
+                        </p>
+                        <ul>
+                            <li><strong>Correo:</strong> soporte@lalavanderia.com</li>
+                            <li><strong>Teléfono:</strong> +57 300 123 4567</li>
+                            <li><strong>En persona:</strong> En cualquiera de nuestras sucursales</li>
+                        </ul>
+                    </section>
+
+                    <section class="mb-4">
+                        <h3 class="text-primary mb-3"><i class="bi bi-file-earmark-text"></i> Aceptación de Términos</h3>
+                        <p>
+                            Al utilizar los servicios de La Lavandería y participar en el programa de descuentos, 
+                            aceptas automáticamente estos términos y condiciones.
+                        </p>
+                        <p class="text-muted">
+                            <small>Última actualización: {{ "now"|date("d/m/Y") }}</small>
+                        </p>
+                    </section>
+
+                    <div class="text-center mt-4">
+                        <a href="{{ url_for('cliente_inicio') if session.get('rol') == 'cliente' else url_for('inicio') }}" 
+                           class="btn btn-primary btn-lg">
+                            <i class="bi bi-arrow-left"></i> Volver al Inicio
+                        </a>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -436,6 +436,16 @@
         <button class="btn-buscar" type="submit">Buscar</button>
       </div>
     </form>
+    
+    <!-- Botón para registro rápido -->
+    <div class="mt-3 text-end">
+      <button class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#registroRapidoModal">
+        <svg width="14" height="14" fill="currentColor" viewBox="0 0 16 16" style="vertical-align: middle;">
+          <path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4z"/>
+        </svg>
+        Cliente no encontrado? Regístralo Aquí
+      </button>
+    </div>
   </div>
 
   <div class="clientes-table">
@@ -774,6 +784,61 @@ document.addEventListener('DOMContentLoaded', function() {
   background: white;
   color: #999;
 }
+</script>
+
+<!-- Modal de Registro Rápido -->
+<div class="modal fade" id="registroRapidoModal" tabindex="-1" aria-labelledby="registroRapidoLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header bg-success text-white">
+        <h5 class="modal-title" id="registroRapidoLabel">
+          <svg width="20" height="20" fill="currentColor" viewBox="0 0 16 16" style="vertical-align: middle;">
+            <path d="M3 14s-1 0-1-1 1-4 6-4 6 3 6 4-1 1-1 1H3zm5-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/>
+          </svg>
+          Registro Rápido de Cliente
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form method="post" action="{{ url_for('registro_rapido') }}" id="formRegistroRapido">
+        <div class="modal-body">
+          <div class="alert alert-info">
+            <small><strong>Nota:</strong> Se generará una contraseña automática que se enviará por correo al cliente.</small>
+          </div>
+          
+          <div class="mb-3">
+            <label for="nombre_rapido" class="form-label"><strong>Nombre Completo *</strong></label>
+            <input type="text" class="form-control" id="nombre_rapido" name="nombre" required 
+                   placeholder="Ej: Juan Pérez" minlength="3">
+          </div>
+          
+          <div class="mb-3">
+            <label for="email_rapido" class="form-label"><strong>Correo Electrónico *</strong></label>
+            <input type="email" class="form-control" id="email_rapido" name="email" required 
+                   placeholder="Ej: juan@ejemplo.com">
+          </div>
+          
+          <div class="mb-3">
+            <label for="username_rapido" class="form-label"><strong>Nombre de Usuario *</strong></label>
+            <input type="text" class="form-control" id="username_rapido" name="username" required 
+                   placeholder="Ej: juanp" minlength="3" pattern="[a-zA-Z0-9_]+">
+            <div class="form-text">Solo letras, números y guiones bajos.</div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-success">
+            <svg width="14" height="14" fill="currentColor" viewBox="0 0 16 16" style="vertical-align: middle;">
+              <path d="M12.736 3.97a.733.733 0 0 1 1.047 0c.286.289.29.756.01 1.05L7.88 12.01a.733.733 0 0 1-1.065.02L3.217 8.384a.757.757 0 0 1 0-1.06.733.733 0 0 1 1.047 0l3.052 3.093 5.4-6.425a.247.247 0 0 1 .02-.022Z"/>
+            </svg>
+            Registrar Cliente
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
 
 /* Ajustar input cuando tiene autocompletado */
 .search-input-group {

@@ -1,0 +1,235 @@
+{% extends "base.html" %}
+
+{% block title %}Configurar Descuentos - Admin{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow-lg">
+                <div class="card-header bg-primary text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h2 class="mb-0">
+                            <i class="bi bi-percent"></i> Panel de Configuración de Descuentos
+                        </h2>
+                        <button class="btn btn-light btn-sm" data-bs-toggle="modal" data-bs-target="#crearDescuentoModal">
+                            <i class="bi bi-plus-circle"></i> Nuevo Nivel
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body p-4">
+                    
+                    <div class="alert alert-info mb-4">
+                        <i class="bi bi-info-circle"></i> <strong>Nota:</strong> Los niveles de descuento se aplican automáticamente 
+                        según el número de pedidos completados de cada cliente.
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="table table-hover table-striped">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>Nivel</th>
+                                    <th>Descuento (%)</th>
+                                    <th>Pedidos Mínimos</th>
+                                    <th>Pedidos Máximos</th>
+                                    <th>Estado</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% if descuentos %}
+                                    {% for d in descuentos %}
+                                    <tr>
+                                        <td><strong>{{ d[1] }}</strong></td>
+                                        <td>
+                                            <span class="badge bg-success fs-6">{{ d[2] }}%</span>
+                                        </td>
+                                        <td>{{ d[3] }}</td>
+                                        <td>{{ d[4] if d[4] else '∞' }}</td>
+                                        <td>
+                                            {% if d[5] %}
+                                                <span class="badge bg-success">Activo</span>
+                                            {% else %}
+                                                <span class="badge bg-secondary">Inactivo</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <button class="btn btn-sm btn-warning" 
+                                                    data-bs-toggle="modal" 
+                                                    data-bs-target="#editarDescuentoModal{{ d[0] }}">
+                                                <i class="bi bi-pencil"></i> Editar
+                                            </button>
+                                            <form action="{{ url_for('eliminar_descuento', id_config=d[0]) }}" 
+                                                  method="post" 
+                                                  style="display: inline;"
+                                                  onsubmit="return confirm('¿Estás seguro de eliminar este nivel de descuento?');">
+                                                <button type="submit" class="btn btn-sm btn-danger">
+                                                    <i class="bi bi-trash"></i> Eliminar
+                                                </button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                    
+                                    <!-- Modal Editar -->
+                                    <div class="modal fade" id="editarDescuentoModal{{ d[0] }}" tabindex="-1">
+                                        <div class="modal-dialog">
+                                            <div class="modal-content">
+                                                <div class="modal-header bg-warning">
+                                                    <h5 class="modal-title">Editar Nivel: {{ d[1] }}</h5>
+                                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                                </div>
+                                                <form method="post" action="{{ url_for('editar_descuento', id_config=d[0]) }}">
+                                                    <div class="modal-body">
+                                                        <div class="mb-3">
+                                                            <label class="form-label"><strong>Nombre del Nivel</strong></label>
+                                                            <input type="text" class="form-control" name="nivel" 
+                                                                   value="{{ d[1] }}" required>
+                                                        </div>
+                                                        <div class="mb-3">
+                                                            <label class="form-label"><strong>Porcentaje de Descuento (%)</strong></label>
+                                                            <input type="number" class="form-control" name="porcentaje" 
+                                                                   value="{{ d[2] }}" min="0" max="100" step="0.01" required>
+                                                        </div>
+                                                        <div class="mb-3">
+                                                            <label class="form-label"><strong>Pedidos Mínimos</strong></label>
+                                                            <input type="number" class="form-control" name="pedidos_minimos" 
+                                                                   value="{{ d[3] }}" min="0" required>
+                                                        </div>
+                                                        <div class="mb-3">
+                                                            <label class="form-label"><strong>Pedidos Máximos (opcional)</strong></label>
+                                                            <input type="number" class="form-control" name="pedidos_maximos" 
+                                                                   value="{{ d[4] if d[4] else '' }}" min="0">
+                                                            <div class="form-text">Dejar vacío para ilimitado</div>
+                                                        </div>
+                                                        <div class="form-check">
+                                                            <input class="form-check-input" type="checkbox" name="activo" 
+                                                                   id="activo_edit_{{ d[0] }}" {{ 'checked' if d[5] else '' }}>
+                                                            <label class="form-check-label" for="activo_edit_{{ d[0] }}">
+                                                                Activo
+                                                            </label>
+                                                        </div>
+                                                    </div>
+                                                    <div class="modal-footer">
+                                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                                        <button type="submit" class="btn btn-warning">
+                                                            <i class="bi bi-save"></i> Guardar Cambios
+                                                        </button>
+                                                    </div>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                {% else %}
+                                    <tr>
+                                        <td colspan="6" class="text-center text-muted py-4">
+                                            <i class="bi bi-inbox" style="font-size: 2rem;"></i>
+                                            <p class="mt-2">No hay niveles de descuento configurados</p>
+                                        </td>
+                                    </tr>
+                                {% endif %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="mt-4">
+                        <a href="{{ url_for('inicio') }}" class="btn btn-secondary">
+                            <i class="bi bi-arrow-left"></i> Volver al Inicio
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Crear Nuevo Descuento -->
+<div class="modal fade" id="crearDescuentoModal" tabindex="-1" aria-labelledby="crearDescuentoLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="crearDescuentoLabel">
+                    <i class="bi bi-plus-circle"></i> Crear Nuevo Nivel de Descuento
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" action="{{ url_for('crear_descuento') }}">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label"><strong>Nombre del Nivel *</strong></label>
+                        <input type="text" class="form-control" name="nivel" 
+                               placeholder="Ej: Diamante" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label"><strong>Porcentaje de Descuento (%) *</strong></label>
+                        <input type="number" class="form-control" name="porcentaje" 
+                               placeholder="Ej: 25" min="0" max="100" step="0.01" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label"><strong>Pedidos Mínimos *</strong></label>
+                        <input type="number" class="form-control" name="pedidos_minimos" 
+                               placeholder="Ej: 20" min="0" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label"><strong>Pedidos Máximos (opcional)</strong></label>
+                        <input type="number" class="form-control" name="pedidos_maximos" 
+                               placeholder="Dejar vacío para ilimitado" min="0">
+                        <div class="form-text">Si no especificas, el nivel aplicará a partir del mínimo sin límite superior</div>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="activo" id="activo_crear" checked>
+                        <label class="form-check-label" for="activo_crear">
+                            Activo
+                        </label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check-circle"></i> Crear Nivel
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+.table {
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.table thead th {
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-size: 0.9rem;
+}
+
+.table tbody tr {
+    transition: all 0.2s ease;
+}
+
+.table tbody tr:hover {
+    background-color: #f8f9fa;
+    transform: scale(1.01);
+}
+
+.modal-header {
+    border-radius: 8px 8px 0 0;
+}
+
+.btn {
+    transition: all 0.2s ease;
+}
+
+.btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+</style>
+
+<!-- Bootstrap Icons -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+
+{% endblock %}
