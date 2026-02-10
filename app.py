@@ -1291,6 +1291,31 @@ def configurar_descuentos():
     return render_template('admin_configurar_descuentos.html', descuentos=descuentos, tabla_descuentos_existe=tabla_existe)
 
 
+@app.route('/admin/ejecutar-migraciones', methods=['POST'])
+@login_requerido
+@admin_requerido
+def ejecutar_migraciones_admin():
+    """Ejecutar migraciones SQL desde el panel de admin (solo si es necesario)."""
+    if not _admin_only():
+        flash('Acceso denegado.', 'danger')
+        return redirect(url_for('index'))
+
+    archivos = ['add_direcciones_to_pedido.sql', 'create_descuento_config.sql']
+    errores = []
+
+    for archivo in archivos:
+        ok, err = _ejecutar_sql_file(archivo)
+        if not ok:
+            errores.append(f"{archivo}: {err}")
+
+    if errores:
+        flash('Errores al ejecutar migraciones: ' + ' | '.join(errores), 'danger')
+    else:
+        flash('Migraciones ejecutadas correctamente.', 'success')
+
+    return redirect(url_for('configurar_descuentos'))
+
+
 @app.route('/admin/descuento/crear', methods=['POST'])
 @login_requerido
 @admin_requerido
@@ -2736,6 +2761,39 @@ def _tabla_descuento_existe():
         return bool(result[0]) if result else False
     except Exception:
         return False
+
+
+def _parse_sql_statements(sql_text):
+    statements = []
+    cleaned_lines = []
+    for line in sql_text.splitlines():
+        stripped = line.strip()
+        if not stripped or stripped.startswith('--'):
+            continue
+        if '--' in line:
+            line = line.split('--', 1)[0]
+        cleaned_lines.append(line)
+    cleaned = "\n".join(cleaned_lines)
+    for stmt in cleaned.split(';'):
+        stmt = stmt.strip()
+        if stmt:
+            statements.append(stmt)
+    return statements
+
+
+def _ejecutar_sql_file(nombre_archivo):
+    ruta = os.path.join(os.path.dirname(__file__), 'migrations', nombre_archivo)
+    if not os.path.exists(ruta):
+        return False, 'Archivo no encontrado'
+    try:
+        with open(ruta, 'r', encoding='utf-8') as f:
+            contenido = f.read()
+        statements = _parse_sql_statements(contenido)
+        for stmt in statements:
+            run_query(stmt, commit=True)
+        return True, None
+    except Exception as e:
+        return False, str(e)
 
 def _get_safe_redirect():
     """Obtiene una URL segura para redireccionar, priorizando el referrer."""
