@@ -1776,44 +1776,86 @@ def reportes_export_excel():
         try:
             with pd.ExcelWriter(output, engine='openpyxl') as writer:
                 
-                # Hoja 1: Resumen General (SIEMPRE se crea)
+                # Hoja 1: Resumen General Expandido (SIEMPRE se crea)
                 try:
                     total_pedidos = safe_scalar("SELECT COUNT(*) FROM pedido", default=0)
                     total_completados = safe_scalar("SELECT COUNT(*) FROM pedido WHERE estado = 'Completado'", default=0)
                     total_clientes = safe_scalar("SELECT COUNT(*) FROM cliente", default=0)
+                    total_ingresos = safe_scalar("SELECT COALESCE(SUM(total), 0) FROM recibo", default=0)
+                    total_prendas = safe_scalar("SELECT COUNT(*) FROM prenda", default=0)
+                    
+                    # Métricas avanzadas
+                    ticket_promedio = total_ingresos / max(total_completados, 1)
+                    valor_por_prenda = total_ingresos / max(total_prendas, 1)
+                    clientes_activos_mes = safe_scalar("""
+                        SELECT COUNT(DISTINCT id_cliente) FROM pedido 
+                        WHERE fecha_ingreso >= CURRENT_DATE - INTERVAL '30 days'
+                    """, default=0)
+                    clientes_recurrentes = safe_scalar("""
+                        SELECT COUNT(*) FROM (
+                            SELECT id_cliente FROM pedido GROUP BY id_cliente HAVING COUNT(*) > 1
+                        ) subq
+                    """, default=0)
+                    
                     resumen_data = {
                         'Metrica': [
-                            'Total Clientes',
+                            'Total Clientes Registrados',
+                            'Clientes Activos (Ultimos 30 dias)',
+                            'Clientes Recurrentes',
+                            'Tasa de Retencion (%)',
                             'Total Pedidos',
-                            'Total Ingresos (COP)',
-                            'Total Prendas Procesadas',
-                            'Promedio Prendas/Pedido',
-                            'Tasa Completacion (%)',
-                            'Promedio Gasto/Cliente (COP)',
+                            'Pedidos Completados',
                             'Pedidos Pendientes',
                             'Pedidos En Proceso',
-                            'Pedidos Completados',
-                            'Promedio Dias Completar'
+                            'Tasa Completacion (%)',
+                            'Total Prendas Procesadas',
+                            'Promedio Prendas por Pedido',
+                            'Total Ingresos (COP)',
+                            'Ticket Promedio (COP)',
+                            'Valor Promedio por Prenda (COP)',
+                            'Ingreso Promedio por Cliente (COP)',
+                            'Promedio Dias para Completar',
+                            'Pedidos por Dia (Promedio)',
+                            'Tasa de Crecimiento Mensual (%)'
                         ],
                         'Valor': [
                             total_clientes,
+                            clientes_activos_mes,
+                            clientes_recurrentes,
+                            round((clientes_recurrentes / max(total_clientes, 1)) * 100, 2),
                             total_pedidos,
-                            safe_scalar("SELECT COALESCE(SUM(total), 0) FROM recibo", default=0),
-                            safe_scalar("SELECT COUNT(*) FROM prenda", default=0),
-                            safe_scalar("SELECT AVG(cnt) FROM (SELECT COUNT(*) as cnt FROM prenda GROUP BY id_pedido) subq", default=0),
-                            round((total_completados / max(total_pedidos, 1)) * 100, 2),
-                            safe_scalar("SELECT AVG(total) FROM recibo", default=0),
+                            total_completados,
                             safe_scalar("SELECT COUNT(*) FROM pedido WHERE estado = 'Pendiente'", default=0),
                             safe_scalar("SELECT COUNT(*) FROM pedido WHERE estado = 'En proceso'", default=0),
-                            total_completados,
-                            safe_scalar("SELECT AVG((fecha_entrega - fecha_ingreso)::integer) FROM pedido WHERE estado = 'Completado' AND fecha_entrega IS NOT NULL", default=0)
+                            round((total_completados / max(total_pedidos, 1)) * 100, 2),
+                            total_prendas,
+                            round(safe_scalar("SELECT AVG(cnt) FROM (SELECT COUNT(*) as cnt FROM prenda GROUP BY id_pedido) subq", default=0), 2),
+                            round(total_ingresos, 2),
+                            round(ticket_promedio, 2),
+                            round(valor_por_prenda, 2),
+                            round(total_ingresos / max(total_clientes, 1), 2),
+                            round(safe_scalar("SELECT AVG((fecha_entrega - fecha_ingreso)::integer) FROM pedido WHERE estado = 'Completado' AND fecha_entrega IS NOT NULL", default=0), 1),
+                            round(safe_scalar("SELECT COUNT(*)::float / NULLIF(COUNT(DISTINCT fecha_ingreso::date), 0) FROM pedido", default=0), 2),
+                            round(safe_scalar("""
+                                SELECT CASE 
+                                    WHEN mes_anterior > 0 THEN ((mes_actual - mes_anterior)::float / mes_anterior) * 100
+                                    ELSE 0 
+                                END
+                                FROM (
+                                    SELECT 
+                                        COUNT(*) FILTER (WHERE fecha_ingreso >= DATE_TRUNC('month', CURRENT_DATE)) as mes_actual,
+                                        COUNT(*) FILTER (WHERE fecha_ingreso >= DATE_TRUNC('month', CURRENT_DATE - INTERVAL '1 month') 
+                                                         AND fecha_ingreso < DATE_TRUNC('month', CURRENT_DATE)) as mes_anterior
+                                    FROM pedido
+                                ) subq
+                            """, default=0), 2)
                         ]
                     }
                     df_resumen = pd.DataFrame(resumen_data)
                 except Exception as e:
                     df_resumen = pd.DataFrame({'Metrica': ['Error'], 'Valor': [f'No se pudo generar resumen: {e}']})
-                df_resumen.to_excel(writer, sheet_name='Resumen', index=False)
-                print("[Resumen]")
+                df_resumen.to_excel(writer, sheet_name='Resumen Ejecutivo', index=False)
+                print("[Resumen Ejecutivo]")
             
                 # Hoja 2: Estado de Pedidos con porcentajes
                 try:
@@ -1848,28 +1890,42 @@ def reportes_export_excel():
                 except Exception as e:
                     print(f"[Prendas - Error: {e}]")
                 
-                # Hoja 4: Top 20 Clientes Mas Activos
+                # Hoja 4: Top 50 Clientes con Analisis Detallado
                 try:
                     clientes_data = run_query("""
                         SELECT 
                             c.nombre,
                             c.email,
-                            COUNT(DISTINCT p.id_pedido) as pedidos,
-                            COUNT(pr.id_prenda) as prendas,
-                            COALESCE(SUM(r.total), 0) as gastado
+                            c.telefono,
+                            COUNT(DISTINCT p.id_pedido) as total_pedidos,
+                            COUNT(DISTINCT CASE WHEN p.estado = 'Completado' THEN p.id_pedido END) as pedidos_completados,
+                            COUNT(DISTINCT CASE WHEN p.estado IN ('Pendiente', 'En proceso') THEN p.id_pedido END) as pedidos_activos,
+                            COUNT(pr.id_prenda) as total_prendas,
+                            COALESCE(SUM(r.total), 0) as total_gastado,
+                            COALESCE(AVG(r.total), 0) as ticket_promedio,
+                            MAX(p.fecha_ingreso)::date as ultimo_pedido,
+                            MIN(p.fecha_ingreso)::date as primer_pedido,
+                            EXTRACT(days FROM (MAX(p.fecha_ingreso) - MIN(p.fecha_ingreso))) / NULLIF(COUNT(DISTINCT p.id_pedido) - 1, 0) as dias_entre_pedidos
                         FROM cliente c
                         LEFT JOIN pedido p ON c.id_cliente = p.id_cliente
                         LEFT JOIN prenda pr ON p.id_pedido = pr.id_pedido
                         LEFT JOIN recibo r ON p.id_pedido = r.id_pedido
-                        GROUP BY c.id_cliente, c.nombre, c.email
+                        GROUP BY c.id_cliente, c.nombre, c.email, c.telefono
                         HAVING COUNT(DISTINCT p.id_pedido) > 0
-                        ORDER BY pedidos DESC, gastado DESC
-                        LIMIT 20
+                        ORDER BY total_gastado DESC, total_pedidos DESC
+                        LIMIT 50
                     """, fetchall=True)
                     if clientes_data and len(clientes_data) > 0:
-                        df_clientes = pd.DataFrame(clientes_data, columns=['Nombre', 'Email', 'Pedidos', 'Prendas', 'Total Gastado (COP)'])
-                        df_clientes.to_excel(writer, sheet_name='Top Clientes', index=False)
-                        print("[Top Clientes]")
+                        df_clientes = pd.DataFrame(clientes_data, columns=[
+                            'Nombre', 'Email', 'Telefono', 'Total Pedidos', 'Completados', 'Activos',
+                            'Total Prendas', 'Total Gastado (COP)', 'Ticket Promedio (COP)', 
+                            'Ultimo Pedido', 'Primer Pedido', 'Dias Entre Pedidos'
+                        ])
+                        df_clientes['Total Gastado (COP)'] = df_clientes['Total Gastado (COP)'].round(2)
+                        df_clientes['Ticket Promedio (COP)'] = df_clientes['Ticket Promedio (COP)'].round(2)
+                        df_clientes['Dias Entre Pedidos'] = df_clientes['Dias Entre Pedidos'].round(1)
+                        df_clientes.to_excel(writer, sheet_name='Top 50 Clientes', index=False)
+                        print("[Top 50 Clientes]")
                 except Exception as e:
                     print(f"[Clientes - Error: {e}]")
                 
@@ -1923,27 +1979,43 @@ def reportes_export_excel():
                 except Exception as e:
                     print(f"[Ingresos por Mes - Error: {e}]")
                 
-                # Hoja 8: Detalle Completo de Pedidos
+                # Hoja 8: Detalle Completo de Pedidos con Rentabilidad
                 try:
                     pedidos_detalle_data = run_query("""
                         SELECT 
                             p.id_pedido,
                             c.nombre as cliente,
+                            c.telefono,
                             p.fecha_ingreso::date as fecha_ingreso,
                             p.fecha_entrega::date as fecha_entrega,
+                            CASE 
+                                WHEN p.fecha_entrega IS NOT NULL AND p.estado = 'Completado'
+                                THEN (p.fecha_entrega::date - p.fecha_ingreso::date)
+                                ELSE NULL
+                            END as dias_procesamiento,
                             p.estado,
+                            p.direccion_entrega,
+                            p.direccion_recogida,
                             COUNT(pr.id_prenda) as cantidad_prendas,
-                            COALESCE(r.total, 0) as total
+                            COALESCE(r.subtotal, 0) as subtotal,
+                            COALESCE(r.descuento, 0) as descuento,
+                            COALESCE(r.total, 0) as total,
+                            r.metodo_pago,
+                            p.observaciones
                         FROM pedido p
                         LEFT JOIN cliente c ON p.id_cliente = c.id_cliente
                         LEFT JOIN prenda pr ON p.id_pedido = pr.id_pedido
                         LEFT JOIN recibo r ON p.id_pedido = r.id_pedido
-                        GROUP BY p.id_pedido, c.nombre, p.fecha_ingreso, p.fecha_entrega, p.estado, r.total
+                        GROUP BY p.id_pedido, c.nombre, c.telefono, p.fecha_ingreso, p.fecha_entrega, 
+                                 p.estado, p.direccion_entrega, p.direccion_recogida, 
+                                 r.subtotal, r.descuento, r.total, r.metodo_pago, p.observaciones
                         ORDER BY p.fecha_ingreso DESC
                     """, fetchall=True)
                     if pedidos_detalle_data and len(pedidos_detalle_data) > 0:
                         df_pedidos_detalle = pd.DataFrame(pedidos_detalle_data, 
-                            columns=['ID Pedido', 'Cliente', 'Fecha Ingreso', 'Fecha Entrega', 'Estado', 'Cantidad Prendas', 'Total (COP)'])
+                            columns=['ID Pedido', 'Cliente', 'Telefono', 'Fecha Ingreso', 'Fecha Entrega', 
+                                   'Dias Proc.', 'Estado', 'Dir. Entrega', 'Dir. Recogida', 'Cant. Prendas', 
+                                   'Subtotal (COP)', 'Descuento (COP)', 'Total (COP)', 'Metodo Pago', 'Observaciones'])
                         df_pedidos_detalle.to_excel(writer, sheet_name='Detalle Pedidos', index=False)
                         print("[Detalle Pedidos]")
                 except Exception as e:
@@ -1998,6 +2070,213 @@ def reportes_export_excel():
                         print("[Prendas Detalle]")
                 except Exception as e:
                     print(f"[Prendas Detalle - Error: {e}]")
+                
+                # Hoja 11: Analisis de Rentabilidad Mensual
+                try:
+                    rentabilidad_data = run_query("""
+                        SELECT 
+                            TO_CHAR(r.fecha, 'YYYY-MM') as mes,
+                            COUNT(DISTINCT r.id_pedido) as pedidos,
+                            COUNT(DISTINCT p.id_cliente) as clientes,
+                            SUM(r.subtotal) as subtotal,
+                            SUM(r.descuento) as descuentos_aplicados,
+                            SUM(r.total) as ingresos_netos,
+                            AVG(r.total) as ticket_promedio,
+                            SUM(r.subtotal) - SUM(r.total) as descuentos_totales
+                        FROM recibo r
+                        JOIN pedido p ON r.id_pedido = p.id_pedido
+                        WHERE r.fecha >= CURRENT_DATE - INTERVAL '12 months'
+                        GROUP BY TO_CHAR(r.fecha, 'YYYY-MM')
+                        ORDER BY mes DESC
+                    """, fetchall=True)
+                    if rentabilidad_data and len(rentabilidad_data) > 0:
+                        df_rentabilidad = pd.DataFrame(rentabilidad_data, columns=[
+                            'Mes', 'Pedidos', 'Clientes', 'Subtotal (COP)', 'Descuentos (COP)', 
+                            'Ingresos Netos (COP)', 'Ticket Promedio (COP)', 'Total Desc. (COP)'
+                        ])
+                        df_rentabilidad.to_excel(writer, sheet_name='Rentabilidad Mensual', index=False)
+                        print("[Rentabilidad Mensual]")
+                except Exception as e:
+                    print(f"[Rentabilidad - Error: {e}]")
+                
+                # Hoja 12: Recibos Detallados
+                try:
+                    recibos_data = run_query("""
+                        SELECT 
+                            r.id_recibo,
+                            r.id_pedido,
+                            c.nombre as cliente,
+                            r.fecha::date as fecha_emision,
+                            r.subtotal,
+                            r.descuento,
+                            r.total,
+                            r.metodo_pago,
+                            r.estado as estado_pago,
+                            p.estado as estado_pedido
+                        FROM recibo r
+                        JOIN pedido p ON r.id_pedido = p.id_pedido
+                        JOIN cliente c ON p.id_cliente = c.id_cliente
+                        ORDER BY r.fecha DESC
+                    """, fetchall=True)
+                    if recibos_data and len(recibos_data) > 0:
+                        df_recibos = pd.DataFrame(recibos_data, columns=[
+                            'ID Recibo', 'ID Pedido', 'Cliente', 'Fecha Emision', 
+                            'Subtotal (COP)', 'Descuento (COP)', 'Total (COP)', 
+                            'Metodo Pago', 'Estado Pago', 'Estado Pedido'
+                        ])
+                        df_recibos.to_excel(writer, sheet_name='Recibos Detallados', index=False)
+                        print("[Recibos Detallados]")
+                except Exception as e:
+                    print(f"[Recibos - Error: {e}]")
+                
+                # Hoja 13: Clientes Inactivos
+                try:
+                    inactivos_data = run_query("""
+                        SELECT 
+                            c.nombre,
+                            c.email,
+                            c.telefono,
+                            COUNT(p.id_pedido) as total_pedidos,
+                            MAX(p.fecha_ingreso)::date as ultimo_pedido,
+                            EXTRACT(days FROM (CURRENT_DATE - MAX(p.fecha_ingreso))) as dias_inactivo,
+                            COALESCE(SUM(r.total), 0) as total_gastado
+                        FROM cliente c
+                        LEFT JOIN pedido p ON c.id_cliente = p.id_cliente
+                        LEFT JOIN recibo r ON p.id_pedido = r.id_pedido
+                        GROUP BY c.id_cliente, c.nombre, c.email, c.telefono
+                        HAVING MAX(p.fecha_ingreso) < CURRENT_DATE - INTERVAL '60 days' 
+                               OR MAX(p.fecha_ingreso) IS NULL
+                        ORDER BY dias_inactivo DESC NULLS FIRST
+                        LIMIT 100
+                    """, fetchall=True)
+                    if inactivos_data and len(inactivos_data) > 0:
+                        df_inactivos = pd.DataFrame(inactivos_data, columns=[
+                            'Nombre', 'Email', 'Telefono', 'Total Pedidos', 
+                            'Ultimo Pedido', 'Dias Inactivo', 'Total Gastado (COP)'
+                        ])
+                        df_inactivos.to_excel(writer, sheet_name='Clientes Inactivos', index=False)
+                        print("[Clientes Inactivos]")
+                except Exception as e:
+                    print(f"[Inactivos - Error: {e}]")
+                
+                # Hoja 14: Analisis de Descuentos Aplicados
+                try:
+                    descuentos_data = run_query("""
+                        SELECT 
+                            c.nombre as cliente,
+                            COUNT(r.id_recibo) as pedidos_con_descuento,
+                            SUM(r.descuento) as total_descuentos,
+                            AVG(r.descuento) as descuento_promedio,
+                            SUM(r.subtotal) as subtotal_acumulado,
+                            SUM(r.total) as total_pagado,
+                            (SUM(r.descuento) / NULLIF(SUM(r.subtotal), 0) * 100) as porcentaje_desc_promedio
+                        FROM recibo r
+                        JOIN pedido p ON r.id_pedido = p.id_pedido
+                        JOIN cliente c ON p.id_cliente = c.id_cliente
+                        WHERE r.descuento > 0
+                        GROUP BY c.id_cliente, c.nombre
+                        ORDER BY total_descuentos DESC
+                        LIMIT 50
+                    """, fetchall=True)
+                    if descuentos_data and len(descuentos_data) > 0:
+                        df_descuentos = pd.DataFrame(descuentos_data, columns=[
+                            'Cliente', 'Pedidos con Descuento', 'Total Descuentos (COP)', 
+                            'Descuento Promedio (COP)', 'Subtotal Acumulado (COP)', 
+                            'Total Pagado (COP)', 'Porcentaje Desc. Promedio'
+                        ])
+                        df_descuentos['Porcentaje Desc. Promedio'] = df_descuentos['Porcentaje Desc. Promedio'].round(2)
+                        df_descuentos.to_excel(writer, sheet_name='Analisis Descuentos', index=False)
+                        print("[Analisis Descuentos]")
+                except Exception as e:
+                    print(f"[Descuentos - Error: {e}]")
+                
+                # Hoja 15: Prendas Mas Rentables
+                try:
+                    rentables_data = run_query("""
+                        SELECT 
+                            pr.tipo,
+                            COUNT(*) as cantidad_procesada,
+                            COUNT(DISTINCT pr.id_pedido) as pedidos,
+                            CASE 
+                                WHEN pr.tipo = 'Camisa' THEN 5000
+                                WHEN pr.tipo = 'Pantalon' THEN 6000
+                                WHEN pr.tipo = 'Vestido' THEN 8000
+                                WHEN pr.tipo = 'Chaqueta' THEN 10000
+                                WHEN pr.tipo = 'Saco' THEN 7000
+                                WHEN pr.tipo = 'Falda' THEN 5500
+                                WHEN pr.tipo = 'Blusa' THEN 4500
+                                WHEN pr.tipo = 'Abrigo' THEN 12000
+                                WHEN pr.tipo = 'Sueter' THEN 6500
+                                WHEN pr.tipo = 'Jeans' THEN 7000
+                                WHEN pr.tipo = 'Corbata' THEN 3000
+                                WHEN pr.tipo = 'Bufanda' THEN 3500
+                                WHEN pr.tipo = 'Sabana' THEN 8000
+                                WHEN pr.tipo = 'Edredon' THEN 15000
+                                WHEN pr.tipo = 'Cortina' THEN 12000
+                                ELSE 5000
+                            END as precio_unitario,
+                            COUNT(*) * CASE 
+                                WHEN pr.tipo = 'Camisa' THEN 5000
+                                WHEN pr.tipo = 'Pantalon' THEN 6000
+                                WHEN pr.tipo = 'Vestido' THEN 8000
+                                WHEN pr.tipo = 'Chaqueta' THEN 10000
+                                WHEN pr.tipo = 'Saco' THEN 7000
+                                WHEN pr.tipo = 'Falda' THEN 5500
+                                WHEN pr.tipo = 'Blusa' THEN 4500
+                                WHEN pr.tipo = 'Abrigo' THEN 12000
+                                WHEN pr.tipo = 'Sueter' THEN 6500
+                                WHEN pr.tipo = 'Jeans' THEN 7000
+                                WHEN pr.tipo = 'Corbata' THEN 3000
+                                WHEN pr.tipo = 'Bufanda' THEN 3500
+                                WHEN pr.tipo = 'Sabana' THEN 8000
+                                WHEN pr.tipo = 'Edredon' THEN 15000
+                                WHEN pr.tipo = 'Cortina' THEN 12000
+                                ELSE 5000
+                            END as ingreso_estimado
+                        FROM prenda pr
+                        GROUP BY pr.tipo
+                        ORDER BY ingreso_estimado DESC
+                    """, fetchall=True)
+                    if rentables_data and len(rentables_data) > 0:
+                        df_rentables = pd.DataFrame(rentables_data, columns=[
+                            'Tipo Prenda', 'Cantidad Procesada', 'Pedidos', 
+                            'Precio Unitario (COP)', 'Ingreso Estimado (COP)'
+                        ])
+                        df_rentables.to_excel(writer, sheet_name='Prendas Rentables', index=False)
+                        print("[Prendas Rentables]")
+                except Exception as e:
+                    print(f"[Prendas Rentables - Error: {e}]")
+                
+                # Hoja 16: Rendimiento por Dia de Semana
+                try:
+                    semana_data = run_query("""
+                        SELECT 
+                            CASE EXTRACT(dow FROM fecha_ingreso)
+                                WHEN 0 THEN 'Domingo'
+                                WHEN 1 THEN 'Lunes'
+                                WHEN 2 THEN 'Martes'
+                                WHEN 3 THEN 'Miercoles'
+                                WHEN 4 THEN 'Jueves'
+                                WHEN 5 THEN 'Viernes'
+                                WHEN 6 THEN 'Sabado'
+                            END as dia_semana,
+                            EXTRACT(dow FROM fecha_ingreso) as orden,
+                            COUNT(*) as pedidos,
+                            COUNT(DISTINCT id_cliente) as clientes_unicos,
+                            COALESCE(AVG((fecha_entrega - fecha_ingreso)::integer), 0) as dias_promedio_entrega
+                        FROM pedido
+                        GROUP BY EXTRACT(dow FROM fecha_ingreso)
+                        ORDER BY orden
+                    """, fetchall=True)
+                    if semana_data and len(semana_data) > 0:
+                        df_semana = pd.DataFrame(semana_data, columns=[
+                            'Dia Semana', 'Orden', 'Pedidos', 'Clientes Unicos', 'Dias Promedio Entrega'
+                        ])
+                        df_semana = df_semana.drop('Orden', axis=1)
+                        df_semana.to_excel(writer, sheet_name='Rendimiento x Dia', index=False)
+                        print("[Rendimiento por Dia]")
+                except Exception as e:
+                    print(f"[Rendimiento Dia - Error: {e}]")
         except Exception as e:
             print(f"[ERROR] export_excel fallo: {e}")
             try:
