@@ -1777,8 +1777,9 @@ def reportes_export_excel():
                 GROUP BY estado
                 ORDER BY cantidad DESC
             """, fetchall=True)
-            df_estado = pd.DataFrame(estado_data, columns=['Estado', 'Cantidad'])
-            df_estado.to_excel(writer, sheet_name='Estado Pedidos', index=False)
+            if estado_data:
+                df_estado = pd.DataFrame(estado_data, columns=['Estado', 'Cantidad'])
+                df_estado.to_excel(writer, sheet_name='Estado Pedidos', index=False)
             
             # Hoja 3: Prendas Más Procesadas
             prendas_data = run_query("""
@@ -1788,8 +1789,9 @@ def reportes_export_excel():
                 ORDER BY cantidad DESC
                 LIMIT 15
             """, fetchall=True)
-            df_prendas = pd.DataFrame(prendas_data, columns=['Tipo de Prenda', 'Cantidad'])
-            df_prendas.to_excel(writer, sheet_name='Prendas Top', index=False)
+            if prendas_data:
+                df_prendas = pd.DataFrame(prendas_data, columns=['Tipo de Prenda', 'Cantidad'])
+                df_prendas.to_excel(writer, sheet_name='Prendas Top', index=False)
             
             # Hoja 4: Clientes Más Activos
             clientes_data = run_query("""
@@ -1802,8 +1804,9 @@ def reportes_export_excel():
                 ORDER BY total_pedidos DESC
                 LIMIT 20
             """, fetchall=True)
-            df_clientes = pd.DataFrame(clientes_data, columns=['Nombre', 'Email', 'Total Pedidos', 'Total Gastado (COP)'])
-            df_clientes.to_excel(writer, sheet_name='Clientes Activos', index=False)
+            if clientes_data:
+                df_clientes = pd.DataFrame(clientes_data, columns=['Nombre', 'Email', 'Total Pedidos', 'Total Gastado (COP)'])
+                df_clientes.to_excel(writer, sheet_name='Clientes Activos', index=False)
             
             # Hoja 5: Pedidos por Fecha (últimos 30 días)
             pedidos_fecha = run_query("""
@@ -1813,9 +1816,11 @@ def reportes_export_excel():
                 GROUP BY fecha_ingreso::date
                 ORDER BY fecha
             """, fetchall=True)
-            df_fechas = pd.DataFrame(pedidos_fecha, columns=['Fecha', 'Cantidad Pedidos'])
-            df_fechas.to_excel(writer, sheet_name='Pedidos Últimos 30 Días', index=False)
+            if pedidos_fecha:
+                df_fechas = pd.DataFrame(pedidos_fecha, columns=['Fecha', 'Cantidad Pedidos'])
+                df_fechas.to_excel(writer, sheet_name='Pedidos Últimos 30 Días', index=False)
         
+        # IMPORTANTE: seek DESPUÉS de cerrar el writer
         output.seek(0)
         
         # Preparar respuesta para descarga

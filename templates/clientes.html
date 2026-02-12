@@ -726,8 +726,17 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
 
-  // El modal de registro rápido se abre automáticamente con data-bs-toggle
-  // No necesita código JavaScript adicional
+  // Asegurar que el modal funcione correctamente
+  const btnRegistroRapido = document.getElementById('btnRegistroRapido');
+  if (btnRegistroRapido) {
+    btnRegistroRapido.addEventListener('click', function() {
+      const modal = document.getElementById('registroRapidoModal');
+      if (modal) {
+        const bsModal = new bootstrap.Modal(modal);
+        bsModal.show();
+      }
+    });
+  }
 });
 </script>
 
