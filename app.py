@@ -1114,8 +1114,8 @@ def registro_rapido():
         
         # Insertar en usuario
         usuario_id = run_query(
-            "INSERT INTO usuario (username, email, password, rol) VALUES (:u, :e, :p, 'cliente') RETURNING id_usuario",
-            {"u": username, "e": email, "p": hashed},
+            "INSERT INTO usuario (nombre, username, email, password, rol) VALUES (:n, :u, :e, :p, 'cliente') RETURNING id_usuario",
+            {"n": nombre, "u": username, "e": email, "p": hashed},
             fetchone=True,
             commit=True
         )[0]
