@@ -460,7 +460,9 @@ def registro():
                     </body>
                 </html>
                 """
+                print(f"[MAIL] Enviando correo de bienvenida registro a {email}")
                 send_email_async(email, "Bienvenido a La Lavanderia", html_bienvenida)
+                print(f"[MAIL] Disparo de correo registro OK para {email}")
 
             flash("¡Registro exitoso! Ya puedes iniciar sesión.", "success")
             return redirect(url_for("login"))
@@ -1148,7 +1150,9 @@ def registro_rapido():
             </body>
         </html>
         """
+        print(f"[MAIL] Enviando credenciales a {email}")
         send_email_async(email, "Bienvenido a La Lavandería - Credenciales de Acceso", html)
+        print(f"[MAIL] Disparo de correo registro rapido OK para {email}")
         
         flash(f'✅ Cliente "{nombre}" registrado exitosamente. Se ha enviado un correo con las credenciales a {email}', 'success')
         
