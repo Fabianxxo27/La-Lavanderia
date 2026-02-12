@@ -143,6 +143,85 @@
     margin: 0;
   }
 
+  /* Filtros y estadísticas */
+  .filters-section {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    border: 2px solid #e8f0d4;
+  }
+
+  .filters-row {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    flex-wrap: wrap;
+    margin-bottom: 1rem;
+  }
+
+  .filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+  }
+
+  .filter-group label {
+    font-weight: 600;
+    color: #1a4e7b;
+    font-size: 0.9rem;
+  }
+
+  .filter-select {
+    padding: 0.6rem 1rem;
+    border: 2px solid #e8f0d4;
+    border-radius: 8px;
+    background: white;
+    font-size: 0.95rem;
+    min-width: 160px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .filter-select:hover {
+    border-color: #a6cc48;
+  }
+
+  .filter-select:focus {
+    outline: none;
+    border-color: #1a4e7b;
+    box-shadow: 0 0 0 3px rgba(26, 78, 123, 0.1);
+  }
+
+  .stats-row {
+    display: flex;
+    gap: 1rem;
+    justify-content: space-around;
+    padding-top: 1rem;
+    border-top: 2px dashed #e8f0d4;
+    flex-wrap: wrap;
+  }
+
+  .stat-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.3rem;
+  }
+
+  .stat-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #1a4e7b;
+  }
+
+  .stat-label {
+    font-size: 0.85rem;
+    color: #666;
+    font-weight: 600;
+  }
+
   /* Mejoras de responsividad móvil */
   @media (max-width: 768px) {
     .calendario-container {
@@ -176,6 +255,44 @@
 
     .info-card h4 {
       font-size: 1rem;
+    }
+
+    .filters-section {
+      padding: 1rem;
+      margin-bottom: 1rem;
+    }
+
+    .filters-row {
+      flex-direction: column;
+      gap: 0.8rem;
+    }
+
+    .filter-group {
+      width: 100%;
+    }
+
+    .filter-select {
+      width: 100%;
+      font-size: 0.9rem;
+      padding: 0.5rem 0.8rem;
+    }
+
+    .stats-row {
+      gap: 0.5rem;
+      padding-top: 0.8rem;
+    }
+
+    .stat-item {
+      flex: 1;
+      min-width: 70px;
+    }
+
+    .stat-value {
+      font-size: 1.2rem;
+    }
+
+    .stat-label {
+      font-size: 0.75rem;
     }
 
     .calendar-section {
@@ -292,6 +409,18 @@
     .fc-daygrid-day-events {
       margin-top: 2px;
     }
+
+    .filters-section {
+      padding: 0.8rem;
+    }
+
+    .stat-value {
+      font-size: 1rem;
+    }
+
+    .stat-label {
+      font-size: 0.7rem;
+    }
   }
 </style>
 
@@ -308,19 +437,80 @@
 
   <div class="info-card">
     <h4>ℹ️ Acerca del Calendario</h4>
-    <p>Visualiza las fechas de ingreso y entrega de todos los pedidos. Haz clic en cualquier evento para ver más detalles.</p>
+    <p>Visualiza las fechas de ingreso y entrega de todos los pedidos. Los colores indican el estado. Usa los filtros para personalizar la vista.</p>
+  </div>
+
+  <!-- Sección de Filtros y Estadísticas -->
+  <div class="filters-section">
+    <div class="filters-row">
+      <div class="filter-group">
+        <label for="filterTipo">📋 Tipo de Evento</label>
+        <select id="filterTipo" class="filter-select">
+          <option value="todos">Todos los eventos</option>
+          <option value="ingreso">Solo Ingresos 📥</option>
+          <option value="entrega">Solo Entregas 📤</option>
+        </select>
+      </div>
+      
+      <div class="filter-group">
+        <label for="filterEstado">🏷️ Estado del Pedido</label>
+        <select id="filterEstado" class="filter-select">
+          <option value="todos">Todos los estados</option>
+          <option value="Pendiente">Pendiente</option>
+          <option value="En proceso">En Proceso</option>
+          <option value="Completado">Completado</option>
+          <option value="Cancelado">Cancelado</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="stats-row">
+      <div class="stat-item">
+        <div class="stat-value" id="statTotal">0</div>
+        <div class="stat-label">Total Eventos</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-value" id="statIngresos">0</div>
+        <div class="stat-label">Ingresos</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-value" id="statEntregas">0</div>
+        <div class="stat-label">Entregas</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-value" id="statPendientes">0</div>
+        <div class="stat-label">Pendientes</div>
+      </div>
+    </div>
   </div>
 
   <div class="calendar-section">
     <div id="calendar"></div>
     <div class="calendar-legend">
       <div class="legend-item">
-        <span class="legend-color" style="background: #3498db;"></span>
-        Fecha de Ingreso
+        <span class="legend-color" style="background: #3498db; border: 2px solid #2980b9;"></span>
+        Ingreso 📥
       </div>
       <div class="legend-item">
-        <span class="legend-color" style="background: #27ae60;"></span>
-        Fecha de Entrega
+        <span class="legend-color" style="background: #27ae60; border: 2px solid #229954;"></span>
+        Entrega 📤
+      </div>
+      <div style="width: 100%; height: 1px; background: #e8f0d4; margin: 0.5rem 0;"></div>
+      <div class="legend-item">
+        <span class="legend-color" style="background: #f39c12; border: 2px solid #e67e22;"></span>
+        Pendiente
+      </div>
+      <div class="legend-item">
+        <span class="legend-color" style="background: #3498db; border: 2px solid #2980b9;"></span>
+        En Proceso
+      </div>
+      <div class="legend-item">
+        <span class="legend-color" style="background: #27ae60; border: 2px solid #229954;"></span>
+        Completado
+      </div>
+      <div class="legend-item">
+        <span class="legend-color" style="background: #e74c3c; border: 2px solid #c0392b;"></span>
+        Cancelado
       </div>
     </div>
   </div>
@@ -333,23 +523,41 @@ document.addEventListener('DOMContentLoaded', function() {
   
   // Convertir datos de pedidos a eventos
   var pedidosData = {{ pedidos_calendario|tojson|safe }};
-  var eventos = [];
+  var todosLosEventos = [];
   
+  // Función para obtener color según estado
+  function getColorByEstado(estado) {
+    switch(estado) {
+      case 'Pendiente':
+        return { bg: '#f39c12', border: '#e67e22' }; // Naranja
+      case 'En proceso':
+        return { bg: '#3498db', border: '#2980b9' }; // Azul
+      case 'Completado':
+        return { bg: '#27ae60', border: '#229954' }; // Verde
+      case 'Cancelado':
+        return { bg: '#e74c3c', border: '#c0392b' }; // Rojo
+      default:
+        return { bg: '#95a5a6', border: '#7f8c8d' }; // Gris
+    }
+  }
+  
+  // Generar eventos de pedidos
   pedidosData.forEach(function(pedido) {
-    // Usar nombres de campos del diccionario
     var id = pedido.id_pedido;
     var fechaIngreso = pedido.fecha_ingreso;
     var fechaEntrega = pedido.fecha_entrega;
     var estado = pedido.estado || 'Sin estado';
     var cliente = pedido.nombre_cliente || 'Sin cliente';
+    var colores = getColorByEstado(estado);
     
     // Evento de ingreso
     if (fechaIngreso) {
-      eventos.push({
-        title: '🔵 Ingreso: ' + cliente,
-        start: fechaIngreso.split('T')[0], // Solo la fecha (formato ISO)
-        backgroundColor: '#3498db',
-        borderColor: '#2980b9',
+      todosLosEventos.push({
+        title: '📥 ' + cliente,
+        start: fechaIngreso.split('T')[0],
+        backgroundColor: colores.bg,
+        borderColor: colores.border,
+        textColor: '#ffffff',
         extendedProps: {
           tipo: 'ingreso',
           pedidoId: id,
@@ -361,11 +569,12 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Evento de entrega
     if (fechaEntrega) {
-      eventos.push({
-        title: '🟢 Entrega: ' + cliente,
-        start: fechaEntrega.split('T')[0], // Solo la fecha (formato ISO)
-        backgroundColor: '#27ae60',
-        borderColor: '#229954',
+      todosLosEventos.push({
+        title: '📤 ' + cliente,
+        start: fechaEntrega.split('T')[0],
+        backgroundColor: colores.bg,
+        borderColor: colores.border,
+        textColor: '#ffffff',
         extendedProps: {
           tipo: 'entrega',
           pedidoId: id,
@@ -376,6 +585,22 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   });
   
+  // Calcular estadísticas iniciales
+  function updateStats(eventos) {
+    var total = eventos.length;
+    var ingresos = eventos.filter(e => e.extendedProps.tipo === 'ingreso').length;
+    var entregas = eventos.filter(e => e.extendedProps.tipo === 'entrega').length;
+    var pendientes = eventos.filter(e => e.extendedProps.estado === 'Pendiente').length;
+    
+    document.getElementById('statTotal').textContent = total;
+    document.getElementById('statIngresos').textContent = ingresos;
+    document.getElementById('statEntregas').textContent = entregas;
+    document.getElementById('statPendientes').textContent = pendientes;
+  }
+  
+  updateStats(todosLosEventos);
+  
+  // Crear calendario
   var calendar = new FullCalendar.Calendar(calendarEl, {
     initialView: window.innerWidth <= 768 ? 'listMonth' : 'dayGridMonth',
     locale: 'es',
@@ -390,17 +615,22 @@ document.addEventListener('DOMContentLoaded', function() {
       week: 'Semana',
       list: 'Lista'
     },
-    events: eventos,
+    events: todosLosEventos,
     eventClick: function(info) {
       var pedidoId = info.event.extendedProps.pedidoId;
       var tipo = info.event.extendedProps.tipo;
       var estado = info.event.extendedProps.estado;
       var cliente = info.event.extendedProps.cliente;
       
+      var tipoTexto = tipo === 'ingreso' ? '📥 Fecha de Ingreso' : '📤 Fecha de Entrega';
+      var estadoEmoji = estado === 'Completado' ? '✅' : 
+                       estado === 'En proceso' ? '⏳' : 
+                       estado === 'Pendiente' ? '🕐' : '❌';
+      
       var mensaje = '🔔 Pedido #' + pedidoId + '\n\n' +
                    '👤 Cliente: ' + cliente + '\n' +
-                   '📋 Tipo: ' + (tipo === 'ingreso' ? 'Fecha de Ingreso' : 'Fecha de Entrega') + '\n' +
-                   '📊 Estado: ' + estado;
+                   '📋 Tipo: ' + tipoTexto + '\n' +
+                   '📊 Estado: ' + estadoEmoji + ' ' + estado;
       
       if (confirm(mensaje + '\n\n¿Deseas ver los detalles completos del pedido?')) {
         window.location.href = '/pedido_detalles/' + pedidoId + '?ref=' + encodeURIComponent(window.location.href);
@@ -408,8 +638,10 @@ document.addEventListener('DOMContentLoaded', function() {
     },
     eventDidMount: function(info) {
       info.el.style.cursor = 'pointer';
-      info.el.title = info.event.extendedProps.tipo === 'ingreso' ? 
-        'Ingreso de pedido' : 'Fecha de entrega';
+      var tipo = info.event.extendedProps.tipo;
+      var estado = info.event.extendedProps.estado;
+      info.el.title = (tipo === 'ingreso' ? '📥 Ingreso' : '📤 Entrega') + 
+                     ' - Estado: ' + estado;
     },
     height: 'auto',
     contentHeight: window.innerWidth <= 768 ? 'auto' : 650,
@@ -418,7 +650,6 @@ document.addEventListener('DOMContentLoaded', function() {
     moreLinkText: function(num) {
       return '+ ' + num + ' más';
     },
-    // Responsividad adicional
     windowResize: function(view) {
       if (window.innerWidth <= 768) {
         calendar.changeView('listMonth');
@@ -433,6 +664,28 @@ document.addEventListener('DOMContentLoaded', function() {
   });
   
   calendar.render();
+  
+  // Filtros
+  function applyFilters() {
+    var tipoFilter = document.getElementById('filterTipo').value;
+    var estadoFilter = document.getElementById('filterEstado').value;
+    
+    var eventosFiltrados = todosLosEventos.filter(function(evento) {
+      var pasaTipo = tipoFilter === 'todos' || evento.extendedProps.tipo === tipoFilter;
+      var pasaEstado = estadoFilter === 'todos' || evento.extendedProps.estado === estadoFilter;
+      return pasaTipo && pasaEstado;
+    });
+    
+    // Actualizar eventos del calendario
+    calendar.removeAllEvents();
+    calendar.addEventSource(eventosFiltrados);
+    
+    // Actualizar estadísticas
+    updateStats(eventosFiltrados);
+  }
+  
+  document.getElementById('filterTipo').addEventListener('change', applyFilters);
+  document.getElementById('filterEstado').addEventListener('change', applyFilters);
 });
 </script>
 
