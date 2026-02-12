@@ -207,15 +207,6 @@
     box-shadow: 0 4px 12px rgba(26, 78, 123, 0.3);
   }
 
-  .btn-eliminar {
-    background: #e74c3c;
-    color: white;
-  }
-
-  .btn-eliminar:hover {
-    background: #c0392b;
-  }
-
   .btn-crear {
     background: linear-gradient(135deg, #a6cc48 0%, #84af1d 100%) !important;
     color: white !important;
@@ -616,7 +607,9 @@
             </a>
             {% endif %}
             <form action="{{ url_for('eliminar_pedido', id_pedido=p[0]) }}" method="post" class="d-inline-block m-0">
-              <button type="submit" class="btn btn-sm btn-accion btn-eliminar" onclick="return confirm('¿Estás seguro de que quieres eliminar este pedido?')">Eliminar</button>
+              <button type="submit" class="btn btn-sm btn-accion" style="background: #e74c3c; color: white;" onclick="return confirm('¿Estás seguro de que quieres eliminar este pedido?')" title="Eliminar Pedido">
+                <i class="fas fa-trash"></i> Eliminar
+              </button>
             </form>
           </div>
         </td>

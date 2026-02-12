@@ -196,15 +196,6 @@
     box-shadow: 0 4px 12px rgba(26, 78, 123, 0.3);
   }
 
-  .btn-eliminar {
-    background: #e74c3c;
-    color: white;
-  }
-
-  .btn-eliminar:hover {
-    background: #c0392b;
-  }
-
   .empty-state {
     text-align: center;
     padding: 3rem;
@@ -477,7 +468,9 @@
             <div class="action-buttons d-flex gap-2 align-items-center justify-content-center">
               <a href="{{ url_for('actualizar_cliente', id_cliente=c[0]) }}" class="btn-accion btn-editar">Editar</a>
               <form action="{{ url_for('eliminar_cliente', id_cliente=c[0]) }}" method="post" class="m-0">
-                <button type="submit" class="btn-accion btn-eliminar" onclick="return confirm('¿Estás seguro de eliminar este cliente?')">Eliminar</button>
+                <button type="submit" class="btn-accion" style="background: #e74c3c; color: white;" onclick="return confirm('¿Estás seguro de eliminar este cliente?')" title="Eliminar Cliente">
+                  <i class="fas fa-trash"></i> Eliminar
+                </button>
               </form>
             </div>
           </td>
