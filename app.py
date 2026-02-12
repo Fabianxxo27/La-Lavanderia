@@ -110,7 +110,7 @@ def send_email_async(destinatario, asunto, cuerpo_html):
             
             # Crear mensaje
             mensaje = MIMEMultipart('alternative')
-            mensaje['From'] = f"La Lavandería <{smtp_user}>"
+            mensaje['From'] = f"La Lavanderia <{smtp_user}>"
             mensaje['To'] = destinatario
             mensaje['Subject'] = asunto
             
@@ -119,15 +119,21 @@ def send_email_async(destinatario, asunto, cuerpo_html):
             mensaje.attach(parte_html)
             
             # Enviar
-            with smtplib.SMTP(smtp_server, smtp_port) as server:
+            with smtplib.SMTP(smtp_server, smtp_port, timeout=15) as server:
+                print("[MAIL] Conectando SMTP...", flush=True)
                 server.starttls()
+                print("[MAIL] STARTTLS OK", flush=True)
                 server.login(smtp_user, smtp_password)
+                print("[MAIL] LOGIN OK", flush=True)
                 server.send_message(mensaje)
+                print("[MAIL] SEND OK", flush=True)
             
             print(f"[OK] Correo enviado a {destinatario}: {asunto}", flush=True)
         except smtplib.SMTPAuthenticationError as e:
             print(f"[ERROR] Autenticacion SMTP: {e}", flush=True)
             print("[ERROR] Verifica SMTP_USER y SMTP_PASSWORD en Render", flush=True)
+        except smtplib.SMTPException as e:
+            print(f"[ERROR] SMTPException: {e}", flush=True)
         except Exception as e:
             print(f"[ERROR] Enviando correo a {destinatario}: {e}", flush=True)
     
