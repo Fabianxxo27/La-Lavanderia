@@ -529,37 +529,48 @@ def cliente_inicio():
         fetchone=True
     )[0]
     
-    # Calcular nivel de descuento (tiers: 0-2=0%, 3-5=5%, 6-9=10%, 10+=15%)
-    if pedidos_count >= 10:
-        nivel = "Diamante"
-        descuento_porcentaje = 15
-        icono = "💎"
-    elif pedidos_count >= 6:
-        nivel = "Oro"
-        descuento_porcentaje = 10
-        icono = "🏆"
-    elif pedidos_count >= 3:
-        nivel = "Plata"
-        descuento_porcentaje = 5
-        icono = "⭐"
-    else:
-        nivel = "Bronce"
+    # Calcular nivel de descuento segun esquema configurado
+    esquema_cliente = _obtener_esquema_descuento_cliente(id_cliente)
+    nivel = None
+    descuento_porcentaje = 0
+    siguiente_nivel = None
+    pedidos_faltantes = 0
+
+    for i, nivel_config in enumerate(esquema_cliente):
+        min_ped = nivel_config.get("min", 0)
+        max_ped = nivel_config.get("max")
+
+        if pedidos_count >= min_ped and (max_ped is None or pedidos_count <= max_ped):
+            nivel = nivel_config.get("nivel")
+            descuento_porcentaje = nivel_config.get("porcentaje", 0)
+
+            if i + 1 < len(esquema_cliente):
+                siguiente_nivel = esquema_cliente[i + 1].get("nivel")
+                pedidos_faltantes = esquema_cliente[i + 1].get("min") - pedidos_count
+                if pedidos_faltantes < 0:
+                    pedidos_faltantes = 0
+            else:
+                siguiente_nivel = None
+                pedidos_faltantes = 0
+            break
+
+    if not nivel and esquema_cliente:
+        primer_nivel = esquema_cliente[0]
+        nivel = "Sin nivel"
         descuento_porcentaje = 0
-        icono = "🎯"
-    
-    # Calcular próximo nivel
-    if pedidos_count < 3:
-        siguiente_nivel = "Plata"
-        pedidos_faltantes = 3 - pedidos_count
-    elif pedidos_count < 6:
-        siguiente_nivel = "Oro"
-        pedidos_faltantes = 6 - pedidos_count
-    elif pedidos_count < 10:
-        siguiente_nivel = "Diamante"
-        pedidos_faltantes = 10 - pedidos_count
-    else:
-        siguiente_nivel = None
-        pedidos_faltantes = 0
+        siguiente_nivel = primer_nivel.get("nivel")
+        pedidos_faltantes = primer_nivel.get("min", 0) - pedidos_count
+        if pedidos_faltantes < 0:
+            pedidos_faltantes = 0
+
+    iconos = {
+        "Bronce": "🥉",
+        "Plata": "🥈",
+        "Oro": "🥇",
+        "Platino": "💎",
+        "Diamante": "💎"
+    }
+    icono = iconos.get(nivel, "⭐")
     
     # Obtener últimos 3 pedidos
     ultimos_pedidos = run_query("""
