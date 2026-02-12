@@ -522,9 +522,9 @@ def cliente_inicio():
     
     id_cliente = usuario[0]
     
-    # Contar pedidos completados del cliente
+    # Contar todos los pedidos del cliente (excepto cancelados)
     pedidos_count = run_query(
-        "SELECT COUNT(*) FROM pedido WHERE id_cliente = :ic AND estado = 'Completado'",
+        "SELECT COUNT(*) FROM pedido WHERE id_cliente = :ic AND estado != 'Cancelado'",
         {"ic": id_cliente},
         fetchone=True
     )[0]
@@ -676,9 +676,9 @@ def cliente_promociones():
     
     id_usuario = usuario[0]
     
-    # Contar pedidos completados del cliente
+    # Contar todos los pedidos del cliente (excepto cancelados)
     pedidos_count = run_query(
-        "SELECT COUNT(*) FROM pedido WHERE id_cliente = :id AND estado = 'Completado'",
+        "SELECT COUNT(*) FROM pedido WHERE id_cliente = :id AND estado != 'Cancelado'",
         {"id": id_usuario},
         fetchone=True
     )[0] or 0
@@ -2387,7 +2387,7 @@ def agregar_pedido():
             
             # 5.1. Calcular descuento según ESQUEMA CONGELADO del cliente
             pedidos_count = run_query(
-                "SELECT COUNT(*) FROM pedido WHERE id_cliente = :id",
+                "SELECT COUNT(*) FROM pedido WHERE id_cliente = :id AND estado != 'Cancelado'",
                 {"id": id_cliente},
                 fetchone=True
             )[0] or 0
@@ -2612,7 +2612,7 @@ def agregar_pedido():
         if usuario_data:
             id_cliente = usuario_data[0]
             pedidos_count = run_query(
-                "SELECT COUNT(*) FROM pedido WHERE id_cliente = :id",
+                "SELECT COUNT(*) FROM pedido WHERE id_cliente = :id AND estado != 'Cancelado'",
                 {"id": id_cliente},
                 fetchone=True
             )[0] or 0
@@ -3134,9 +3134,9 @@ def _obtener_esquema_descuento_cliente(id_cliente):
         try:
             esquema_json = json.loads(esquema_guardado[1])
             
-            # Contar pedidos completados del cliente
+            # Contar todos los pedidos del cliente (excepto cancelados)
             pedidos_count = run_query(
-                "SELECT COUNT(*) FROM pedido WHERE id_cliente = :id AND estado = 'Completado'",
+                "SELECT COUNT(*) FROM pedido WHERE id_cliente = :id AND estado != 'Cancelado'",
                 {"id": id_cliente},
                 fetchone=True
             )[0] or 0
