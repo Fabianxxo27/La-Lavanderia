@@ -1738,7 +1738,7 @@ def reportes_export_excel():
         import pandas as pd
         from datetime import datetime
         
-        print("\n=== Iniciando generación de Excel ===")
+        print("\nGenerando archivo Excel...")
         
         # Crear un buffer en memoria
         output = BytesIO()
@@ -1748,15 +1748,15 @@ def reportes_export_excel():
             
             # Hoja 1: Resumen General (SIEMPRE se crea)
             resumen_data = {
-                'Métrica': [
+                'Metrica': [
                     'Total Pedidos',
                     'Total Ingresos (COP)',
                     'Total Prendas Procesadas',
                     'Promedio Prendas/Pedido',
-                    'Tasa Completación (%)',
+                    'Tasa Completacion (%)',
                     'Promedio Gasto/Cliente (COP)',
                     'Pedidos Pendientes',
-                    'Promedio Días Completar'
+                    'Promedio Dias Completar'
                 ],
                 'Valor': [
                     run_query("SELECT COUNT(*) FROM pedido", fetchone=True)[0] or 0,
@@ -1771,7 +1771,7 @@ def reportes_export_excel():
             }
             df_resumen = pd.DataFrame(resumen_data)
             df_resumen.to_excel(writer, sheet_name='Resumen', index=False)
-            print("✓ Hoja 'Resumen' creada")
+            print("[Resumen]")
             
             # Hoja 2: Estado de Pedidos
             try:
@@ -1784,11 +1784,11 @@ def reportes_export_excel():
                 if estado_data and len(estado_data) > 0:
                     df_estado = pd.DataFrame(estado_data, columns=['Estado', 'Cantidad'])
                     df_estado.to_excel(writer, sheet_name='Estados', index=False)
-                    print("✓ Hoja 'Estados' creada")
+                    print("[Estados]")
             except Exception as e:
-                print(f"⚠ Error en Estados: {e}")
+                print(f"[Estados - Error: {e}]")
             
-            # Hoja 3: Prendas Más Procesadas
+            # Hoja 3: Prendas Mas Procesadas
             try:
                 prendas_data = run_query("""
                     SELECT tipo_prenda, COUNT(*) as cantidad
@@ -1800,11 +1800,11 @@ def reportes_export_excel():
                 if prendas_data and len(prendas_data) > 0:
                     df_prendas = pd.DataFrame(prendas_data, columns=['Tipo Prenda', 'Cantidad'])
                     df_prendas.to_excel(writer, sheet_name='Prendas', index=False)
-                    print("✓ Hoja 'Prendas' creada")
+                    print("[Prendas]")
             except Exception as e:
-                print(f"⚠ Error en Prendas: {e}")
+                print(f"[Prendas - Error: {e}]")
             
-            # Hoja 4: Clientes Más Activos
+            # Hoja 4: Clientes Mas Activos
             try:
                 clientes_data = run_query("""
                     SELECT c.nombre, COUNT(p.id_pedido) as pedidos,
@@ -1820,13 +1820,13 @@ def reportes_export_excel():
                 if clientes_data and len(clientes_data) > 0:
                     df_clientes = pd.DataFrame(clientes_data, columns=['Nombre', 'Pedidos', 'Total (COP)'])
                     df_clientes.to_excel(writer, sheet_name='Clientes', index=False)
-                    print("✓ Hoja 'Clientes' creada")
+                    print("[Clientes]")
             except Exception as e:
-                print(f"⚠ Error en Clientes: {e}")
+                print(f"[Clientes - Error: {e}]")
         
-        print("=== Excel generado, preparando descarga ===")
+        print("Preparando descarga...")
         
-        # IMPORTANTE: seek DESPUÉS de cerrar el writer
+        # IMPORTANTE: seek DESPUES de cerrar el writer
         output.seek(0)
         
         # Preparar respuesta para descarga

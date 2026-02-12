@@ -856,9 +856,24 @@ document.addEventListener('DOMContentLoaded', function() {
       if (modal && typeof bootstrap !== 'undefined') {
         const bsModal = new bootstrap.Modal(modal);
         bsModal.show();
-        console.log('✅ Modal abierto');
+        console.log('Modal abierto');
+        
+        // Arreglo: Limpiar fondo negro al cerrar modal
+        modal.addEventListener('hidden.bs.modal', function() {
+          console.log('Modal cerrado');
+          // Remover el backdrop si quedó visible
+          const backdrops = document.querySelectorAll('.modal-backdrop');
+          backdrops.forEach(backdrop => {
+            if (backdrop) {
+              backdrop.remove();
+            }
+          });
+          // Restaurar scroll en body
+          document.body.classList.remove('modal-open');
+          document.body.style.overflow = 'auto';
+        });
       } else {
-        console.error('❌ Bootstrap o modal no disponible');
+        console.error('Bootstrap o modal no disponible');
       }
     });
   }
