@@ -38,7 +38,7 @@ app = Flask(__name__)
 secret_key = os.getenv('SECRET_KEY')
 if not secret_key or len(secret_key) < 16:
     secret_key = secrets.token_hex(32)
-    print("⚠️ Usando SECRET_KEY generada automáticamente")
+    print("[WARN] Usando SECRET_KEY generada automáticamente")
 app.secret_key = secret_key
 
 # Configuración de sesión segura
