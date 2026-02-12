@@ -98,13 +98,13 @@ def send_email_async(destinatario, asunto, cuerpo_html):
             smtp_password = os.getenv('SMTP_PASSWORD', '')
             
             if not smtp_password:
-                print("⚠️ SMTP_PASSWORD no configurado en las variables de entorno")
-                print("⚠️ Para habilitar correos, configura SMTP_PASSWORD en Render:")
-                print("   Dashboard > Environment > Add Variable > SMTP_PASSWORD = tu_app_password_16_caracteres")
+                print("[WARN] SMTP_PASSWORD no configurado en las variables de entorno")
+                print("[WARN] Para habilitar correos, configura SMTP_PASSWORD en Render:")
+                print("[WARN] Dashboard > Environment > Add Variable > SMTP_PASSWORD")
                 return
             
             if not destinatario or '@' not in destinatario:
-                print(f"⚠️ Email destinatario inválido: {destinatario}")
+                print(f"[WARN] Email destinatario invalido: {destinatario}")
                 return
             
             # Crear mensaje
@@ -123,13 +123,12 @@ def send_email_async(destinatario, asunto, cuerpo_html):
                 server.login(smtp_user, smtp_password)
                 server.send_message(mensaje)
             
-            print(f"✅ Correo enviado exitosamente a {destinatario}: {asunto}")
+            print(f"[OK] Correo enviado a {destinatario}: {asunto}")
         except smtplib.SMTPAuthenticationError as e:
-            print(f"❌ Error de autenticación SMTP: {e}")
-            print("   Verifica que SMTP_USER y SMTP_PASSWORD sean correctos")
-            print("   Usa App Password de Gmail (16 caracteres sin espacios)")
+            print(f"[ERROR] Autenticacion SMTP: {e}")
+            print("[ERROR] Verifica SMTP_USER y SMTP_PASSWORD en Render")
         except Exception as e:
-            print(f"❌ Error enviando correo a {destinatario}: {e}")
+            print(f"[ERROR] Enviando correo a {destinatario}: {e}")
     
     # Ejecutar en thread separado
     thread = threading.Thread(target=_send)
@@ -461,7 +460,7 @@ def registro():
                     </body>
                 </html>
                 """
-                send_email_async(email, "🎉 ¡Bienvenido a La Lavandería!", html_bienvenida)
+                send_email_async(email, "Bienvenido a La Lavanderia", html_bienvenida)
 
             flash("¡Registro exitoso! Ya puedes iniciar sesión.", "success")
             return redirect(url_for("login"))
@@ -2377,7 +2376,7 @@ def agregar_pedido():
                     </body>
                 </html>
                 """
-                send_email_async(email_cliente, f"✅ Pedido #{id_pedido} Creado - La Lavandería", html_pedido)
+                send_email_async(email_cliente, f"Pedido {id_pedido} Creado - La Lavanderia", html_pedido)
             
             # Mensaje con descuento aplicado y código de barras
             if descuento_porcentaje_aplicado > 0:
@@ -2514,7 +2513,7 @@ def actualizar_pedido(id_pedido):
                     </body>
                 </html>
                 """
-                send_email_async(email_cliente, f"🔄 Pedido {codigo} en Proceso", html)
+                send_email_async(email_cliente, f"Pedido {codigo} en Proceso", html)
             
             elif estado == "Completado":
                 html = f"""
@@ -2531,7 +2530,7 @@ def actualizar_pedido(id_pedido):
                     </body>
                 </html>
                 """
-                send_email_async(email_cliente, f"✅ Pedido {codigo} Completado y Listo", html)
+                send_email_async(email_cliente, f"Pedido {codigo} Completado y Listo", html)
         
         flash('Pedido actualizado correctamente.', 'success')
     except Exception as e:
