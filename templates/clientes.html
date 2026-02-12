@@ -468,9 +468,9 @@
           <td>{{ c[2] }}</td>
           <td>{{ c[3] }}</td>
           <td>
-            <div class="action-buttons">
+            <div class="action-buttons d-flex gap-2 align-items-center justify-content-center">
               <a href="{{ url_for('actualizar_cliente', id_cliente=c[0]) }}" class="btn-accion btn-editar">Editar</a>
-              <form action="{{ url_for('eliminar_cliente', id_cliente=c[0]) }}" method="post" style="display:inline; margin:0;">
+              <form action="{{ url_for('eliminar_cliente', id_cliente=c[0]) }}" method="post" class="m-0">
                 <button type="submit" class="btn-accion btn-eliminar" onclick="return confirm('¿Estás seguro de eliminar este cliente?')">Eliminar</button>
               </form>
             </div>

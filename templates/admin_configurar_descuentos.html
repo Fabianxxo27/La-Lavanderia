@@ -75,23 +75,25 @@
                                             {% endif %}
                                         </td>
                                         <td>
-                                            {% if tabla_descuentos_existe %}
-                                            <button class="btn btn-sm btn-warning" 
-                                                    data-bs-toggle="modal" 
-                                                    data-bs-target="#editarDescuentoModal{{ d[0] }}">
-                                                <i class="bi bi-pencil"></i> Editar
-                                            </button>
-                                            <form action="{{ url_for('eliminar_descuento', id_config=d[0]) }}" 
-                                                  method="post" 
-                                                  style="display: inline;"
-                                                  onsubmit="return confirm('¿Estás seguro de eliminar este nivel de descuento?');">
-                                                <button type="submit" class="btn btn-sm btn-danger">
-                                                    <i class="bi bi-trash"></i> Eliminar
+                                            <div class="d-flex gap-2 align-items-center">
+                                                {% if tabla_descuentos_existe %}
+                                                <button class="btn btn-sm btn-warning" 
+                                                        data-bs-toggle="modal" 
+                                                        data-bs-target="#editarDescuentoModal{{ d[0] }}">
+                                                    <i class="bi bi-pencil"></i> Editar
                                                 </button>
-                                            </form>
-                                            {% else %}
-                                            <span class="text-muted">Sin acciones</span>
-                                            {% endif %}
+                                                <form action="{{ url_for('eliminar_descuento', id_config=d[0]) }}" 
+                                                      method="post" 
+                                                      class="m-0"
+                                                      onsubmit="return confirm('¿Estás seguro de eliminar este nivel de descuento?');">
+                                                    <button type="submit" class="btn btn-sm btn-danger">
+                                                        <i class="bi bi-trash"></i> Eliminar
+                                                    </button>
+                                                </form>
+                                                {% else %}
+                                                <span class="text-muted">Sin acciones</span>
+                                                {% endif %}
+                                            </div>
                                         </td>
                                     </tr>
                                     
