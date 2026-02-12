@@ -85,6 +85,92 @@ app.jinja_env.globals['now'] = datetime.datetime.now
 
 
 # -----------------------------------------------
+# EJECUTAR MIGRACIONES AL INICIAR
+# -----------------------------------------------
+def ejecutar_migraciones_automaticas():
+    """Ejecuta migraciones SQL necesarias al iniciar la aplicación."""
+    print("\n" + "="*70)
+    print("🔄 VERIFICANDO MIGRACIONES NECESARIAS...")
+    print("="*70 + "\n")
+    
+    migraciones = [
+        {
+            'nombre': 'Tabla de Notificaciones',
+            'archivo': 'create_notificaciones.sql',
+            'verificar': "SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'notificacion')"
+        },
+        {
+            'nombre': 'Tabla de Descuentos',
+            'archivo': 'create_descuento_config.sql',
+            'verificar': "SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'descuento_config')"
+        },
+        {
+            'nombre': 'Columnas de Descuento en Pedido',
+            'archivo': 'add_descuento_to_pedido.sql',
+            'verificar': "SELECT EXISTS (SELECT FROM information_schema.columns WHERE table_name = 'pedido' AND column_name = 'porcentaje_descuento')"
+        },
+        {
+            'nombre': 'Columnas de Dirección en Pedido',
+            'archivo': 'add_direcciones_to_pedido.sql',
+            'verificar': "SELECT EXISTS (SELECT FROM information_schema.columns WHERE table_name = 'pedido' AND column_name = 'direccion_recogida')"
+        },
+        {
+            'nombre': 'Tabla de Esquema de Descuento',
+            'archivo': 'create_cliente_esquema_descuento.sql',
+            'verificar': "SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'cliente_esquema_descuento')"
+        }
+    ]
+    
+    ejecutadas = 0
+    saltadas = 0
+    errores = 0
+    
+    for migracion in migraciones:
+        try:
+            # Verificar si ya existe
+            resultado = run_query(migracion['verificar'], fetchone=True)
+            ya_existe = resultado[0] if resultado else False
+            
+            if ya_existe:
+                print(f"✓ {migracion['nombre']}: Ya existe")
+                saltadas += 1
+            else:
+                # Ejecutar migración
+                try:
+                    ruta = os.path.join(os.path.dirname(__file__), 'migrations', migracion['archivo'])
+                    if os.path.exists(ruta):
+                        with open(ruta, 'r', encoding='utf-8') as f:
+                            sql_content = f.read()
+                        
+                        # Ejecutar el SQL
+                        run_query(sql_content, commit=True)
+                        
+                        print(f"✓ {migracion['nombre']}: Creada correctamente")
+                        ejecutadas += 1
+                    else:
+                        print(f"⚠️ {migracion['nombre']}: Archivo de migración no encontrado")
+                        errores += 1
+                except Exception as e:
+                    print(f"✗ {migracion['nombre']}: Error al ejecutar - {str(e)[:100]}")
+                    errores += 1
+        except Exception as e:
+            print(f"⚠️ {migracion['nombre']}: Error al verificar - {str(e)[:100]}")
+            errores += 1
+    
+    print("\n" + "="*70)
+    print(f"📊 RESUMEN: {ejecutadas} creadas, {saltadas} ya existían, {errores} errores")
+    print("="*70 + "\n")
+
+# Ejecutar migraciones cuando se inicializa la app
+try:
+    with app.app_context():
+        ejecutar_migraciones_automaticas()
+except Exception as e:
+    print(f"[WARN] Error ejecutando migraciones automaticas: {e}")
+    print("[WARN] Algunas características podrían no estar disponibles")
+
+
+# -----------------------------------------------
 # FUNCIÓN PARA ENVÍO DE CORREOS (ASÍNCRONO)
 # -----------------------------------------------
 def send_email_async(destinatario, asunto, cuerpo_html):
@@ -2957,11 +3043,20 @@ def actualizar_pedido(id_pedido):
     try:
         # Obtener datos del pedido y cliente antes de actualizar
         pedido_data = run_query("""
-            SELECT p.id_pedido, p.codigo_barras, p.fecha_entrega, c.nombre, c.email
+            SELECT p.id_pedido, p.codigo_barras, p.fecha_entrega, c.nombre, c.email, p.id_cliente, p.estado
             FROM pedido p
             LEFT JOIN cliente c ON p.id_cliente = c.id_cliente
             WHERE p.id_pedido = :id
         """, {"id": id_pedido}, fetchone=True)
+        
+        if not pedido_data:
+            flash('Pedido no encontrado.', 'danger')
+            return redirect(url_for('pedidos'))
+        
+        estado_anterior = pedido_data[6]
+        id_cliente = pedido_data[5]
+        codigo = pedido_data[1] or f"#{id_pedido}"
+        nombre_cliente = pedido_data[3]
         
         # Actualizar estado
         run_query(
@@ -2970,11 +3065,41 @@ def actualizar_pedido(id_pedido):
             commit=True
         )
         
+        # Crear notificación para el cliente si el estado cambió
+        if id_cliente and estado != estado_anterior:
+            titulo = ""
+            mensaje = ""
+            tipo = "info"
+            
+            if estado == "En proceso":
+                titulo = f"🔄 Pedido {codigo} en Proceso"
+                mensaje = "Tu pedido está siendo procesado. Estamos lavando tu ropa con el mayor cuidado."
+                tipo = "info"
+            elif estado == "Completado":
+                titulo = f"✅ Pedido {codigo} Completado"
+                mensaje = "¡Tu pedido está listo! Tu ropa está limpia y lista para ser entregada."
+                tipo = "success"
+            elif estado == "Cancelado":
+                titulo = f"❌ Pedido {codigo} Cancelado"
+                mensaje = "Tu pedido ha sido cancelado. Si tienes dudas, contacta con nosotros."
+                tipo = "error"
+            elif estado == "Pendiente":
+                titulo = f"🕐 Pedido {codigo} Pendiente"
+                mensaje = "Tu pedido está registrado y pronto será procesado."
+                tipo = "warning"
+            
+            if titulo:
+                crear_notificacion(
+                    id_usuario=id_cliente,
+                    titulo=titulo,
+                    mensaje=mensaje,
+                    tipo=tipo,
+                    url=f'/cliente_pedidos'
+                )
+        
         # Enviar correo según el nuevo estado
         if pedido_data and pedido_data[4]:  # Si tiene email
-            codigo = pedido_data[1] or f"#{id_pedido}"
             fecha_entrega = pedido_data[2]
-            nombre_cliente = pedido_data[3]
             email_cliente = pedido_data[4]
             
             if estado == "En proceso":
@@ -3285,6 +3410,158 @@ def api_autocomplete_estados():
     estados_filtrados = [e for e in todos_estados if query in e.lower()]
     
     return jsonify(estados_filtrados)
+
+
+# -----------------------------------------------
+# SISTEMA DE NOTIFICACIONES
+# -----------------------------------------------
+def crear_notificacion(id_usuario, titulo, mensaje, tipo='info', url=None):
+    """Crea una notificación para un usuario."""
+    try:
+        run_query("""
+            INSERT INTO notificacion (id_usuario, titulo, mensaje, tipo, url)
+            VALUES (:id_usuario, :titulo, :mensaje, :tipo, :url)
+        """, {
+            'id_usuario': id_usuario,
+            'titulo': titulo,
+            'mensaje': mensaje,
+            'tipo': tipo,
+            'url': url
+        }, commit=True)
+        return True
+    except Exception as e:
+        print(f"[ERROR] crear_notificacion: {e}")
+        return False
+
+
+@app.route('/api/notificaciones')
+@login_requerido
+def api_notificaciones():
+    """Obtiene las notificaciones del usuario actual."""
+    username = session.get('username')
+    if not username:
+        return jsonify({'error': 'No autorizado'}), 401
+    
+    # Obtener id_usuario
+    usuario = run_query(
+        "SELECT id_usuario FROM usuario WHERE LOWER(username) = :u",
+        {"u": username.lower()},
+        fetchone=True
+    )
+    
+    if not usuario:
+        return jsonify({'error': 'Usuario no encontrado'}), 404
+    
+    id_usuario = usuario[0]
+    
+    # Obtener notificaciones (últimas 20, ordenadas por fecha)
+    notificaciones = run_query("""
+        SELECT id_notificacion, titulo, mensaje, tipo, leida, url, 
+               fecha_creacion
+        FROM notificacion
+        WHERE id_usuario = :id
+        ORDER BY fecha_creacion DESC
+        LIMIT 20
+    """, {"id": id_usuario}, fetchall=True)
+    
+    # Convertir a lista de diccionarios
+    resultado = []
+    for n in notificaciones:
+        resultado.append({
+            'id': n[0],
+            'titulo': n[1],
+            'mensaje': n[2],
+            'tipo': n[3],
+            'leida': n[4],
+            'url': n[5],
+            'fecha': n[6].isoformat() if n[6] else None
+        })
+    
+    return jsonify(resultado)
+
+
+@app.route('/api/notificaciones/no-leidas')
+@login_requerido
+def api_notificaciones_no_leidas():
+    """Cuenta las notificaciones no leídas del usuario actual."""
+    username = session.get('username')
+    if not username:
+        return jsonify({'count': 0})
+    
+    usuario = run_query(
+        "SELECT id_usuario FROM usuario WHERE LOWER(username) = :u",
+        {"u": username.lower()},
+        fetchone=True
+    )
+    
+    if not usuario:
+        return jsonify({'count': 0})
+    
+    id_usuario = usuario[0]
+    
+    count = run_query("""
+        SELECT COUNT(*) FROM notificacion
+        WHERE id_usuario = :id AND leida = FALSE
+    """, {"id": id_usuario}, fetchone=True)[0] or 0
+    
+    return jsonify({'count': count})
+
+
+@app.route('/api/notificaciones/<int:id_notificacion>/marcar-leida', methods=['POST'])
+@login_requerido
+def api_marcar_notificacion_leida(id_notificacion):
+    """Marca una notificación como leída."""
+    username = session.get('username')
+    if not username:
+        return jsonify({'error': 'No autorizado'}), 401
+    
+    usuario = run_query(
+        "SELECT id_usuario FROM usuario WHERE LOWER(username) = :u",
+        {"u": username.lower()},
+        fetchone=True
+    )
+    
+    if not usuario:
+        return jsonify({'error': 'Usuario no encontrado'}), 404
+    
+    id_usuario = usuario[0]
+    
+    # Marcar como leída solo si pertenece al usuario
+    run_query("""
+        UPDATE notificacion
+        SET leida = TRUE
+        WHERE id_notificacion = :id AND id_usuario = :id_usuario
+    """, {"id": id_notificacion, "id_usuario": id_usuario}, commit=True)
+    
+    return jsonify({'success': True})
+
+
+@app.route('/api/notificaciones/marcar-todas-leidas', methods=['POST'])
+@login_requerido
+def api_marcar_todas_leidas():
+    """Marca todas las notificaciones del usuario como leídas."""
+    username = session.get('username')
+    if not username:
+        return jsonify({'error': 'No autorizado'}), 401
+    
+    usuario = run_query(
+        "SELECT id_usuario FROM usuario WHERE LOWER(username) = :u",
+        {"u": username.lower()},
+        fetchone=True
+    )
+    
+    if not usuario:
+        return jsonify({'error': 'Usuario no encontrado'}), 404
+    
+    id_usuario = usuario[0]
+    
+    run_query("""
+        UPDATE notificacion
+        SET leida = TRUE
+        WHERE id_usuario = :id AND leida = FALSE
+    """, {"id": id_usuario}, commit=True)
+    
+    return jsonify({'success': True})
 
 
 # -----------------------------------------------

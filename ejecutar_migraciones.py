@@ -124,6 +124,23 @@ def verificar_tabla_esquema_cliente(conn):
         print(f"⚠️ Error al verificar tabla: {e}")
         return False
 
+def verificar_tabla_notificaciones(conn):
+    """Verificar si la tabla notificacion existe"""
+    try:
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT EXISTS (
+                SELECT FROM information_schema.tables 
+                WHERE table_name = 'notificacion'
+            )
+        """)
+        existe = cursor.fetchone()[0]
+        cursor.close()
+        return existe
+    except Exception as e:
+        print(f"⚠️ Error al verificar tabla: {e}")
+        return False
+
 def main():
     print("=" * 70)
     print("🚀 EJECUTANDO MIGRACIONES DE BASE DE DATOS")
@@ -189,6 +206,21 @@ def main():
             print("   ✗ Falló la migración de esquema cliente")
     
     print()
+    
+    # Verificar migración 5: Tabla de notificaciones
+    tiene_notificaciones = verificar_tabla_notificaciones(conn)
+    if tiene_notificaciones:
+        print("ℹ️  La tabla notificacion ya existe, se omitirá esta migración")
+    else:
+        print("📝 Ejecutando migración: create_notificaciones.sql")
+        if ejecutar_sql_file(conn, 'create_notificaciones.sql'):
+            print("   ✓ Tabla notificacion creada")
+            print("   ✓ Sistema de notificaciones en tiempo real habilitado")
+            print("   ✓ Los clientes recibirán alertas cuando sus pedidos cambien de estado")
+        else:
+            print("   ✗ Falló la migración de notificaciones")
+    
+    print()
     print("=" * 70)
     print("🎉 PROCESO COMPLETADO")
     print("=" * 70)
@@ -226,6 +258,11 @@ def main():
                 print(f"      • {d[0]}: {d[1]}% ({d[2]}-{max_ped} pedidos)")
     else:
         print("   ❌ Tabla descuento_config: FALTA")
+    
+    if verificar_tabla_notificaciones(conn):
+        print("   ✅ Tabla notificacion: OK")
+    else:
+        print("   ❌ Tabla notificacion: FALTA")
     
     conn.close()
     print("\n✅ Conexión cerrada")

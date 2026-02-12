@@ -171,6 +171,149 @@
         margin: 0.5rem 0;
       }
 
+      /* Estilos para notificaciones */
+      .notif-bell {
+        position: relative;
+        cursor: pointer;
+        padding: 0.5rem 0.8rem;
+        background: white;
+        border: 2px solid #1a4e7b;
+        border-radius: 8px;
+        transition: all 0.2s;
+      }
+
+      .notif-bell:hover {
+        background: #1a4e7b;
+        color: white;
+      }
+
+      .notif-badge {
+        position: absolute;
+        top: -5px;
+        right: -5px;
+        background: #e74c3c;
+        color: white;
+        border-radius: 50%;
+        padding: 2px 6px;
+        font-size: 0.7rem;
+        font-weight: 700;
+        min-width: 20px;
+        text-align: center;
+      }
+
+      .notif-dropdown {
+        position: absolute;
+        top: 100%;
+        right: 0;
+        margin-top: 0.5rem;
+        background: white;
+        border: 2px solid #e8f0d4;
+        border-radius: 12px;
+        width: 350px;
+        max-height: 400px;
+        overflow-y: auto;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+        z-index: 1050;
+        display: none;
+      }
+
+      .notif-dropdown.show {
+        display: block;
+      }
+
+      .notif-header {
+        padding: 1rem;
+        border-bottom: 2px solid #e8f0d4;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: linear-gradient(135deg, #a6cc48 0%, #84af1d 100%);
+        border-radius: 10px 10px 0 0;
+      }
+
+      .notif-header h6 {
+        margin: 0;
+        color: white;
+        font-weight: 700;
+      }
+
+      .notif-mark-all {
+        background: white;
+        border: none;
+        color: #1a4e7b;
+        padding: 0.3rem 0.6rem;
+        border-radius: 6px;
+        font-size: 0.8rem;
+        cursor: pointer;
+        font-weight: 600;
+      }
+
+      .notif-mark-all:hover {
+        background: #f0f0f0;
+      }
+
+      .notif-list {
+        max-height: 300px;
+        overflow-y: auto;
+      }
+
+      .notif-item {
+        padding: 0.8rem 1rem;
+        border-bottom: 1px solid #f0f0f0;
+        cursor: pointer;
+        transition: background 0.2s;
+      }
+
+      .notif-item:hover {
+        background: #f9f9f9;
+      }
+
+      .notif-item.unread {
+        background: #e8f0d4;
+      }
+
+      .notif-item.unread:hover {
+        background: #d8e0c4;
+      }
+
+      .notif-title {
+        font-weight: 700;
+        font-size: 0.9rem;
+        color: #1a4e7b;
+        margin-bottom: 0.3rem;
+      }
+
+      .notif-message {
+        font-size: 0.85rem;
+        color: #666;
+        margin-bottom: 0.3rem;
+      }
+
+      .notif-time {
+        font-size: 0.75rem;
+        color: #999;
+      }
+
+      .notif-empty {
+        padding: 2rem;
+        text-align: center;
+        color: #999;
+      }
+
+      @media (max-width: 768px) {
+        .notif-dropdown {
+          width: 300px;
+          right: -50px;
+        }
+      }
+
+      @media (max-width: 480px) {
+        .notif-dropdown {
+          width: 280px;
+          right: -80px;
+        }
+      }
+
       /* Main Container */
       .container {
         max-width: 1140px;
@@ -265,6 +408,23 @@
         </a>
 
         {% if session.get('username') %}
+          {# Widget de Notificaciones #}
+          <div style="position: relative;">
+            <button class="notif-bell" id="notifBell" title="Notificaciones">
+              🔔
+              <span class="notif-badge" id="notifBadge" style="display: none;">0</span>
+            </button>
+            <div class="notif-dropdown" id="notifDropdown">
+              <div class="notif-header">
+                <h6>🔔 Notificaciones</h6>
+                <button class="notif-mark-all" id="markAllRead">Marcar todas</button>
+              </div>
+              <div class="notif-list" id="notifList">
+                <div class="notif-empty">Cargando...</div>
+              </div>
+            </div>
+          </div>
+
           <div class="dropdown">
             <button class="btn btn-light dropdown-toggle" type="button">
               <i class="fas fa-user"></i> {{ session.get('username') }}
@@ -307,6 +467,120 @@
     </footer>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    
+    {# Sistema de Notificaciones #}
+    {% if session.get('username') %}
+    <script>
+      let notificaciones = [];
+
+      async function loadNotifications() {
+        try {
+          const response = await fetch('/api/notificaciones');
+          if (response.ok) {
+            notificaciones = await response.json();
+            renderNotifications();
+            updateBadge();
+          }
+        } catch (error) {
+          console.error('Error loading notifications:', error);
+        }
+      }
+
+      function renderNotifications() {
+        const list = document.getElementById('notifList');
+        if (!notificaciones || notificaciones.length === 0) {
+          list.innerHTML = '<div class="notif-empty">No hay notificaciones</div>';
+          return;
+        }
+
+        list.innerHTML = notificaciones.map(notif => {
+          const time = new Date(notif.fecha_creacion);
+          const now = new Date();
+          const diff = Math.floor((now - time) / 1000);
+          
+          let timeStr;
+          if (diff < 60) timeStr = 'Ahora mismo';
+          else if (diff < 3600) timeStr = `Hace ${Math.floor(diff / 60)}min`;
+          else if (diff < 86400) timeStr = `Hace ${Math.floor(diff / 3600)}h`;
+          else timeStr = `Hace ${Math.floor(diff / 86400)}d`;
+
+          const unreadClass = notif.leida ? '' : 'unread';
+          const url = notif.url ? ` onclick="markAsRead(${notif.id_notificacion}); window.location='${notif.url}'" ` : ' onclick="markAsRead(' + notif.id_notificacion + ')" ';
+          
+          return `
+            <div class="notif-item ${unreadClass}"${url}>
+              <div class="notif-title">${notif.titulo}</div>
+              <div class="notif-message">${notif.mensaje}</div>
+              <div class="notif-time">${timeStr}</div>
+            </div>
+          `;
+        }).join('');
+      }
+
+      function updateBadge() {
+        const unreadCount = notificaciones.filter(n => !n.leida).length;
+        const badge = document.getElementById('notifBadge');
+        if (unreadCount > 0) {
+          badge.style.display = 'block';
+          badge.textContent = unreadCount > 99 ? '99+' : unreadCount;
+        } else {
+          badge.style.display = 'none';
+        }
+      }
+
+      async function markAsRead(id) {
+        try {
+          await fetch(`/api/notificaciones/${id}/marcar-leida`, { method: 'POST' });
+          loadNotifications();
+        } catch (error) {
+          console.error('Error marking notification as read:', error);
+        }
+      }
+
+      async function markAllAsRead() {
+        try {
+          await fetch('/api/notificaciones/marcar-todas-leidas', { method: 'POST' });
+          loadNotifications();
+        } catch (error) {
+          console.error('Error marking all as read:', error);
+        }
+      }
+
+      document.addEventListener('DOMContentLoaded', function() {
+        // Load initial notifications
+        loadNotifications();
+        
+        // Refresh every 30 seconds
+        setInterval(loadNotifications, 30000);
+
+        // Bell button click
+        const bell = document.getElementById('notifBell');
+        const dropdown = document.getElementById('notifDropdown');
+        
+        bell.addEventListener('click', function(e) {
+          e.stopPropagation();
+          dropdown.classList.toggle('show');
+        });
+
+        // Mark all read button
+        const markAllBtn = document.getElementById('markAllRead');
+        if (markAllBtn) {
+          markAllBtn.addEventListener('click', async function(e) {
+            e.stopPropagation();
+            await markAllAsRead();
+          });
+        }
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function(e) {
+          if (!e.target.closest('.notif-bell') && !e.target.closest('.notif-dropdown')) {
+            dropdown.classList.remove('show');
+          }
+        });
+      });
+    </script>
+    {% endif %}
+    
     {% block scripts %}{% endblock %}
   </body>
 </html>

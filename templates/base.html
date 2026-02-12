@@ -108,6 +108,149 @@
         color: #fff;
       }
 
+      /* Estilos para notificaciones */
+      .notif-bell {
+        position: relative;
+        cursor: pointer;
+        padding: 0.5rem 0.8rem;
+        background: white;
+        border: 2px solid #1a4e7b;
+        border-radius: 8px;
+        transition: all 0.2s;
+      }
+
+      .notif-bell:hover {
+        background: #1a4e7b;
+        color: white;
+      }
+
+      .notif-badge {
+        position: absolute;
+        top: -5px;
+        right: -5px;
+        background: #e74c3c;
+        color: white;
+        border-radius: 50%;
+        padding: 2px 6px;
+        font-size: 0.7rem;
+        font-weight: 700;
+        min-width: 20px;
+        text-align: center;
+      }
+
+      .notif-dropdown {
+        position: absolute;
+        top: 100%;
+        right: 0;
+        margin-top: 0.5rem;
+        background: white;
+        border: 2px solid #e8f0d4;
+        border-radius: 12px;
+        width: 350px;
+        max-height: 400px;
+        overflow-y: auto;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+        z-index: 1050;
+        display: none;
+      }
+
+      .notif-dropdown.show {
+        display: block;
+      }
+
+      .notif-header {
+        padding: 1rem;
+        border-bottom: 2px solid #e8f0d4;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: linear-gradient(135deg, #a6cc48 0%, #84af1d 100%);
+        border-radius: 10px 10px 0 0;
+      }
+
+      .notif-header h6 {
+        margin: 0;
+        color: white;
+        font-weight: 700;
+      }
+
+      .notif-mark-all {
+        background: white;
+        border: none;
+        color: #1a4e7b;
+        padding: 0.3rem 0.6rem;
+        border-radius: 6px;
+        font-size: 0.8rem;
+        cursor: pointer;
+        font-weight: 600;
+      }
+
+      .notif-mark-all:hover {
+        background: #f0f0f0;
+      }
+
+      .notif-list {
+        max-height: 300px;
+        overflow-y: auto;
+      }
+
+      .notif-item {
+        padding: 0.8rem 1rem;
+        border-bottom: 1px solid #f0f0f0;
+        cursor: pointer;
+        transition: background 0.2s;
+      }
+
+      .notif-item:hover {
+        background: #f9f9f9;
+      }
+
+      .notif-item.unread {
+        background: #e8f0d4;
+      }
+
+      .notif-item.unread:hover {
+        background: #d8e0c4;
+      }
+
+      .notif-title {
+        font-weight: 700;
+        font-size: 0.9rem;
+        color: #1a4e7b;
+        margin-bottom: 0.3rem;
+      }
+
+      .notif-message {
+        font-size: 0.85rem;
+        color: #666;
+        margin-bottom: 0.3rem;
+      }
+
+      .notif-time {
+        font-size: 0.75rem;
+        color: #999;
+      }
+
+      .notif-empty {
+        padding: 2rem;
+        text-align: center;
+        color: #999;
+      }
+
+      @media (max-width: 768px) {
+        .notif-dropdown {
+          width: 300px;
+          right: -50px;
+        }
+      }
+
+      @media (max-width: 480px) {
+        .notif-dropdown {
+          width: 280px;
+          right: -80px;
+        }
+      }
+
       .btn-back {
         border-color: #1a4e7b;
         color: #1a4e7b;
@@ -261,6 +404,23 @@
           Regresar
         </a>
         {% if session.get('username') %}
+          {# Widget de Notificaciones #}
+          <div style="position: relative;">
+            <button class="notif-bell" id="notifBell" title="Notificaciones">
+              🔔
+              <span class="notif-badge" id="notifBadge" style="display: none;">0</span>
+            </button>
+            <div class="notif-dropdown" id="notifDropdown">
+              <div class="notif-header">
+                <h6>🔔 Notificaciones</h6>
+                <button class="notif-mark-all" id="markAllRead">Marcar todas</button>
+              </div>
+              <div class="notif-list" id="notifList">
+                <div class="notif-empty">Cargando...</div>
+              </div>
+            </div>
+          </div>
+
           {# Mostrar nombre de usuario y dropdown con Cerrar sesión #}
           <div class="dropdown">
             <button class="btn btn-light dropdown-toggle" type="button" id="userMenu" data-bs-toggle="dropdown" aria-expanded="false">
@@ -299,6 +459,137 @@
     </footer>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    
+    {% if session.get('username') %}
+    <script>
+      // Sistema de Notificaciones
+      const notifBell = document.getElementById('notifBell');
+      const notifBadge = document.getElementById('notifBadge');
+      const notifDropdown = document.getElementById('notifDropdown');
+      const notifList = document.getElementById('notifList');
+      const markAllRead = document.getElementById('markAllRead');
+      
+      let notificaciones = [];
+      
+      // Cargar notificaciones
+      async function loadNotifications() {
+        try {
+          const response = await fetch('/api/notificaciones');
+          notificaciones = await response.json();
+          renderNotifications();
+          updateBadge();
+        } catch (error) {
+          console.error('Error cargando notificaciones:', error);
+        }
+      }
+      
+      // Actualizar badge
+      function updateBadge() {
+        const unreadCount = notificaciones.filter(n => !n.leida).length;
+        if (unreadCount > 0) {
+          notifBadge.textContent = unreadCount > 99 ? '99+' : unreadCount;
+          notifBadge.style.display = 'block';
+        } else {
+          notifBadge.style.display = 'none';
+        }
+      }
+      
+      // Renderizar notificaciones
+      function renderNotifications() {
+        if (notificaciones.length === 0) {
+          notifList.innerHTML = '<div class="notif-empty">No hay notificaciones</div>';
+          return;
+        }
+        
+        notifList.innerHTML = notificaciones.map(n => {
+          const fecha = new Date(n.fecha);
+          const ahora = new Date();
+          const diffMs = ahora - fecha;
+          const diffMins = Math.floor(diffMs / 60000);
+          const diffHoras = Math.floor(diffMins / 60);
+          const diffDias = Math.floor(diffHoras / 24);
+          
+          let timeText;
+          if (diffMins < 1) {
+            timeText = 'Ahora mismo';
+          } else if (diffMins < 60) {
+            timeText = `Hace ${diffMins} min`;
+          } else if (diffHoras < 24) {
+            timeText = `Hace ${diffHoras}h`;
+          } else {
+            timeText = `Hace ${diffDias}d`;
+          }
+          
+          return `
+            <div class="notif-item ${!n.leida ? 'unread' : ''}" data-id="${n.id}" data-url="${n.url || ''}">
+              <div class="notif-title">${n.titulo}</div>
+              <div class="notif-message">${n.mensaje}</div>
+              <div class="notif-time">${timeText}</div>
+            </div>
+          `;
+        }).join('');
+        
+        // Agregar eventos de clic
+        document.querySelectorAll('.notif-item').forEach(item => {
+          item.addEventListener('click', () => {
+            const id = parseInt(item.dataset.id);
+            const url = item.dataset.url;
+            markAsRead(id);
+            if (url && url !== 'null') {
+              window.location.href = url;
+            }
+          });
+        });
+      }
+      
+      // Marcar como leída
+      async function markAsRead(id) {
+        try {
+          await fetch(`/api/notificaciones/${id}/marcar-leida`, { method: 'POST' });
+          const notif = notificaciones.find(n => n.id === id);
+          if (notif) {
+            notif.leida = true;
+            renderNotifications();
+            updateBadge();
+          }
+        } catch (error) {
+          console.error('Error marcando notificación:', error);
+        }
+      }
+      
+      // Marcar todas como leídas
+      markAllRead.addEventListener('click', async () => {
+        try {
+          await fetch('/api/notificaciones/marcar-todas-leidas', { method: 'POST' });
+          notificaciones.forEach(n => n.leida = true);
+          renderNotifications();
+          updateBadge();
+        } catch (error) {
+          console.error('Error marcando todas:', error);
+        }
+      });
+      
+      // Toggle dropdown
+      notifBell.addEventListener('click', (e) => {
+        e.stopPropagation();
+        notifDropdown.classList.toggle('show');
+      });
+      
+      // Cerrar al hacer clic fuera
+      document.addEventListener('click', (e) => {
+        if (!notifBell.contains(e.target) && !notifDropdown.contains(e.target)) {
+          notifDropdown.classList.remove('show');
+        }
+      });
+      
+      // Cargar al inicio
+      loadNotifications();
+      
+      // Actualizar cada 30 segundos
+      setInterval(loadNotifications, 30000);
+    </script>
+    {% endif %}
+    
     {% block scripts %}{% endblock %}
   </body>
 </html>
