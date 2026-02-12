@@ -1753,39 +1753,40 @@ def reportes_export_excel():
                 return default
         
         # Crear el archivo Excel con múltiples hojas
-        with pd.ExcelWriter(output, engine='openpyxl') as writer:
-            
-            # Hoja 1: Resumen General (SIEMPRE se crea)
-            try:
-                total_pedidos = safe_scalar("SELECT COUNT(*) FROM pedido", default=0)
-                total_completados = safe_scalar("SELECT COUNT(*) FROM pedido WHERE estado = 'Completado'", default=0)
-                resumen_data = {
-                    'Metrica': [
-                        'Total Pedidos',
-                        'Total Ingresos (COP)',
-                        'Total Prendas Procesadas',
-                        'Promedio Prendas/Pedido',
-                        'Tasa Completacion (%)',
-                        'Promedio Gasto/Cliente (COP)',
-                        'Pedidos Pendientes',
-                        'Promedio Dias Completar'
-                    ],
-                    'Valor': [
-                        total_pedidos,
-                        safe_scalar("SELECT COALESCE(SUM(total), 0) FROM recibo", default=0),
-                        safe_scalar("SELECT COUNT(*) FROM prenda", default=0),
-                        safe_scalar("SELECT AVG(cnt) FROM (SELECT COUNT(*) as cnt FROM prenda GROUP BY id_pedido) subq", default=0),
-                        (total_completados / max(total_pedidos, 1)) * 100,
-                        safe_scalar("SELECT AVG(total) FROM recibo", default=0),
-                        safe_scalar("SELECT COUNT(*) FROM pedido WHERE estado IN ('Pendiente', 'En proceso')", default=0),
-                        safe_scalar("SELECT AVG((fecha_entrega - fecha_ingreso)::integer) FROM pedido WHERE estado = 'Completado' AND fecha_entrega IS NOT NULL", default=0)
-                    ]
-                }
-                df_resumen = pd.DataFrame(resumen_data)
-            except Exception as e:
-                df_resumen = pd.DataFrame({'Metrica': ['Error'], 'Valor': [f'No se pudo generar resumen: {e}']})
-            df_resumen.to_excel(writer, sheet_name='Resumen', index=False)
-            print("[Resumen]")
+        try:
+            with pd.ExcelWriter(output, engine='openpyxl') as writer:
+                
+                # Hoja 1: Resumen General (SIEMPRE se crea)
+                try:
+                    total_pedidos = safe_scalar("SELECT COUNT(*) FROM pedido", default=0)
+                    total_completados = safe_scalar("SELECT COUNT(*) FROM pedido WHERE estado = 'Completado'", default=0)
+                    resumen_data = {
+                        'Metrica': [
+                            'Total Pedidos',
+                            'Total Ingresos (COP)',
+                            'Total Prendas Procesadas',
+                            'Promedio Prendas/Pedido',
+                            'Tasa Completacion (%)',
+                            'Promedio Gasto/Cliente (COP)',
+                            'Pedidos Pendientes',
+                            'Promedio Dias Completar'
+                        ],
+                        'Valor': [
+                            total_pedidos,
+                            safe_scalar("SELECT COALESCE(SUM(total), 0) FROM recibo", default=0),
+                            safe_scalar("SELECT COUNT(*) FROM prenda", default=0),
+                            safe_scalar("SELECT AVG(cnt) FROM (SELECT COUNT(*) as cnt FROM prenda GROUP BY id_pedido) subq", default=0),
+                            (total_completados / max(total_pedidos, 1)) * 100,
+                            safe_scalar("SELECT AVG(total) FROM recibo", default=0),
+                            safe_scalar("SELECT COUNT(*) FROM pedido WHERE estado IN ('Pendiente', 'En proceso')", default=0),
+                            safe_scalar("SELECT AVG((fecha_entrega - fecha_ingreso)::integer) FROM pedido WHERE estado = 'Completado' AND fecha_entrega IS NOT NULL", default=0)
+                        ]
+                    }
+                    df_resumen = pd.DataFrame(resumen_data)
+                except Exception as e:
+                    df_resumen = pd.DataFrame({'Metrica': ['Error'], 'Valor': [f'No se pudo generar resumen: {e}']})
+                df_resumen.to_excel(writer, sheet_name='Resumen', index=False)
+                print("[Resumen]")
             
             # Hoja 2: Estado de Pedidos
             try:
@@ -1837,6 +1838,30 @@ def reportes_export_excel():
                     print("[Clientes]")
             except Exception as e:
                 print(f"[Clientes - Error: {e}]")
+        except Exception as e:
+            print(f"[ERROR] export_excel fallo: {e}")
+            try:
+                from openpyxl import Workbook
+                output = BytesIO()
+                wb = Workbook()
+                ws = wb.active
+                ws.title = "Resumen"
+                ws["A1"] = "Error"
+                ws["B1"] = f"No se pudo generar el Excel: {e}"
+                wb.save(output)
+                output.seek(0)
+                from flask import send_file
+                fecha_actual = datetime.now().strftime('%Y-%m-%d_%H-%M')
+                filename = f'Reportes_LaLavanderia_{fecha_actual}.xlsx'
+                return send_file(
+                    output,
+                    mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                    as_attachment=True,
+                    download_name=filename
+                )
+            except Exception as fallback_error:
+                print(f"[ERROR] export_excel fallback fallo: {fallback_error}")
+                raise
         
         print("Preparando descarga...")
         
