@@ -132,7 +132,7 @@ def send_email_async(destinatario, asunto, cuerpo_html):
     
     # Ejecutar en thread separado
     thread = threading.Thread(target=_send)
-    thread.daemon = True
+    thread.daemon = False
     thread.start()
 
 
