@@ -37,8 +37,12 @@
                     {% endif %}
                     
                     <div class="alert alert-info mb-4">
-                        <i class="bi bi-info-circle"></i> <strong>Nota:</strong> Los niveles de descuento se aplican automáticamente 
-                        según el número de pedidos completados de cada cliente.
+                        <i class="bi bi-info-circle"></i> <strong>Sistema de Promociones Congeladas:</strong>
+                        <ul class="mb-0 mt-2">
+                            <li>Los cambios se aplican solo a <strong>clientes nuevos</strong> o que <strong>completen su ciclo actual</strong></li>
+                            <li>Clientes con ciclo activo mantienen su esquema de descuentos original</li>
+                            <li>Esto evita cambios injustos en medio de un ciclo de lealtad</li>
+                        </ul>
                     </div>
 
                     <div class="table-responsive">
@@ -71,7 +75,7 @@
                                             {% endif %}
                                         </td>
                                         <td>
-                                            {% if tabla_ok %}
+                                            {% if tabla_descuentos_existe %}
                                             <button class="btn btn-sm btn-warning" 
                                                     data-bs-toggle="modal" 
                                                     data-bs-target="#editarDescuentoModal{{ d[0] }}">
@@ -146,7 +150,7 @@
                                         <td colspan="6" class="text-center text-muted py-4">
                                             <i class="bi bi-inbox" style="font-size: 2rem;"></i>
                                             <p class="mt-2">
-                                                {% if tabla_ok %}
+                                                {% if tabla_descuentos_existe %}
                                                 No hay niveles de descuento configurados
                                                 {% else %}
                                                 Ejecuta migraciones para crear la tabla de descuentos

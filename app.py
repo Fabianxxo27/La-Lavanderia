@@ -1404,7 +1404,7 @@ def crear_descuento():
             "a": activo
         }, commit=True)
         
-        flash(f'Nivel de descuento "{nivel}" creado exitosamente.', 'success')
+        flash(f'Nivel de descuento "{nivel}" creado exitosamente. Se aplicará a CLIENTES NUEVOS o que completen su ciclo actual.', 'success')
     except Exception as e:
         flash(f'Error al crear descuento: {e}', 'danger')
     
@@ -1459,7 +1459,7 @@ def editar_descuento(id_config):
             "id": id_config
         }, commit=True)
         
-        flash(f'Nivel de descuento "{nivel}" actualizado exitosamente.', 'success')
+        flash(f'Nivel de descuento "{nivel}" actualizado exitosamente. Los cambios se aplicarán solo a CLIENTES NUEVOS o que completen su ciclo actual.', 'success')
     except Exception as e:
         flash(f'Error al editar descuento: {e}', 'danger')
     
