@@ -104,6 +104,65 @@
         </div>
     </div>
 
+    <!-- KPIs Adicionales -->
+    <div class="row mb-5">
+        <div class="col-md-3 mb-3">
+            <div class="card border-left-primary">
+                <div class="card-body">
+                    <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                        <i class="fas fa-check-circle"></i> Tasa de Completación
+                    </div>
+                    <div class="h3 mb-0">
+                        {{ "%.1f"|format(tasa_completacion) }}%
+                    </div>
+                    <small class="text-muted">De pedidos completados</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3 mb-3">
+            <div class="card border-left-success">
+                <div class="card-body">
+                    <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                        <i class="fas fa-shopping-bag"></i> Promedio de Gasto
+                    </div>
+                    <div class="h3 mb-0">
+                        ${{ "{:,.0f}".format(promedio_gasto) }}
+                    </div>
+                    <small class="text-muted">Por cliente</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3 mb-3">
+            <div class="card border-left-warning">
+                <div class="card-body">
+                    <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                        <i class="fas fa-hourglass-half"></i> Pendientes
+                    </div>
+                    <div class="h3 mb-0">
+                        {{ pedidos_pendientes }}
+                    </div>
+                    <small class="text-muted">Pedidos sin completar</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3 mb-3">
+            <div class="card border-left-info">
+                <div class="card-body">
+                    <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                        <i class="fas fa-calendar-alt"></i> Promedio de Días
+                    </div>
+                    <div class="h3 mb-0">
+                        {{ "%.1f"|format(promedio_dias) }} días
+                    </div>
+                    <small class="text-muted">Desde ingreso a entrega</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Gráficos principales con controles interactivos -->
     <div class="row mb-5">
         <!-- Pedidos por día -->
@@ -409,65 +468,6 @@
                             <li class="page-item"><a class="page-link" href="#">Siguiente</a></li>
                         </ul>
                     </nav>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- KPIs Adicionales -->
-    <div class="row mb-5">
-        <div class="col-md-3 mb-3">
-            <div class="card border-left-primary">
-                <div class="card-body">
-                    <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
-                        <i class="fas fa-check-circle"></i> Tasa de Completación
-                    </div>
-                    <div class="h3 mb-0">
-                        {{ "%.1f"|format(tasa_completacion) }}%
-                    </div>
-                    <small class="text-muted">De pedidos completados</small>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-md-3 mb-3">
-            <div class="card border-left-success">
-                <div class="card-body">
-                    <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
-                        <i class="fas fa-shopping-bag"></i> Promedio de Gasto
-                    </div>
-                    <div class="h3 mb-0">
-                        ${{ "{:,.0f}".format(promedio_gasto) }}
-                    </div>
-                    <small class="text-muted">Por cliente</small>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-md-3 mb-3">
-            <div class="card border-left-warning">
-                <div class="card-body">
-                    <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
-                        <i class="fas fa-hourglass-half"></i> Pendientes
-                    </div>
-                    <div class="h3 mb-0">
-                        {{ pedidos_pendientes }}
-                    </div>
-                    <small class="text-muted">Pedidos sin completar</small>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-md-3 mb-3">
-            <div class="card border-left-info">
-                <div class="card-body">
-                    <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
-                        <i class="fas fa-calendar-alt"></i> Promedio de Días
-                    </div>
-                    <div class="h3 mb-0">
-                        {{ "%.1f"|format(promedio_dias) }} días
-                    </div>
-                    <small class="text-muted">Desde ingreso a entrega</small>
                 </div>
             </div>
         </div>
