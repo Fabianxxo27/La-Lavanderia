@@ -2970,37 +2970,10 @@ def _obtener_esquema_descuento_cliente(id_cliente):
     ]
     
     if esquema_guardado:
-        # Tiene esquema congelado, verificar si completó ciclo
+        # Tiene esquema congelado - SIEMPRE usar ese esquema mientras esté activo
+        # NO actualizar automáticamente - mantener congelado hasta desactivacion manual
         try:
             esquema_json = json.loads(esquema_guardado[1])
-            
-            # Contar pedidos completados del cliente
-            pedidos_count = run_query(
-                "SELECT COUNT(*) FROM pedido WHERE id_cliente = :id AND estado = 'Completado'",
-                {"id": id_cliente},
-                fetchone=True
-            )[0] or 0
-            
-            # Encontrar nivel máximo del esquema guardado
-            nivel_maximo = max((n.get("max") or 999) for n in esquema_json)
-            
-            # Si completó el ciclo, actualizar a esquema actual
-            if pedidos_count > nivel_maximo:
-                # Desactivar esquema anterior
-                run_query("""
-                    UPDATE cliente_esquema_descuento
-                    SET activo = false
-                    WHERE id_esquema = :id
-                """, {"id": esquema_guardado[0]}, commit=True)
-                
-                # Crear nuevo esquema con config actual
-                run_query("""
-                    INSERT INTO cliente_esquema_descuento (id_cliente, esquema_json, activo)
-                    VALUES (:id, :json, true)
-                """, {"id": id_cliente, "json": json.dumps(esquema_actual)}, commit=True)
-                
-                return esquema_actual
-            
             return esquema_json
         except:
             # Error parseando JSON, usar actual
