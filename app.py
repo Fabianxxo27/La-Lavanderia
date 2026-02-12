@@ -91,6 +91,7 @@ def send_email_async(destinatario, asunto, cuerpo_html):
     """Envía un correo de forma asíncrona para no bloquear la aplicación."""
     def _send():
         try:
+            print(f"[MAIL] send_email_async to={destinatario} subject={asunto}", flush=True)
             # Configuración SMTP
             smtp_server = os.getenv('SMTP_SERVER', 'smtp.gmail.com')
             smtp_port = int(os.getenv('SMTP_PORT', 587))
@@ -98,13 +99,13 @@ def send_email_async(destinatario, asunto, cuerpo_html):
             smtp_password = os.getenv('SMTP_PASSWORD', '')
             
             if not smtp_password:
-                print("[WARN] SMTP_PASSWORD no configurado en las variables de entorno")
-                print("[WARN] Para habilitar correos, configura SMTP_PASSWORD en Render:")
-                print("[WARN] Dashboard > Environment > Add Variable > SMTP_PASSWORD")
+                print("[WARN] SMTP_PASSWORD no configurado en las variables de entorno", flush=True)
+                print("[WARN] Para habilitar correos, configura SMTP_PASSWORD en Render:", flush=True)
+                print("[WARN] Dashboard > Environment > Add Variable > SMTP_PASSWORD", flush=True)
                 return
             
             if not destinatario or '@' not in destinatario:
-                print(f"[WARN] Email destinatario invalido: {destinatario}")
+                print(f"[WARN] Email destinatario invalido: {destinatario}", flush=True)
                 return
             
             # Crear mensaje
@@ -123,12 +124,12 @@ def send_email_async(destinatario, asunto, cuerpo_html):
                 server.login(smtp_user, smtp_password)
                 server.send_message(mensaje)
             
-            print(f"[OK] Correo enviado a {destinatario}: {asunto}")
+            print(f"[OK] Correo enviado a {destinatario}: {asunto}", flush=True)
         except smtplib.SMTPAuthenticationError as e:
-            print(f"[ERROR] Autenticacion SMTP: {e}")
-            print("[ERROR] Verifica SMTP_USER y SMTP_PASSWORD en Render")
+            print(f"[ERROR] Autenticacion SMTP: {e}", flush=True)
+            print("[ERROR] Verifica SMTP_USER y SMTP_PASSWORD en Render", flush=True)
         except Exception as e:
-            print(f"[ERROR] Enviando correo a {destinatario}: {e}")
+            print(f"[ERROR] Enviando correo a {destinatario}: {e}", flush=True)
     
     # Ejecutar en thread separado
     thread = threading.Thread(target=_send)
@@ -460,9 +461,9 @@ def registro():
                     </body>
                 </html>
                 """
-                print(f"[MAIL] Enviando correo de bienvenida registro a {email}")
+                print(f"[MAIL] Enviando correo de bienvenida registro a {email}", flush=True)
                 send_email_async(email, "Bienvenido a La Lavanderia", html_bienvenida)
-                print(f"[MAIL] Disparo de correo registro OK para {email}")
+                print(f"[MAIL] Disparo de correo registro OK para {email}", flush=True)
 
             flash("¡Registro exitoso! Ya puedes iniciar sesión.", "success")
             return redirect(url_for("login"))
@@ -1150,9 +1151,9 @@ def registro_rapido():
             </body>
         </html>
         """
-        print(f"[MAIL] Enviando credenciales a {email}")
+        print(f"[MAIL] Enviando credenciales a {email}", flush=True)
         send_email_async(email, "Bienvenido a La Lavandería - Credenciales de Acceso", html)
-        print(f"[MAIL] Disparo de correo registro rapido OK para {email}")
+        print(f"[MAIL] Disparo de correo registro rapido OK para {email}", flush=True)
         
         flash(f'✅ Cliente "{nombre}" registrado exitosamente. Se ha enviado un correo con las credenciales a {email}', 'success')
         
