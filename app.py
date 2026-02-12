@@ -1780,8 +1780,10 @@ def reportes_export_excel():
                 try:
                     total_pedidos = safe_scalar("SELECT COUNT(*) FROM pedido", default=0)
                     total_completados = safe_scalar("SELECT COUNT(*) FROM pedido WHERE estado = 'Completado'", default=0)
+                    total_clientes = safe_scalar("SELECT COUNT(*) FROM cliente", default=0)
                     resumen_data = {
                         'Metrica': [
+                            'Total Clientes',
                             'Total Pedidos',
                             'Total Ingresos (COP)',
                             'Total Prendas Procesadas',
@@ -1789,16 +1791,21 @@ def reportes_export_excel():
                             'Tasa Completacion (%)',
                             'Promedio Gasto/Cliente (COP)',
                             'Pedidos Pendientes',
+                            'Pedidos En Proceso',
+                            'Pedidos Completados',
                             'Promedio Dias Completar'
                         ],
                         'Valor': [
+                            total_clientes,
                             total_pedidos,
                             safe_scalar("SELECT COALESCE(SUM(total), 0) FROM recibo", default=0),
                             safe_scalar("SELECT COUNT(*) FROM prenda", default=0),
                             safe_scalar("SELECT AVG(cnt) FROM (SELECT COUNT(*) as cnt FROM prenda GROUP BY id_pedido) subq", default=0),
-                            (total_completados / max(total_pedidos, 1)) * 100,
+                            round((total_completados / max(total_pedidos, 1)) * 100, 2),
                             safe_scalar("SELECT AVG(total) FROM recibo", default=0),
-                            safe_scalar("SELECT COUNT(*) FROM pedido WHERE estado IN ('Pendiente', 'En proceso')", default=0),
+                            safe_scalar("SELECT COUNT(*) FROM pedido WHERE estado = 'Pendiente'", default=0),
+                            safe_scalar("SELECT COUNT(*) FROM pedido WHERE estado = 'En proceso'", default=0),
+                            total_completados,
                             safe_scalar("SELECT AVG((fecha_entrega - fecha_ingreso)::integer) FROM pedido WHERE estado = 'Completado' AND fecha_entrega IS NOT NULL", default=0)
                         ]
                     }
@@ -1808,56 +1815,189 @@ def reportes_export_excel():
                 df_resumen.to_excel(writer, sheet_name='Resumen', index=False)
                 print("[Resumen]")
             
-            # Hoja 2: Estado de Pedidos
-            try:
-                estado_data = run_query("""
-                    SELECT estado, COUNT(*) as cantidad
-                    FROM pedido
-                    GROUP BY estado
-                    ORDER BY cantidad DESC
-                """, fetchall=True)
-                if estado_data and len(estado_data) > 0:
-                    df_estado = pd.DataFrame(estado_data, columns=['Estado', 'Cantidad'])
-                    df_estado.to_excel(writer, sheet_name='Estados', index=False)
-                    print("[Estados]")
-            except Exception as e:
-                print(f"[Estados - Error: {e}]")
-            
-            # Hoja 3: Prendas Mas Procesadas
-            try:
-                prendas_data = run_query("""
-                    SELECT tipo_prenda, COUNT(*) as cantidad
-                    FROM prenda
-                    GROUP BY tipo_prenda
-                    ORDER BY cantidad DESC
-                    LIMIT 15
-                """, fetchall=True)
-                if prendas_data and len(prendas_data) > 0:
-                    df_prendas = pd.DataFrame(prendas_data, columns=['Tipo Prenda', 'Cantidad'])
-                    df_prendas.to_excel(writer, sheet_name='Prendas', index=False)
-                    print("[Prendas]")
-            except Exception as e:
-                print(f"[Prendas - Error: {e}]")
-            
-            # Hoja 4: Clientes Mas Activos
-            try:
-                clientes_data = run_query("""
-                    SELECT c.nombre, COUNT(p.id_pedido) as pedidos,
-                           COALESCE(SUM(r.total), 0) as gastado
-                    FROM cliente c
-                    LEFT JOIN pedido p ON c.id_cliente = p.id_cliente
-                    LEFT JOIN recibo r ON p.id_pedido = r.id_pedido
-                    GROUP BY c.id_cliente, c.nombre
-                    HAVING COUNT(p.id_pedido) > 0
-                    ORDER BY pedidos DESC
-                    LIMIT 20
-                """, fetchall=True)
-                if clientes_data and len(clientes_data) > 0:
-                    df_clientes = pd.DataFrame(clientes_data, columns=['Nombre', 'Pedidos', 'Total (COP)'])
-                    df_clientes.to_excel(writer, sheet_name='Clientes', index=False)
-                    print("[Clientes]")
-            except Exception as e:
-                print(f"[Clientes - Error: {e}]")
+                # Hoja 2: Estado de Pedidos con porcentajes
+                try:
+                    estado_data = run_query("""
+                        SELECT estado, COUNT(*) as cantidad
+                        FROM pedido
+                        GROUP BY estado
+                        ORDER BY cantidad DESC
+                    """, fetchall=True)
+                    if estado_data and len(estado_data) > 0:
+                        df_estado = pd.DataFrame(estado_data, columns=['Estado', 'Cantidad'])
+                        df_estado['Porcentaje'] = (df_estado['Cantidad'] / df_estado['Cantidad'].sum() * 100).round(2)
+                        df_estado.to_excel(writer, sheet_name='Estados', index=False)
+                        print("[Estados]")
+                except Exception as e:
+                    print(f"[Estados - Error: {e}]")
+                
+                # Hoja 3: Prendas por Tipo (todas)
+                try:
+                    prendas_data = run_query("""
+                        SELECT tipo, COUNT(*) as cantidad
+                        FROM prenda
+                        GROUP BY tipo
+                        ORDER BY cantidad DESC
+                    """, fetchall=True)
+                    if prendas_data and len(prendas_data) > 0:
+                        df_prendas = pd.DataFrame(prendas_data, columns=['Tipo Prenda', 'Cantidad'])
+                        total_prendas_tipo = df_prendas['Cantidad'].sum()
+                        df_prendas['Porcentaje'] = (df_prendas['Cantidad'] / total_prendas_tipo * 100).round(2)
+                        df_prendas.to_excel(writer, sheet_name='Prendas por Tipo', index=False)
+                        print("[Prendas por Tipo]")
+                except Exception as e:
+                    print(f"[Prendas - Error: {e}]")
+                
+                # Hoja 4: Top 20 Clientes Mas Activos
+                try:
+                    clientes_data = run_query("""
+                        SELECT 
+                            c.nombre,
+                            c.email,
+                            COUNT(DISTINCT p.id_pedido) as pedidos,
+                            COUNT(pr.id_prenda) as prendas,
+                            COALESCE(SUM(r.total), 0) as gastado
+                        FROM cliente c
+                        LEFT JOIN pedido p ON c.id_cliente = p.id_cliente
+                        LEFT JOIN prenda pr ON p.id_pedido = pr.id_pedido
+                        LEFT JOIN recibo r ON p.id_pedido = r.id_pedido
+                        GROUP BY c.id_cliente, c.nombre, c.email
+                        HAVING COUNT(DISTINCT p.id_pedido) > 0
+                        ORDER BY pedidos DESC, gastado DESC
+                        LIMIT 20
+                    """, fetchall=True)
+                    if clientes_data and len(clientes_data) > 0:
+                        df_clientes = pd.DataFrame(clientes_data, columns=['Nombre', 'Email', 'Pedidos', 'Prendas', 'Total Gastado (COP)'])
+                        df_clientes.to_excel(writer, sheet_name='Top Clientes', index=False)
+                        print("[Top Clientes]")
+                except Exception as e:
+                    print(f"[Clientes - Error: {e}]")
+                
+                # Hoja 5: Pedidos por Dia (ultimos 30 dias)
+                try:
+                    pedidos_dia_data = run_query("""
+                        SELECT fecha_ingreso::date as fecha, COUNT(*) as cantidad
+                        FROM pedido
+                        WHERE fecha_ingreso >= CURRENT_DATE - INTERVAL '30 days'
+                        GROUP BY fecha_ingreso::date
+                        ORDER BY fecha DESC
+                    """, fetchall=True)
+                    if pedidos_dia_data and len(pedidos_dia_data) > 0:
+                        df_pedidos_dia = pd.DataFrame(pedidos_dia_data, columns=['Fecha', 'Cantidad Pedidos'])
+                        df_pedidos_dia.to_excel(writer, sheet_name='Pedidos por Dia', index=False)
+                        print("[Pedidos por Dia]")
+                except Exception as e:
+                    print(f"[Pedidos por Dia - Error: {e}]")
+                
+                # Hoja 6: Clientes Nuevos por Dia (ultimos 30 dias)
+                try:
+                    clientes_nuevos_data = run_query("""
+                        SELECT p.fecha_ingreso::date as fecha, COUNT(DISTINCT p.id_cliente) as clientes
+                        FROM pedido p
+                        WHERE p.fecha_ingreso >= CURRENT_DATE - INTERVAL '30 days'
+                        GROUP BY p.fecha_ingreso::date
+                        ORDER BY fecha DESC
+                    """, fetchall=True)
+                    if clientes_nuevos_data and len(clientes_nuevos_data) > 0:
+                        df_clientes_nuevos = pd.DataFrame(clientes_nuevos_data, columns=['Fecha', 'Clientes Nuevos'])
+                        df_clientes_nuevos.to_excel(writer, sheet_name='Clientes Nuevos', index=False)
+                        print("[Clientes Nuevos]")
+                except Exception as e:
+                    print(f"[Clientes Nuevos - Error: {e}]")
+                
+                # Hoja 7: Ingresos por Mes (ultimos 12 meses)
+                try:
+                    ingresos_mes_data = run_query("""
+                        SELECT 
+                            TO_CHAR(fecha, 'YYYY-MM') as mes,
+                            SUM(monto) as total
+                        FROM recibo
+                        WHERE fecha >= CURRENT_DATE - INTERVAL '12 months'
+                        GROUP BY TO_CHAR(fecha, 'YYYY-MM')
+                        ORDER BY mes DESC
+                    """, fetchall=True)
+                    if ingresos_mes_data and len(ingresos_mes_data) > 0:
+                        df_ingresos_mes = pd.DataFrame(ingresos_mes_data, columns=['Mes', 'Ingresos (COP)'])
+                        df_ingresos_mes.to_excel(writer, sheet_name='Ingresos por Mes', index=False)
+                        print("[Ingresos por Mes]")
+                except Exception as e:
+                    print(f"[Ingresos por Mes - Error: {e}]")
+                
+                # Hoja 8: Detalle Completo de Pedidos
+                try:
+                    pedidos_detalle_data = run_query("""
+                        SELECT 
+                            p.id_pedido,
+                            c.nombre as cliente,
+                            p.fecha_ingreso::date as fecha_ingreso,
+                            p.fecha_entrega::date as fecha_entrega,
+                            p.estado,
+                            COUNT(pr.id_prenda) as cantidad_prendas,
+                            COALESCE(r.total, 0) as total
+                        FROM pedido p
+                        LEFT JOIN cliente c ON p.id_cliente = c.id_cliente
+                        LEFT JOIN prenda pr ON p.id_pedido = pr.id_pedido
+                        LEFT JOIN recibo r ON p.id_pedido = r.id_pedido
+                        GROUP BY p.id_pedido, c.nombre, p.fecha_ingreso, p.fecha_entrega, p.estado, r.total
+                        ORDER BY p.fecha_ingreso DESC
+                    """, fetchall=True)
+                    if pedidos_detalle_data and len(pedidos_detalle_data) > 0:
+                        df_pedidos_detalle = pd.DataFrame(pedidos_detalle_data, 
+                            columns=['ID Pedido', 'Cliente', 'Fecha Ingreso', 'Fecha Entrega', 'Estado', 'Cantidad Prendas', 'Total (COP)'])
+                        df_pedidos_detalle.to_excel(writer, sheet_name='Detalle Pedidos', index=False)
+                        print("[Detalle Pedidos]")
+                except Exception as e:
+                    print(f"[Detalle Pedidos - Error: {e}]")
+                
+                # Hoja 9: Todos los Clientes con estadisticas
+                try:
+                    todos_clientes_data = run_query("""
+                        SELECT 
+                            c.id_cliente,
+                            c.nombre,
+                            c.email,
+                            c.telefono,
+                            COUNT(DISTINCT p.id_pedido) as total_pedidos,
+                            COUNT(DISTINCT CASE WHEN p.estado = 'Completado' THEN p.id_pedido END) as pedidos_completados,
+                            COUNT(pr.id_prenda) as total_prendas,
+                            COALESCE(SUM(r.total), 0) as total_gastado
+                        FROM cliente c
+                        LEFT JOIN pedido p ON c.id_cliente = p.id_cliente
+                        LEFT JOIN prenda pr ON p.id_pedido = pr.id_pedido
+                        LEFT JOIN recibo r ON p.id_pedido = r.id_pedido
+                        GROUP BY c.id_cliente, c.nombre, c.email, c.telefono
+                        ORDER BY total_pedidos DESC, total_gastado DESC
+                    """, fetchall=True)
+                    if todos_clientes_data and len(todos_clientes_data) > 0:
+                        df_todos_clientes = pd.DataFrame(todos_clientes_data, 
+                            columns=['ID', 'Nombre', 'Email', 'Telefono', 'Total Pedidos', 'Completados', 'Total Prendas', 'Total Gastado (COP)'])
+                        df_todos_clientes.to_excel(writer, sheet_name='Todos los Clientes', index=False)
+                        print("[Todos los Clientes]")
+                except Exception as e:
+                    print(f"[Todos Clientes - Error: {e}]")
+                
+                # Hoja 10: Prendas por Pedido (analisis detallado)
+                try:
+                    prendas_pedido_data = run_query("""
+                        SELECT 
+                            p.id_pedido,
+                            c.nombre as cliente,
+                            pr.tipo,
+                            pr.color,
+                            pr.estado as estado_prenda,
+                            pr.observaciones
+                        FROM prenda pr
+                        JOIN pedido p ON pr.id_pedido = p.id_pedido
+                        JOIN cliente c ON p.id_cliente = c.id_cliente
+                        ORDER BY p.id_pedido DESC, pr.tipo
+                    """, fetchall=True)
+                    if prendas_pedido_data and len(prendas_pedido_data) > 0:
+                        df_prendas_pedido = pd.DataFrame(prendas_pedido_data,
+                            columns=['ID Pedido', 'Cliente', 'Tipo Prenda', 'Color', 'Estado', 'Observaciones'])
+                        df_prendas_pedido.to_excel(writer, sheet_name='Prendas Detalle', index=False)
+                        print("[Prendas Detalle]")
+                except Exception as e:
+                    print(f"[Prendas Detalle - Error: {e}]")
         except Exception as e:
             print(f"[ERROR] export_excel fallo: {e}")
             try:
