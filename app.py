@@ -1072,44 +1072,44 @@ def registro_rapido():
         flash('Acceso denegado.', 'danger')
         return redirect(url_for('index'))
     
-    nombre = request.form.get('nombre', '').strip()
-    username = request.form.get('username', '').strip()
-    email = request.form.get('email', '').strip()
-    
-    # Generar contraseña automática
-    import secrets
-    import string
-    alphabet = string.ascii_letters + string.digits
-    password_auto = ''.join(secrets.choice(alphabet) for _ in range(12))
-    
-    # Validación
-    errores = []
-    
-    if not nombre or len(nombre) < 3:
-        errores.append("El nombre debe tener al menos 3 caracteres.")
-    
-    if not username or len(username) < 3:
-        errores.append("El username debe tener al menos 3 caracteres.")
-    
-    if not validar_email(email):
-        errores.append("Email inválido.")
-    
-    # Verificar si el username o email ya existen
-    if not errores:
-        usuario_existente = run_query(
-            "SELECT id_usuario FROM usuario WHERE username = :u OR email = :e",
-            {"u": username, "e": email},
-            fetchone=True
-        )
-        if usuario_existente:
-            errores.append("El username o email ya están registrados.")
-    
-    if errores:
-        for error in errores:
-            flash(error, 'danger')
-        return redirect(url_for('clientes'))
-    
     try:
+        nombre = request.form.get('nombre', '').strip()
+        username = request.form.get('username', '').strip()
+        email = request.form.get('email', '').strip()
+        
+        # Generar contraseña automática
+        import secrets
+        import string
+        alphabet = string.ascii_letters + string.digits
+        password_auto = ''.join(secrets.choice(alphabet) for _ in range(12))
+        
+        # Validación
+        errores = []
+        
+        if not nombre or len(nombre) < 3:
+            errores.append("El nombre debe tener al menos 3 caracteres.")
+        
+        if not username or len(username) < 3:
+            errores.append("El username debe tener al menos 3 caracteres.")
+        
+        if not validar_email(email):
+            errores.append("Email inválido.")
+        
+        # Verificar si el username o email ya existen
+        if not errores:
+            usuario_existente = run_query(
+                "SELECT id_usuario FROM usuario WHERE username = :u OR email = :e",
+                {"u": username, "e": email},
+                fetchone=True
+            )
+            if usuario_existente:
+                errores.append("El username o email ya están registrados.")
+        
+        if errores:
+            for error in errores:
+                flash(error, 'danger')
+            return redirect(url_for('clientes'))
+        
         # Hash de la contraseña generada
         hashed = generate_password_hash(password_auto, method='pbkdf2:sha256')
         
@@ -1151,9 +1151,11 @@ def registro_rapido():
         """
         send_email_async(email, "Bienvenido a La Lavandería - Credenciales de Acceso", html)
         
-        flash(f'Cliente {nombre} registrado exitosamente. Contraseña enviada por correo.', 'success')
+        flash(f'✅ Cliente "{nombre}" registrado exitosamente. Se ha enviado un correo con las credenciales a {email}', 'success')
+        
     except Exception as e:
-        flash(f'Error al registrar cliente: {e}', 'danger')
+        print(f"Error en registro_rapido: {e}")
+        flash(f'❌ Error al registrar cliente: {str(e)}', 'danger')
     
     return redirect(url_for('clientes'))
 
@@ -1731,101 +1733,111 @@ def reportes_export_excel():
         flash('Acceso denegado.', 'danger')
         return redirect(url_for('index'))
     
-    from io import BytesIO
-    import pandas as pd
-    from datetime import datetime
-    
-    # Crear un buffer en memoria
-    output = BytesIO()
-    
-    # Crear el archivo Excel con múltiples hojas
-    with pd.ExcelWriter(output, engine='openpyxl') as writer:
+    try:
+        from io import BytesIO
+        import pandas as pd
+        from datetime import datetime
         
-        # Hoja 1: Resumen General
-        resumen_data = {
-            'Métrica': [
-                'Total Pedidos',
-                'Total Ingresos (COP)',
-                'Total Prendas Procesadas',
-                'Promedio Prendas/Pedido',
-                'Tasa Completación (%)',
-                'Promedio Gasto/Cliente (COP)',
-                'Pedidos Pendientes',
-                'Promedio Días Completar'
-            ],
-            'Valor': [
-                run_query("SELECT COUNT(*) FROM pedido", fetchone=True)[0] or 0,
-                run_query("SELECT COALESCE(SUM(total), 0) FROM recibo", fetchone=True)[0] or 0,
-                run_query("SELECT COUNT(*) FROM prenda", fetchone=True)[0] or 0,
-                run_query("SELECT AVG(cnt) FROM (SELECT COUNT(*) as cnt FROM prenda GROUP BY id_pedido) subq", fetchone=True)[0] or 0,
-                (run_query("SELECT COUNT(*) FROM pedido WHERE estado = 'Completado'", fetchone=True)[0] or 0) / max(run_query("SELECT COUNT(*) FROM pedido", fetchone=True)[0] or 1, 1) * 100,
-                run_query("SELECT AVG(total) FROM recibo", fetchone=True)[0] or 0,
-                run_query("SELECT COUNT(*) FROM pedido WHERE estado IN ('Pendiente', 'En proceso')", fetchone=True)[0] or 0,
-                run_query("SELECT AVG((fecha_entrega - fecha_ingreso)::integer) FROM pedido WHERE estado = 'Completado' AND fecha_entrega IS NOT NULL", fetchone=True)[0] or 0
-            ]
-        }
-        df_resumen = pd.DataFrame(resumen_data)
-        df_resumen.to_excel(writer, sheet_name='Resumen General', index=False)
+        # Crear un buffer en memoria
+        output = BytesIO()
         
-        # Hoja 2: Estado de Pedidos
-        estado_data = run_query("""
-            SELECT estado, COUNT(*) as cantidad
-            FROM pedido
-            GROUP BY estado
-            ORDER BY cantidad DESC
-        """, fetchall=True)
-        df_estado = pd.DataFrame(estado_data, columns=['Estado', 'Cantidad'])
-        df_estado.to_excel(writer, sheet_name='Estado Pedidos', index=False)
+        # Crear el archivo Excel con múltiples hojas
+        with pd.ExcelWriter(output, engine='openpyxl') as writer:
+            
+            # Hoja 1: Resumen General
+            resumen_data = {
+                'Métrica': [
+                    'Total Pedidos',
+                    'Total Ingresos (COP)',
+                    'Total Prendas Procesadas',
+                    'Promedio Prendas/Pedido',
+                    'Tasa Completación (%)',
+                    'Promedio Gasto/Cliente (COP)',
+                    'Pedidos Pendientes',
+                    'Promedio Días Completar'
+                ],
+                'Valor': [
+                    run_query("SELECT COUNT(*) FROM pedido", fetchone=True)[0] or 0,
+                    run_query("SELECT COALESCE(SUM(total), 0) FROM recibo", fetchone=True)[0] or 0,
+                    run_query("SELECT COUNT(*) FROM prenda", fetchone=True)[0] or 0,
+                    run_query("SELECT AVG(cnt) FROM (SELECT COUNT(*) as cnt FROM prenda GROUP BY id_pedido) subq", fetchone=True)[0] or 0,
+                    (run_query("SELECT COUNT(*) FROM pedido WHERE estado = 'Completado'", fetchone=True)[0] or 0) / max(run_query("SELECT COUNT(*) FROM pedido", fetchone=True)[0] or 1, 1) * 100,
+                    run_query("SELECT AVG(total) FROM recibo", fetchone=True)[0] or 0,
+                    run_query("SELECT COUNT(*) FROM pedido WHERE estado IN ('Pendiente', 'En proceso')", fetchone=True)[0] or 0,
+                    run_query("SELECT AVG((fecha_entrega - fecha_ingreso)::integer) FROM pedido WHERE estado = 'Completado' AND fecha_entrega IS NOT NULL", fetchone=True)[0] or 0
+                ]
+            }
+            df_resumen = pd.DataFrame(resumen_data)
+            df_resumen.to_excel(writer, sheet_name='Resumen General', index=False)
+            
+            # Hoja 2: Estado de Pedidos
+            estado_data = run_query("""
+                SELECT estado, COUNT(*) as cantidad
+                FROM pedido
+                GROUP BY estado
+                ORDER BY cantidad DESC
+            """, fetchall=True)
+            df_estado = pd.DataFrame(estado_data, columns=['Estado', 'Cantidad'])
+            df_estado.to_excel(writer, sheet_name='Estado Pedidos', index=False)
+            
+            # Hoja 3: Prendas Más Procesadas
+            prendas_data = run_query("""
+                SELECT tipo_prenda, COUNT(*) as cantidad
+                FROM prenda
+                GROUP BY tipo_prenda
+                ORDER BY cantidad DESC
+                LIMIT 15
+            """, fetchall=True)
+            df_prendas = pd.DataFrame(prendas_data, columns=['Tipo de Prenda', 'Cantidad'])
+            df_prendas.to_excel(writer, sheet_name='Prendas Top', index=False)
+            
+            # Hoja 4: Clientes Más Activos
+            clientes_data = run_query("""
+                SELECT c.nombre, c.email, COUNT(p.id_pedido) as total_pedidos,
+                       COALESCE(SUM(r.total), 0) as total_gastado
+                FROM cliente c
+                LEFT JOIN pedido p ON c.id_cliente = p.id_cliente
+                LEFT JOIN recibo r ON p.id_pedido = r.id_pedido
+                GROUP BY c.id_cliente, c.nombre, c.email
+                ORDER BY total_pedidos DESC
+                LIMIT 20
+            """, fetchall=True)
+            df_clientes = pd.DataFrame(clientes_data, columns=['Nombre', 'Email', 'Total Pedidos', 'Total Gastado (COP)'])
+            df_clientes.to_excel(writer, sheet_name='Clientes Activos', index=False)
+            
+            # Hoja 5: Pedidos por Fecha (últimos 30 días)
+            pedidos_fecha = run_query("""
+                SELECT fecha_ingreso::date as fecha, COUNT(*) as cantidad
+                FROM pedido
+                WHERE fecha_ingreso >= CURRENT_DATE - INTERVAL '30 days'
+                GROUP BY fecha_ingreso::date
+                ORDER BY fecha
+            """, fetchall=True)
+            df_fechas = pd.DataFrame(pedidos_fecha, columns=['Fecha', 'Cantidad Pedidos'])
+            df_fechas.to_excel(writer, sheet_name='Pedidos Últimos 30 Días', index=False)
         
-        # Hoja 3: Prendas Más Procesadas
-        prendas_data = run_query("""
-            SELECT tipo_prenda, COUNT(*) as cantidad
-            FROM prenda
-            GROUP BY tipo_prenda
-            ORDER BY cantidad DESC
-            LIMIT 15
-        """, fetchall=True)
-        df_prendas = pd.DataFrame(prendas_data, columns=['Tipo de Prenda', 'Cantidad'])
-        df_prendas.to_excel(writer, sheet_name='Prendas Top', index=False)
+        output.seek(0)
         
-        # Hoja 4: Clientes Más Activos
-        clientes_data = run_query("""
-            SELECT c.nombre, c.email, COUNT(p.id_pedido) as total_pedidos,
-                   COALESCE(SUM(r.total), 0) as total_gastado
-            FROM cliente c
-            LEFT JOIN pedido p ON c.id_cliente = p.id_cliente
-            LEFT JOIN recibo r ON p.id_pedido = r.id_pedido
-            GROUP BY c.id_cliente, c.nombre, c.email
-            ORDER BY total_pedidos DESC
-            LIMIT 20
-        """, fetchall=True)
-        df_clientes = pd.DataFrame(clientes_data, columns=['Nombre', 'Email', 'Total Pedidos', 'Total Gastado (COP)'])
-        df_clientes.to_excel(writer, sheet_name='Clientes Activos', index=False)
+        # Preparar respuesta para descarga
+        from flask import send_file
+        fecha_actual = datetime.now().strftime('%Y-%m-%d_%H-%M')
+        filename = f'Reportes_LaLavanderia_{fecha_actual}.xlsx'
         
-        # Hoja 5: Pedidos por Fecha (últimos 30 días)
-        pedidos_fecha = run_query("""
-            SELECT fecha_ingreso::date as fecha, COUNT(*) as cantidad
-            FROM pedido
-            WHERE fecha_ingreso >= CURRENT_DATE - INTERVAL '30 days'
-            GROUP BY fecha_ingreso::date
-            ORDER BY fecha
-        """, fetchall=True)
-        df_fechas = pd.DataFrame(pedidos_fecha, columns=['Fecha', 'Cantidad Pedidos'])
-        df_fechas.to_excel(writer, sheet_name='Pedidos Últimos 30 Días', index=False)
+        return send_file(
+            output,
+            mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            as_attachment=True,
+            download_name=filename
+        )
     
-    output.seek(0)
-    
-    # Preparar respuesta para descarga
-    from flask import send_file
-    fecha_actual = datetime.now().strftime('%Y-%m-%d_%H-%M')
-    filename = f'Reportes_LaLavanderia_{fecha_actual}.xlsx'
-    
-    return send_file(
-        output,
-        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        as_attachment=True,
-        download_name=filename
-    )
+    except ImportError as e:
+        flash(f'❌ Error: Falta instalar dependencias (pandas/openpyxl). Contacta al administrador.', 'danger')
+        print(f"Error de importación en export_excel: {e}")
+        return redirect(url_for('reportes'))
+    except Exception as e:
+        flash(f'❌ Error al generar archivo Excel: {str(e)}', 'danger')
+        print(f"Error en export_excel: {e}")
+        return redirect(url_for('reportes'))
 
 
 # -----------------------------------------------
