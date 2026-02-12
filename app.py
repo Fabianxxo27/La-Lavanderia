@@ -3065,22 +3065,12 @@ def _ejecutar_sql_file(nombre_archivo):
 def _obtener_esquema_descuento_cliente(id_cliente):
     """
     Obtiene el esquema de descuento para un cliente específico.
-    - Si tiene esquema congelado activo, lo retorna
-    - Si no tiene o completó ciclo, obtiene el esquema actual y lo congela
+    - Si tiene pedidos activos (Pendiente/En proceso), usa esquema congelado
+    - Si NO tiene pedidos activos, usa esquema actual (actualizado)
+    - Si completó el último nivel, actualiza al esquema actual
     - Retorna: lista de dicts con nivel, porcentaje, min, max
     """
     import json
-    
-    # Verificar si tiene esquema activo
-    try:
-        esquema_guardado = run_query("""
-            SELECT id_esquema, esquema_json, fecha_inicio
-            FROM cliente_esquema_descuento
-            WHERE id_cliente = :id AND activo = true
-        """, {"id": id_cliente}, fetchone=True)
-    except:
-        # Si la tabla no existe, usar esquema actual
-        esquema_guardado = None
     
     # Obtener configuración actual
     config_actual = run_query("""
@@ -3108,6 +3098,36 @@ def _obtener_esquema_descuento_cliente(id_cliente):
         }
         for c in config_actual
     ]
+    
+    # Verificar si tiene pedidos activos (NO completados)
+    pedidos_activos = run_query("""
+        SELECT COUNT(*) FROM pedido 
+        WHERE id_cliente = :id AND estado IN ('Pendiente', 'En proceso')
+    """, {"id": id_cliente}, fetchone=True)[0] or 0
+    
+    # Si NO tiene pedidos activos, usar SIEMPRE el esquema actual
+    if pedidos_activos == 0:
+        # Desactivar cualquier esquema congelado anterior
+        try:
+            run_query("""
+                UPDATE cliente_esquema_descuento
+                SET activo = false
+                WHERE id_cliente = :id AND activo = true
+            """, {"id": id_cliente}, commit=True)
+        except:
+            pass
+        
+        return esquema_actual
+    
+    # Tiene pedidos activos - verificar si tiene esquema congelado
+    try:
+        esquema_guardado = run_query("""
+            SELECT id_esquema, esquema_json, fecha_inicio
+            FROM cliente_esquema_descuento
+            WHERE id_cliente = :id AND activo = true
+        """, {"id": id_cliente}, fetchone=True)
+    except:
+        esquema_guardado = None
     
     if esquema_guardado:
         # Tiene esquema congelado - verificar si completó TODOS los niveles
@@ -3144,13 +3164,13 @@ def _obtener_esquema_descuento_cliente(id_cliente):
                     
                     return esquema_actual
             
-            # Mantener esquema congelado
+            # Mantener esquema congelado (tiene pedidos activos)
             return esquema_json
         except:
             # Error parseando JSON, usar actual
             return esquema_actual
     else:
-        # No tiene esquema, congelar el actual
+        # Tiene pedidos activos pero NO tiene esquema congelado - congelar el actual
         try:
             run_query("""
                 INSERT INTO cliente_esquema_descuento (id_cliente, esquema_json, activo)
