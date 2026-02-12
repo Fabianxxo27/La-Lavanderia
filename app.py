@@ -1122,8 +1122,8 @@ def registro_rapido():
         
         # Insertar en cliente
         run_query(
-            "INSERT INTO cliente (id_usuario, nombre) VALUES (:uid, :n)",
-            {"uid": usuario_id, "n": nombre},
+            "INSERT INTO cliente (id_cliente, nombre, email) VALUES (:uid, :n, :e)",
+            {"uid": usuario_id, "n": nombre, "e": email},
             commit=True
         )
         
