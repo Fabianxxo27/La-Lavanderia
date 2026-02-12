@@ -522,9 +522,9 @@ def cliente_inicio():
     
     id_cliente = usuario[0]
     
-    # Contar pedidos del cliente
+    # Contar pedidos completados del cliente
     pedidos_count = run_query(
-        "SELECT COUNT(*) FROM pedido WHERE id_cliente = :ic",
+        "SELECT COUNT(*) FROM pedido WHERE id_cliente = :ic AND estado = 'Completado'",
         {"ic": id_cliente},
         fetchone=True
     )[0]
@@ -676,9 +676,9 @@ def cliente_promociones():
     
     id_usuario = usuario[0]
     
-    # Contar pedidos del cliente
+    # Contar pedidos completados del cliente
     pedidos_count = run_query(
-        "SELECT COUNT(*) FROM pedido WHERE id_cliente = :id",
+        "SELECT COUNT(*) FROM pedido WHERE id_cliente = :id AND estado = 'Completado'",
         {"id": id_usuario},
         fetchone=True
     )[0] or 0
@@ -2974,9 +2974,9 @@ def _obtener_esquema_descuento_cliente(id_cliente):
         try:
             esquema_json = json.loads(esquema_guardado[1])
             
-            # Contar pedidos del cliente
+            # Contar pedidos completados del cliente
             pedidos_count = run_query(
-                "SELECT COUNT(*) FROM pedido WHERE id_cliente = :id",
+                "SELECT COUNT(*) FROM pedido WHERE id_cliente = :id AND estado = 'Completado'",
                 {"id": id_cliente},
                 fetchone=True
             )[0] or 0
