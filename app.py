@@ -27,7 +27,6 @@ import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 import threading
-import requests
 
 # Cargar variables de entorno desde .env (si existe)
 load_dotenv()
@@ -93,41 +92,11 @@ def send_email_async(destinatario, asunto, cuerpo_html):
     def _send():
         try:
             print(f"[MAIL] send_email_async to={destinatario} subject={asunto}", flush=True)
-            # Preferir SendGrid API si esta configurado
-            sendgrid_api_key = os.getenv('SENDGRID_API_KEY', '')
-            from_email = os.getenv('SENDGRID_FROM', os.getenv('SMTP_USER', 'lalavanderiabogota@gmail.com'))
-            
             if not destinatario or '@' not in destinatario:
                 print(f"[WARN] Email destinatario invalido: {destinatario}", flush=True)
                 return
-            if not from_email or '@' not in from_email:
-                print(f"[WARN] Email remitente invalido: {from_email}", flush=True)
-                return
 
-            if sendgrid_api_key:
-                payload = {
-                    "personalizations": [{"to": [{"email": destinatario}]}],
-                    "from": {"email": from_email, "name": "La Lavanderia"},
-                    "subject": asunto,
-                    "content": [{"type": "text/html", "value": cuerpo_html}],
-                }
-                headers = {
-                    "Authorization": f"Bearer {sendgrid_api_key}",
-                    "Content-Type": "application/json",
-                }
-                resp = requests.post(
-                    "https://api.sendgrid.com/v3/mail/send",
-                    json=payload,
-                    headers=headers,
-                    timeout=15,
-                )
-                if resp.status_code in (200, 202):
-                    print(f"[OK] SendGrid enviado a {destinatario}", flush=True)
-                    return
-                print(f"[ERROR] SendGrid status={resp.status_code} body={resp.text}", flush=True)
-                return
-
-            # Configuración SMTP (fallback)
+            # Configuración SMTP
             smtp_server = os.getenv('SMTP_SERVER', 'smtp.gmail.com')
             smtp_port = int(os.getenv('SMTP_PORT', 587))
             smtp_user = os.getenv('SMTP_USER', 'lalavanderiabogota@gmail.com')
