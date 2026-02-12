@@ -244,13 +244,6 @@
         }
       }
 
-      @media (max-width: 480px) {
-        .notif-dropdown {
-          width: 280px;
-          right: -80px;
-        }
-      }
-
       .btn-back {
         border-color: #1a4e7b;
         color: #1a4e7b;
@@ -404,23 +397,6 @@
           Regresar
         </a>
         {% if session.get('username') %}
-          {# Widget de Notificaciones #}
-          <div style="position: relative;">
-            <button class="notif-bell" id="notifBell" title="Notificaciones">
-              🔔
-              <span class="notif-badge" id="notifBadge" style="display: none;">0</span>
-            </button>
-            <div class="notif-dropdown" id="notifDropdown">
-              <div class="notif-header">
-                <h6>🔔 Notificaciones</h6>
-                <button class="notif-mark-all" id="markAllRead">Marcar todas</button>
-              </div>
-              <div class="notif-list" id="notifList">
-                <div class="notif-empty">Cargando...</div>
-              </div>
-            </div>
-          </div>
-
           {# Mostrar nombre de usuario y dropdown con Cerrar sesión #}
           <div class="dropdown">
             <button class="btn btn-light dropdown-toggle" type="button" id="userMenu" data-bs-toggle="dropdown" aria-expanded="false">
@@ -583,10 +559,18 @@
       });
       
       // Cargar al inicio
-      loadNotifications();
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => {
+          if (notifBell) loadNotifications();
+        });
+      } else {
+        if (notifBell) loadNotifications();
+      }
       
-      // Actualizar cada 30 segundos
-      setInterval(loadNotifications, 30000);
+      // Actualizar cada 60 segundos (reducido para rendimiento)
+      if (notifBell) {
+        setInterval(loadNotifications, 60000);
+      }
     </script>
     {% endif %}
     
