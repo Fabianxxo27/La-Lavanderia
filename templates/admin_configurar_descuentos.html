@@ -84,14 +84,13 @@
                                                         title="Editar Nivel">
                                                     <i class="fas fa-edit"></i> Editar
                                                 </button>
-                                                <form action="{{ url_for('eliminar_descuento', id_config=d[0]) }}" 
-                                                      method="post" 
-                                                      class="m-0"
-                                                      onsubmit="return confirm('¿Estás seguro de eliminar este nivel de descuento?');">
-                                                    <button type="submit" class="btn btn-sm btn-accion" style="background: #e74c3c; color: white;" title="Eliminar Nivel">
-                                                        <i class="fas fa-trash"></i> Eliminar
-                                                    </button>
-                                                </form>
+                                                <button class="btn btn-sm btn-accion" 
+                                                        style="background: #e74c3c; color: white;" 
+                                                        onclick="if(confirm('¿Estás seguro de eliminar este nivel de descuento?')) { document.getElementById('formEliminar{{ d[0] }}').submit(); }"
+                                                        title="Eliminar Nivel">
+                                                    <i class="fas fa-trash"></i> Eliminar
+                                                </button>
+                                                <form id="formEliminar{{ d[0] }}" action="{{ url_for('eliminar_descuento', id_config=d[0]) }}" method="post" style="display: none;"></form>
                                                 {% else %}
                                                 <span class="text-muted">Sin acciones</span>
                                                 {% endif %}
