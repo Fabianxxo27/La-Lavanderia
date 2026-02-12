@@ -1741,34 +1741,49 @@ def reportes_export_excel():
         
         # Crear un buffer en memoria
         output = BytesIO()
+
+        def safe_scalar(query, default=0):
+            try:
+                result = run_query(query, fetchone=True)
+                if not result or result[0] is None:
+                    return default
+                return result[0]
+            except Exception as e:
+                print(f"[Resumen - Error: {e}]")
+                return default
         
         # Crear el archivo Excel con múltiples hojas
         with pd.ExcelWriter(output, engine='openpyxl') as writer:
             
             # Hoja 1: Resumen General (SIEMPRE se crea)
-            resumen_data = {
-                'Metrica': [
-                    'Total Pedidos',
-                    'Total Ingresos (COP)',
-                    'Total Prendas Procesadas',
-                    'Promedio Prendas/Pedido',
-                    'Tasa Completacion (%)',
-                    'Promedio Gasto/Cliente (COP)',
-                    'Pedidos Pendientes',
-                    'Promedio Dias Completar'
-                ],
-                'Valor': [
-                    run_query("SELECT COUNT(*) FROM pedido", fetchone=True)[0] or 0,
-                    run_query("SELECT COALESCE(SUM(total), 0) FROM recibo", fetchone=True)[0] or 0,
-                    run_query("SELECT COUNT(*) FROM prenda", fetchone=True)[0] or 0,
-                    run_query("SELECT AVG(cnt) FROM (SELECT COUNT(*) as cnt FROM prenda GROUP BY id_pedido) subq", fetchone=True)[0] or 0,
-                    (run_query("SELECT COUNT(*) FROM pedido WHERE estado = 'Completado'", fetchone=True)[0] or 0) / max(run_query("SELECT COUNT(*) FROM pedido", fetchone=True)[0] or 1, 1) * 100,
-                    run_query("SELECT AVG(total) FROM recibo", fetchone=True)[0] or 0,
-                    run_query("SELECT COUNT(*) FROM pedido WHERE estado IN ('Pendiente', 'En proceso')", fetchone=True)[0] or 0,
-                    run_query("SELECT AVG((fecha_entrega - fecha_ingreso)::integer) FROM pedido WHERE estado = 'Completado' AND fecha_entrega IS NOT NULL", fetchone=True)[0] or 0
-                ]
-            }
-            df_resumen = pd.DataFrame(resumen_data)
+            try:
+                total_pedidos = safe_scalar("SELECT COUNT(*) FROM pedido", default=0)
+                total_completados = safe_scalar("SELECT COUNT(*) FROM pedido WHERE estado = 'Completado'", default=0)
+                resumen_data = {
+                    'Metrica': [
+                        'Total Pedidos',
+                        'Total Ingresos (COP)',
+                        'Total Prendas Procesadas',
+                        'Promedio Prendas/Pedido',
+                        'Tasa Completacion (%)',
+                        'Promedio Gasto/Cliente (COP)',
+                        'Pedidos Pendientes',
+                        'Promedio Dias Completar'
+                    ],
+                    'Valor': [
+                        total_pedidos,
+                        safe_scalar("SELECT COALESCE(SUM(total), 0) FROM recibo", default=0),
+                        safe_scalar("SELECT COUNT(*) FROM prenda", default=0),
+                        safe_scalar("SELECT AVG(cnt) FROM (SELECT COUNT(*) as cnt FROM prenda GROUP BY id_pedido) subq", default=0),
+                        (total_completados / max(total_pedidos, 1)) * 100,
+                        safe_scalar("SELECT AVG(total) FROM recibo", default=0),
+                        safe_scalar("SELECT COUNT(*) FROM pedido WHERE estado IN ('Pendiente', 'En proceso')", default=0),
+                        safe_scalar("SELECT AVG((fecha_entrega - fecha_ingreso)::integer) FROM pedido WHERE estado = 'Completado' AND fecha_entrega IS NOT NULL", default=0)
+                    ]
+                }
+                df_resumen = pd.DataFrame(resumen_data)
+            except Exception as e:
+                df_resumen = pd.DataFrame({'Metrica': ['Error'], 'Valor': [f'No se pudo generar resumen: {e}']})
             df_resumen.to_excel(writer, sheet_name='Resumen', index=False)
             print("[Resumen]")
             
