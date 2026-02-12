@@ -701,36 +701,6 @@ class Autocomplete {
     this.currentFocus = -1;
   }
 }
-
-// ================================================
-// INICIALIZAR AUTOCOMPLETADO
-// ================================================
-document.addEventListener('DOMContentLoaded', function() {
-  // Autocompletado para búsqueda de clientes
-  const searchInput = document.querySelector('input[name="q"]');
-  if (searchInput) {
-    new Autocomplete(searchInput, '/api/autocomplete/clientes', {
-      minChars: 2,
-      delay: 300,
-      onSelect: (item) => {
-        console.log('Cliente seleccionado:', item);
-        // El formulario se enviará automáticamente
-      }
-    });
-  }
-
-  // Asegurar que el modal funcione correctamente
-  const btnRegistroRapido = document.getElementById('btnRegistroRapido');
-  if (btnRegistroRapido) {
-    btnRegistroRapido.addEventListener('click', function() {
-      const modal = document.getElementById('registroRapidoModal');
-      if (modal) {
-        const bsModal = new bootstrap.Modal(modal);
-        bsModal.show();
-      }
-    });
-  }
-});
 </script>
 
 <style>
@@ -795,7 +765,7 @@ document.addEventListener('DOMContentLoaded', function() {
   background: white;
   color: #999;
 }
-</script>
+</style>
 
 <!-- Modal de Registro Rápido -->
 <div class="modal fade" id="registroRapidoModal" tabindex="-1" aria-labelledby="registroRapidoLabel" aria-hidden="true">
@@ -849,4 +819,49 @@ document.addEventListener('DOMContentLoaded', function() {
   </div>
 </div>
 
+{% endblock %}
+
+{% block scripts %}
+<script>
+// ================================================
+// INICIALIZAR AUTOCOMPLETADO Y MODAL
+// ================================================
+document.addEventListener('DOMContentLoaded', function() {
+  console.log('DOM cargado - inicializando clientes.html');
+  
+  // Autocompletado para búsqueda de clientes
+  const searchInput = document.querySelector('input[name="q"]');
+  if (searchInput) {
+    new Autocomplete(searchInput, '/api/autocomplete/clientes', {
+      minChars: 2,
+      delay: 300,
+      onSelect: (item) => {
+        console.log('Cliente seleccionado:', item);
+      }
+    });
+  }
+
+  // IMPORTANTE: Forzar apertura del modal de registro rápido
+  const btnRegistroRapido = document.getElementById('btnRegistroRapido');
+  console.log('Botón registro rápido:', btnRegistroRapido);
+  
+  if (btnRegistroRapido) {
+    btnRegistroRapido.addEventListener('click', function(e) {
+      e.preventDefault();
+      console.log('Click en botón registro rápido');
+      
+      const modal = document.getElementById('registroRapidoModal');
+      console.log('Modal encontrado:', modal);
+      
+      if (modal && typeof bootstrap !== 'undefined') {
+        const bsModal = new bootstrap.Modal(modal);
+        bsModal.show();
+        console.log('✅ Modal abierto');
+      } else {
+        console.error('❌ Bootstrap o modal no disponible');
+      }
+    });
+  }
+});
+</script>
 {% endblock %}

@@ -1738,13 +1738,15 @@ def reportes_export_excel():
         import pandas as pd
         from datetime import datetime
         
+        print("\n=== Iniciando generación de Excel ===")
+        
         # Crear un buffer en memoria
         output = BytesIO()
         
         # Crear el archivo Excel con múltiples hojas
         with pd.ExcelWriter(output, engine='openpyxl') as writer:
             
-            # Hoja 1: Resumen General
+            # Hoja 1: Resumen General (SIEMPRE se crea)
             resumen_data = {
                 'Métrica': [
                     'Total Pedidos',
@@ -1768,57 +1770,61 @@ def reportes_export_excel():
                 ]
             }
             df_resumen = pd.DataFrame(resumen_data)
-            df_resumen.to_excel(writer, sheet_name='Resumen General', index=False)
+            df_resumen.to_excel(writer, sheet_name='Resumen', index=False)
+            print("✓ Hoja 'Resumen' creada")
             
             # Hoja 2: Estado de Pedidos
-            estado_data = run_query("""
-                SELECT estado, COUNT(*) as cantidad
-                FROM pedido
-                GROUP BY estado
-                ORDER BY cantidad DESC
-            """, fetchall=True)
-            if estado_data:
-                df_estado = pd.DataFrame(estado_data, columns=['Estado', 'Cantidad'])
-                df_estado.to_excel(writer, sheet_name='Estado Pedidos', index=False)
+            try:
+                estado_data = run_query("""
+                    SELECT estado, COUNT(*) as cantidad
+                    FROM pedido
+                    GROUP BY estado
+                    ORDER BY cantidad DESC
+                """, fetchall=True)
+                if estado_data and len(estado_data) > 0:
+                    df_estado = pd.DataFrame(estado_data, columns=['Estado', 'Cantidad'])
+                    df_estado.to_excel(writer, sheet_name='Estados', index=False)
+                    print("✓ Hoja 'Estados' creada")
+            except Exception as e:
+                print(f"⚠ Error en Estados: {e}")
             
             # Hoja 3: Prendas Más Procesadas
-            prendas_data = run_query("""
-                SELECT tipo_prenda, COUNT(*) as cantidad
-                FROM prenda
-                GROUP BY tipo_prenda
-                ORDER BY cantidad DESC
-                LIMIT 15
-            """, fetchall=True)
-            if prendas_data:
-                df_prendas = pd.DataFrame(prendas_data, columns=['Tipo de Prenda', 'Cantidad'])
-                df_prendas.to_excel(writer, sheet_name='Prendas Top', index=False)
+            try:
+                prendas_data = run_query("""
+                    SELECT tipo_prenda, COUNT(*) as cantidad
+                    FROM prenda
+                    GROUP BY tipo_prenda
+                    ORDER BY cantidad DESC
+                    LIMIT 15
+                """, fetchall=True)
+                if prendas_data and len(prendas_data) > 0:
+                    df_prendas = pd.DataFrame(prendas_data, columns=['Tipo Prenda', 'Cantidad'])
+                    df_prendas.to_excel(writer, sheet_name='Prendas', index=False)
+                    print("✓ Hoja 'Prendas' creada")
+            except Exception as e:
+                print(f"⚠ Error en Prendas: {e}")
             
             # Hoja 4: Clientes Más Activos
-            clientes_data = run_query("""
-                SELECT c.nombre, c.email, COUNT(p.id_pedido) as total_pedidos,
-                       COALESCE(SUM(r.total), 0) as total_gastado
-                FROM cliente c
-                LEFT JOIN pedido p ON c.id_cliente = p.id_cliente
-                LEFT JOIN recibo r ON p.id_pedido = r.id_pedido
-                GROUP BY c.id_cliente, c.nombre, c.email
-                ORDER BY total_pedidos DESC
-                LIMIT 20
-            """, fetchall=True)
-            if clientes_data:
-                df_clientes = pd.DataFrame(clientes_data, columns=['Nombre', 'Email', 'Total Pedidos', 'Total Gastado (COP)'])
-                df_clientes.to_excel(writer, sheet_name='Clientes Activos', index=False)
-            
-            # Hoja 5: Pedidos por Fecha (últimos 30 días)
-            pedidos_fecha = run_query("""
-                SELECT fecha_ingreso::date as fecha, COUNT(*) as cantidad
-                FROM pedido
-                WHERE fecha_ingreso >= CURRENT_DATE - INTERVAL '30 days'
-                GROUP BY fecha_ingreso::date
-                ORDER BY fecha
-            """, fetchall=True)
-            if pedidos_fecha:
-                df_fechas = pd.DataFrame(pedidos_fecha, columns=['Fecha', 'Cantidad Pedidos'])
-                df_fechas.to_excel(writer, sheet_name='Pedidos Últimos 30 Días', index=False)
+            try:
+                clientes_data = run_query("""
+                    SELECT c.nombre, COUNT(p.id_pedido) as pedidos,
+                           COALESCE(SUM(r.total), 0) as gastado
+                    FROM cliente c
+                    LEFT JOIN pedido p ON c.id_cliente = p.id_cliente
+                    LEFT JOIN recibo r ON p.id_pedido = r.id_pedido
+                    GROUP BY c.id_cliente, c.nombre
+                    HAVING COUNT(p.id_pedido) > 0
+                    ORDER BY pedidos DESC
+                    LIMIT 20
+                """, fetchall=True)
+                if clientes_data and len(clientes_data) > 0:
+                    df_clientes = pd.DataFrame(clientes_data, columns=['Nombre', 'Pedidos', 'Total (COP)'])
+                    df_clientes.to_excel(writer, sheet_name='Clientes', index=False)
+                    print("✓ Hoja 'Clientes' creada")
+            except Exception as e:
+                print(f"⚠ Error en Clientes: {e}")
+        
+        print("=== Excel generado, preparando descarga ===")
         
         # IMPORTANTE: seek DESPUÉS de cerrar el writer
         output.seek(0)
