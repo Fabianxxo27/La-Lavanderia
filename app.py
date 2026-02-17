@@ -72,4 +72,17 @@ app = create_app()
 
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    import os
+    # Solo usar desarrollo local si está explícitamente configurado
+    # En Render/producción: usar waitress-serve en lugar de app.run()
+    environment = os.environ.get('ENV', 'development').lower()
+    
+    if environment == 'production':
+        # En producción (Render), no ejecutar app.run()
+        # El Procfile/render.yaml manejará el startup con waitress
+        print("✓ Producción detectada. Use: waitress-serve --listen=0.0.0.0:$PORT app:app")
+    else:
+        # Desarrollo local
+        debug_mode = environment == 'development'
+        print(f"🚀 Desarrollo local: debug={debug_mode}")
+        app.run(host='127.0.0.1', port=5000, debug=debug_mode)
