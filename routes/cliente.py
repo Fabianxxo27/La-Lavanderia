@@ -2,26 +2,13 @@
 Blueprint de cliente
 Rutas del panel de cliente
 """
-from flask import Blueprint, render_template, request, redirect, url_for, flash, session, send_file, Response, jsonify
+from flask import Blueprint, render_template, request, redirect, url_for, flash, session
 from werkzeug.security import generate_password_hash
 from models import run_query, ensure_cliente_exists
 from services import limpiar_texto, validar_email, send_email_async
 from decorators import login_requerido, admin_requerido
 from helpers import admin_only, obtener_esquema_descuento_cliente, ejecutar_sql_file, get_safe_redirect
-from io import BytesIO
-import pandas as pd
 import datetime
-import barcode
-from barcode.writer import ImageWriter
-from reportlab.lib.pagesizes import letter
-from reportlab.lib.styles import getSampleStyleSheet
-from reportlab.lib.units import inch
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image
-from reportlab.lib import colors
-from pyzbar.pyzbar import decode
-from PIL import Image as PILImage
-import cv2
-import numpy as np
 
 bp = Blueprint('cliente', __name__)
 
@@ -110,8 +97,10 @@ def cliente_inicio():
     # Calcular dinero ahorrado con descuentos
     recibos = run_query("""
         SELECT r.monto FROM recibo r
-
-
+        WHERE r.id_cliente = :ic
+    """, {"ic": id_cliente}, fetchall=True)
+    
+    total_gastado = sum(float(r[0]) if r[0] else 0 for r in recibos)
     total_recibos = len(recibos)
     
     # Estimar dinero ahorrado (si cada prenda cuesta 5000)
@@ -249,8 +238,10 @@ def cliente_promociones():
                     siguiente_nivel = "Máximo nivel"
                     pedidos_faltantes = 0
             else:
-
-
+                progreso = 100
+                siguiente_nivel = "Máximo nivel"
+                pedidos_faltantes = 0
+            break
     
     if not nivel_actual and esquema_cliente:
         # Aún no alcanza el primer nivel
@@ -296,7 +287,7 @@ def cliente_pedidos():
     username = session.get('username')
     if not username:
         flash("No se pudo identificar al usuario.", "danger")
-        return redirect(url_for('login'))
+        return redirect(url_for('auth.login'))
     
     # Obtener id_usuario (case-insensitive)
     usuario = run_query(
@@ -307,7 +298,7 @@ def cliente_pedidos():
     
     if not usuario:
         flash("Usuario no encontrado.", "danger")
-        return redirect(url_for('login'))
+        return redirect(url_for('auth.login'))
     
     id_usuario = usuario[0]
 
@@ -334,3 +325,46 @@ def cliente_pedidos():
             p.fecha_entrega, 
             p.estado,
             COUNT(pr.id_prenda) as total_prendas,
+            ROW_NUMBER() OVER (ORDER BY p.fecha_ingreso ASC) as numero_pedido_cliente
+        FROM pedido p
+        LEFT JOIN prenda pr ON p.id_pedido = pr.id_pedido
+        WHERE p.id_cliente = :id
+        GROUP BY p.id_pedido, p.fecha_ingreso, p.fecha_entrega, p.estado
+        ORDER BY p.fecha_ingreso DESC
+        LIMIT :limit OFFSET :offset
+    """, {"id": id_usuario, "limit": por_pagina, "offset": offset}, fetchall=True)
+    
+    # Estadísticas del cliente
+    stats = {
+        'total_pedidos': total_count,
+        'pendientes': run_query(
+            "SELECT COUNT(*) FROM pedido WHERE id_cliente = :id AND estado = 'Pendiente'",
+            {"id": id_usuario},
+            fetchone=True
+        )[0],
+        'en_proceso': run_query(
+            "SELECT COUNT(*) FROM pedido WHERE id_cliente = :id AND estado = 'En proceso'",
+            {"id": id_usuario},
+            fetchone=True
+        )[0],
+        'completados': run_query(
+            "SELECT COUNT(*) FROM pedido WHERE id_cliente = :id AND estado = 'Completado'",
+            {"id": id_usuario},
+            fetchone=True
+        )[0]
+    }
+
+    # Calcular paginación
+    total_paginas = (total_count + por_pagina - 1) // por_pagina
+    tiene_anterior = pagina > 1
+    tiene_siguiente = pagina < total_paginas
+
+    return render_template('cliente_pedidos.html', 
+                         pedidos=pedidos, 
+                         username=username,
+                         stats=stats,
+                         pagina=pagina,
+                         total_paginas=total_paginas,
+                         tiene_anterior=tiene_anterior,
+                         tiene_siguiente=tiene_siguiente,
+                         total_count=total_count)

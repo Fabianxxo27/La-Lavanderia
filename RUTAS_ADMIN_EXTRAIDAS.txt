@@ -1,0 +1,27 @@
+﻿RUTAS EXTRAÍDAS Y AÑADIDAS A routes/admin.py:
+
+# RUTAS COMPLETADAS (11/21):
+1.  /inicio - inicio()
+2.  /pedidos - pedidos()
+3.  /calendario-pedidos - calendario_pedidos()
+4.  /actualizar_pedido/<int:id_pedido> - actualizar_pedido()
+5.  /eliminar_pedido/<int:id_pedido> - eliminar_pedido()
+6.  /pedido_detalles/<int:id_pedido> - pedido_detalles()
+7.  /pedido_prendas/<int:id_pedido> - pedido_prendas()
+8.  /generar_recibo/<int:id_pedido> - generar_recibo()
+9.  /lector_barcode - lector_barcode()
+
+# RUTAS PENDIENTES (10 restantes):
+10.  /agregar_pedido
+11.  /clientes
+12.  /registro-rapido
+13.  /agregar_cliente
+14.  /actualizar_cliente/<int:id_cliente>
+15.  /eliminar_cliente/<int:id_cliente>
+16.  /terminos-descuentos
+17.  /admin/configurar-descuentos + rutas de descuentos
+18.  /admin/ejecutar-migraciones
+19.  /reportes
+20.  /reportes/export_excel
+21.  /api/autocomplete/clientes
+
