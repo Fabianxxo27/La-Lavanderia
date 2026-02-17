@@ -231,19 +231,32 @@ def get_safe_redirect():
         return url_for('cliente.cliente_pedidos')
 
 
-# Función de notific aciones
-
-
-    """, fetchall=True)
+def crear_notificacion(id_usuario, titulo, mensaje, tipo='info', url=None):
+    """
+    Crea una notificación para un usuario.
     
-    if not config_actual:
-        # Valores por defecto si no hay configuración
-        return [
-            {"nivel": "Bronce", "porcentaje": 5, "min": 0, "max": 2},
-            {"nivel": "Plata", "porcentaje": 10, "min": 3, "max": 5},
-            {"nivel": "Oro", "porcentaje": 15, "min": 6, "max": 9},
-            {"nivel": "Platino", "porcentaje": 20, "min": 10, "max": None}
-        ]
-    
-    esquema_actual = [
-        {
+    Args:
+        id_usuario: ID del usuario destinatario
+        titulo: título de la notificación
+        mensaje: mensaje de la notificación
+        tipo: tipo de notificación (info, warning, error, success)
+        url: URL opcional para acción relacionada
+        
+    Returns:
+        bool: True si se creó correctamente, False en caso contrario
+    """
+    try:
+        run_query("""
+            INSERT INTO notificacion (id_usuario, titulo, mensaje, tipo, url)
+            VALUES (:id_usuario, :titulo, :mensaje, :tipo, :url)
+        """, {
+            'id_usuario': id_usuario,
+            'titulo': titulo,
+            'mensaje': mensaje,
+            'tipo': tipo,
+            'url': url
+        }, commit=True)
+        return True
+    except Exception as e:
+        print(f"[ERROR] crear_notificacion: {e}")
+        return False

@@ -150,7 +150,7 @@ def logout():
 @bp.route('/actualizar_cliente/<int:id_cliente>', methods=['GET', 'POST'])
 def actualizar_cliente(id_cliente):
     """Actualizar datos de un cliente."""
-    if not _admin_only():
+    if not admin_only():
         flash('Acceso denegado.', 'danger')
         return redirect(url_for('index'))
     
@@ -175,7 +175,7 @@ def actualizar_cliente(id_cliente):
                 commit=True
             )
             flash('Cliente actualizado correctamente.', 'success')
-            return redirect(_get_safe_redirect())
+            return redirect(get_safe_redirect())
         except Exception as e:
             flash(f'Error al actualizar cliente: {e}', 'danger')
     
@@ -233,7 +233,7 @@ def actualizar_cliente(id_cliente):
 @admin_requerido
 def pedidos():
     """Mostrar todos los pedidos con búsqueda, filtrado y paginación (para administrador)."""
-    if not _admin_only():
+    if not admin_only():
         flash('Acceso denegado.', 'danger')
         return redirect(url_for('index'))
     
@@ -398,7 +398,7 @@ def pedidos():
             )[0] or 0
             
             # Obtener esquema de descuento del cliente (congelado o actual)
-            esquema_cliente = _obtener_esquema_descuento_cliente(id_cliente)
+            esquema_cliente = obtener_esquema_descuento_cliente(id_cliente)
             
             # Determinar nivel y descuento basado en el esquema del cliente
             descuento_porcentaje_aplicado = 0
@@ -674,7 +674,7 @@ def pedido_detalles(id_pedido):
 @bp.route('/actualizar_pedido/<int:id_pedido>', methods=['POST'])
 def actualizar_pedido(id_pedido):
     """Actualizar estado de un pedido."""
-    if not _admin_only():
+    if not admin_only():
         flash('Acceso denegado.', 'danger')
         return redirect(url_for('index'))
     
@@ -785,7 +785,7 @@ def actualizar_pedido(id_pedido):
 @bp.route('/eliminar_pedido/<int:id_pedido>', methods=['POST'])
 def eliminar_pedido(id_pedido):
     """Eliminar un pedido y sus datos asociados (recibos y prendas)."""
-    if not _admin_only():
+    if not admin_only():
         flash('Acceso denegado.', 'danger')
         return redirect(url_for('index'))
     
@@ -812,7 +812,7 @@ def eliminar_pedido(id_pedido):
     except Exception as e:
         flash(f'Error al eliminar: {e}', 'danger')
     
-    return redirect(_get_safe_redirect())
+    return redirect(get_safe_redirect())
 
 
 # -----------------------------------------------
@@ -823,7 +823,7 @@ def eliminar_pedido(id_pedido):
 @admin_requerido
 def registro_rapido():
     """Registro rápido de cliente desde búsqueda."""
-    if not _admin_only():
+    if not admin_only():
         flash('Acceso denegado.', 'danger')
         return redirect(url_for('index'))
     
@@ -895,7 +895,7 @@ def registro_rapido():
 
 def eliminar_cliente(id_cliente):
     """Eliminar un cliente."""
-    if not _admin_only():
+    if not admin_only():
         flash('Acceso denegado.', 'danger')
         return redirect(url_for('index'))
 
@@ -907,7 +907,7 @@ def eliminar_cliente(id_cliente):
     except Exception as e:
         flash(f'Error al eliminar cliente: {e}', 'danger')
     
-    return redirect(_get_safe_redirect())
+    return redirect(get_safe_redirect())
 
 
 # -----------------------------------------------
@@ -928,11 +928,11 @@ def terminos_descuentos():
 @admin_requerido
 def configurar_descuentos():
     """Panel de administración de configuración de descuentos."""
-    if not _admin_only():
+    if not admin_only():
         flash('Acceso denegado.', 'danger')
         return redirect(url_for('index'))
     
-    tabla_existe = _tabla_descuento_existe()
+    tabla_existe = tabla_descuento_existe()
     if not tabla_existe:
         flash('La tabla de descuentos no existe. Ejecuta las migraciones para habilitar el panel.', 'warning')
         return render_template('admin_configurar_descuentos.html', descuentos=[], tabla_descuentos_existe=False)
@@ -956,7 +956,7 @@ def configurar_descuentos():
 @admin_requerido
 def ejecutar_migraciones_admin():
     """Ejecutar migraciones SQL desde el panel de admin (solo si es necesario)."""
-    if not _admin_only():
+    if not admin_only():
         flash('Acceso denegado.', 'danger')
         return redirect(url_for('index'))
 
@@ -964,7 +964,7 @@ def ejecutar_migraciones_admin():
     errores = []
 
     for archivo in archivos:
-        ok, err = _ejecutar_sql_file(archivo)
+        ok, err = ejecutar_sql_file(archivo)
         if not ok:
             errores.append(f"{archivo}: {err}")
 
@@ -981,11 +981,11 @@ def ejecutar_migraciones_admin():
 @admin_requerido
 def crear_descuento():
     """Crear un nuevo nivel de descuento."""
-    if not _admin_only():
+    if not admin_only():
         flash('Acceso denegado.', 'danger')
         return redirect(url_for('index'))
     
-    if not _tabla_descuento_existe():
+    if not tabla_descuento_existe():
         flash('La tabla de descuentos no existe. Ejecuta las migraciones antes de crear niveles.', 'warning')
         return redirect(url_for('configurar_descuentos'))
     
@@ -1035,7 +1035,7 @@ def crear_descuento():
 
 
     
-    if not _tabla_descuento_existe():
+    if not tabla_descuento_existe():
         flash('La tabla de descuentos no existe. Ejecuta las migraciones antes de editar niveles.', 'warning')
         return redirect(url_for('configurar_descuentos'))
     
@@ -1086,11 +1086,11 @@ def crear_descuento():
 @admin_requerido
 def eliminar_descuento(id_config):
     """Eliminar un nivel de descuento."""
-    if not _admin_only():
+    if not admin_only():
         flash('Acceso denegado.', 'danger')
         return redirect(url_for('index'))
     
-    if not _tabla_descuento_existe():
+    if not tabla_descuento_existe():
         flash('La tabla de descuentos no existe. Ejecuta las migraciones antes de eliminar niveles.', 'warning')
         return redirect(url_for('configurar_descuentos'))
     
@@ -1114,7 +1114,7 @@ def eliminar_descuento(id_config):
 @admin_requerido
 def reportes():
     """Página de reportes avanzados para administrador."""
-    if not _admin_only():
+    if not admin_only():
         flash('Acceso denegado.', 'danger')
         return redirect(url_for('index'))
     
@@ -1342,7 +1342,7 @@ def reportes():
 @admin_requerido
 def reportes_export_excel():
     """Exportar todos los reportes a un archivo Excel."""
-    if not _admin_only():
+    if not admin_only():
         flash('Acceso denegado.', 'danger')
         return redirect(url_for('index'))
     
@@ -1929,7 +1929,7 @@ def reportes_export_excel():
 @admin_requerido
 def lector_barcode():
     """Escanear código de barras y mostrar detalles del pedido."""
-    if not _admin_only():
+    if not admin_only():
         flash('Acceso denegado.', 'danger')
         return redirect(url_for('index'))
     

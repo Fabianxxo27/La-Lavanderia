@@ -26,18 +26,6 @@ import numpy as np
 bp = Blueprint('cliente', __name__)
 
 
-
-
-
-# -----------------------------------------------
-# PÁGINA PRINCIPAL DEL PANEL (administrador)
-# -----------------------------------------------
-@bp.route('/inicio')
-@login_requerido
-@admin_requerido
-def inicio():
-    return render_template('inicio.html')
-
 # -----------------------------------------------
 # PÁGINA PRINCIPAL DEL PANEL (cliente)
 # -----------------------------------------------
@@ -68,7 +56,7 @@ def cliente_inicio():
     )[0]
     
     # Calcular nivel de descuento segun esquema configurado
-    esquema_cliente = _obtener_esquema_descuento_cliente(id_cliente)
+    esquema_cliente = obtener_esquema_descuento_cliente(id_cliente)
     nivel = None
     descuento_porcentaje = 0
     siguiente_nivel = None
@@ -218,7 +206,7 @@ def cliente_promociones():
     )[0] or 0
     
     # Obtener esquema de descuento del cliente (congelado o actual)
-    esquema_cliente = _obtener_esquema_descuento_cliente(id_usuario)
+    esquema_cliente = obtener_esquema_descuento_cliente(id_usuario)
     
     # Verificar si tiene esquema congelado
     try:

@@ -1,146 +1,13 @@
 """
-Blueprint de api
+Blueprint de API
 API REST endpoints
 """
-from flask import Blueprint, render_template, request, redirect, url_for, flash, session, send_file, Response, jsonify
-from werkzeug.security import generate_password_hash
-from models import run_query, ensure_cliente_exists
-from services import limpiar_texto, validar_email, send_email_async
+from flask import Blueprint, request, session, jsonify
+from models import run_query
 from decorators import login_requerido, admin_requerido
-from helpers import admin_only, obtener_esquema_descuento_cliente, ejecutar_sql_file, get_safe_redirect
-from io import BytesIO
-import pandas as pd
-import datetime
-import barcode
-from barcode.writer import ImageWriter
-from reportlab.lib.pagesizes import letter
-from reportlab.lib.styles import getSampleStyleSheet
-from reportlab.lib.units import inch
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image
-from reportlab.lib import colors
-from pyzbar.pyzbar import decode
-from PIL import Image as PILImage
-import cv2
-import numpy as np
+from helpers import crear_notificacion
 
 bp = Blueprint('api', __name__)
-
-
-
-            "porcentaje": int(c[1]),
-            "min": int(c[2]),
-            "max": int(c[3]) if c[3] is not None else None
-        }
-        for c in config_actual
-    ]
-    
-    # Verificar si tiene pedidos activos (NO completados)
-    pedidos_activos = run_query("""
-        SELECT COUNT(*) FROM pedido 
-        WHERE id_cliente = :id AND estado IN ('Pendiente', 'En proceso')
-    """, {"id": id_cliente}, fetchone=True)[0] or 0
-    
-    # Si NO tiene pedidos activos, usar SIEMPRE el esquema actual
-    if pedidos_activos == 0:
-        # Desactivar cualquier esquema congelado anterior
-        try:
-            run_query("""
-                UPDATE cliente_esquema_descuento
-                SET activo = false
-                WHERE id_cliente = :id AND activo = true
-            """, {"id": id_cliente}, commit=True)
-        except:
-            pass
-        
-        return esquema_actual
-    
-    # Tiene pedidos activos - verificar si tiene esquema congelado
-    try:
-        esquema_guardado = run_query("""
-            SELECT id_esquema, esquema_json, fecha_inicio
-
-
-        """, {"id": id_cliente}, fetchone=True)
-    except:
-        esquema_guardado = None
-    
-    if esquema_guardado:
-        # Tiene esquema congelado - verificar si completó TODOS los niveles
-        try:
-            esquema_json = json.loads(esquema_guardado[1])
-            
-            # Contar todos los pedidos del cliente (excepto cancelados)
-            pedidos_count = run_query(
-                "SELECT COUNT(*) FROM pedido WHERE id_cliente = :id AND estado != 'Cancelado'",
-                {"id": id_cliente},
-                fetchone=True
-            )[0] or 0
-            
-            # Verificar si completó el último nivel del esquema
-            # Solo actualizar si el último nivel tiene máximo definido Y lo superó
-            ultimo_nivel = esquema_json[-1] if esquema_json else None
-            if ultimo_nivel:
-                max_ultimo = ultimo_nivel.get("max")
-                # Si el último nivel es ilimitado (None), NUNCA actualizar
-
-
-                    # Desactivar esquema anterior
-                    run_query("""
-                        UPDATE cliente_esquema_descuento
-                        SET activo = false
-                        WHERE id_esquema = :id
-                    """, {"id": esquema_guardado[0]}, commit=True)
-                    
-                    # Crear nuevo esquema con config actual
-                    run_query("""
-                        INSERT INTO cliente_esquema_descuento (id_cliente, esquema_json, activo)
-                        VALUES (:id, :json, true)
-                    """, {"id": id_cliente, "json": json.dumps(esquema_actual)}, commit=True)
-                    
-                    return esquema_actual
-            
-            # Mantener esquema congelado (tiene pedidos activos)
-            return esquema_json
-        except:
-            # Error parseando JSON, usar actual
-            return esquema_actual
-    else:
-        # Tiene pedidos activos pero NO tiene esquema congelado - congelar el actual
-        try:
-            run_query("""
-
-
-            """, {"id": id_cliente, "json": json.dumps(esquema_actual)}, commit=True)
-        except:
-            # Si falla (tabla no existe), continuar sin guardar
-            pass
-        
-        return esquema_actual
-
-
-def _get_safe_redirect():
-    """Obtiene una URL segura para redireccionar, priorizando el referrer."""
-    referrer = request.referrer
-    # Verificar que el referrer sea de la misma aplicación
-    if referrer and request.host_url in referrer:
-        return referrer
-    # Fallback basado en el rol
-    rol = session.get('rol', '').strip().lower()
-    if rol == 'administrador':
-        return url_for('pedidos')
-    else:
-        return url_for('cliente_pedidos')
-
-
-    return_url = referer if referer and referer != request.url else None
-    
-    return render_template('pedido_prendas.html',
-                         pedido=pedido,
-                         prendas=prendas,
-                         precio_dict=precio_dict,
-                         total_costo=total_costo,
-                         rol=rol,
-                         return_url=return_url)
 
 
 # -----------------------------------------------
@@ -149,8 +16,6 @@ def _get_safe_redirect():
 @bp.route('/api/prendas_pedido/<int:id_pedido>')
 def api_prendas_pedido(id_pedido):
     """API para obtener prendas de un pedido en JSON (para cargas dinámicas)."""
-    from flask import jsonify
-    
     username = session.get('username')
     rol = session.get('rol')
     
@@ -187,8 +52,10 @@ def api_prendas_pedido(id_pedido):
                 WHEN 'Pantalón' THEN 6000
                 WHEN 'Vestido' THEN 8000
                 WHEN 'Chaqueta' THEN 10000
-
-
+                WHEN 'Saco' THEN 7000
+                WHEN 'Falda' THEN 5500
+                WHEN 'Blusa' THEN 4500
+                WHEN 'Abrigo' THEN 12000
                 WHEN 'Suéter' THEN 6500
                 WHEN 'Jeans' THEN 7000
                 WHEN 'Corbata' THEN 3000
@@ -218,12 +85,12 @@ def api_prendas_pedido(id_pedido):
 
 # -----------------------------------------------
 # API: AUTOCOMPLETADO DE CLIENTES
-
-
+# -----------------------------------------------
+@bp.route('/api/autocomplete/clientes')
+@login_requerido
+@admin_requerido
 def api_autocomplete_clientes():
     """API para autocompletado de clientes."""
-    from flask import jsonify
-    
     query = request.args.get('q', '').strip()
     
     if not query or len(query) < 2:
@@ -237,3 +104,175 @@ def api_autocomplete_clientes():
         AND (
             LOWER(nombre) LIKE LOWER(:q) OR
             LOWER(email) LIKE LOWER(:q) OR
+            LOWER(username) LIKE LOWER(:q) OR
+            CAST(id_usuario AS TEXT) LIKE :q
+        )
+        ORDER BY nombre
+        LIMIT 10
+    """, {"q": f"%{query}%"}, fetchall=True)
+    
+    resultados = []
+    for cliente in clientes:
+        resultados.append({
+            'id': cliente[0],
+            'nombre': cliente[1],
+            'email': cliente[2] or '',
+            'username': cliente[3] or '',
+            'label': f"{cliente[1]} ({cliente[2] or cliente[3]})"
+        })
+    
+    return jsonify(resultados)
+
+
+# -----------------------------------------------
+# API: AUTOCOMPLETADO DE ESTADOS
+# -----------------------------------------------
+@bp.route('/api/autocomplete/estados')
+@login_requerido
+def api_autocomplete_estados():
+    """API para autocompletado de estados de pedidos."""
+    query = request.args.get('q', '').strip().lower()
+    
+    # Estados posibles
+    todos_estados = ['Pendiente', 'En proceso', 'Completado', 'Cancelado', 'Entregado']
+    
+    if not query:
+        return jsonify(todos_estados)
+    
+    # Filtrar estados que coincidan
+    estados_filtrados = [e for e in todos_estados if query in e.lower()]
+    
+    return jsonify(estados_filtrados)
+
+
+# -----------------------------------------------
+# API: NOTIFICACIONES
+# -----------------------------------------------
+@bp.route('/api/notificaciones')
+@login_requerido
+def api_notificaciones():
+    """Obtiene las notificaciones del usuario actual."""
+    username = session.get('username')
+    if not username:
+        return jsonify({'error': 'No autorizado'}), 401
+    
+    # Obtener id_usuario
+    usuario = run_query(
+        "SELECT id_usuario FROM usuario WHERE LOWER(username) = :u",
+        {"u": username.lower()},
+        fetchone=True
+    )
+    
+    if not usuario:
+        return jsonify({'error': 'Usuario no encontrado'}), 404
+    
+    id_usuario = usuario[0]
+    
+    # Obtener notificaciones (últimas 20, ordenadas por fecha)
+    notificaciones = run_query("""
+        SELECT id_notificacion, titulo, mensaje, tipo, leida, url, 
+               fecha_creacion
+        FROM notificacion
+        WHERE id_usuario = :id
+        ORDER BY fecha_creacion DESC
+        LIMIT 20
+    """, {"id": id_usuario}, fetchall=True)
+    
+    # Convertir a lista de diccionarios
+    resultado = []
+    for n in notificaciones:
+        resultado.append({
+            'id_notificacion': n[0],
+            'titulo': n[1],
+            'mensaje': n[2],
+            'tipo': n[3],
+            'leida': n[4],
+            'url': n[5],
+            'fecha_creacion': n[6].isoformat() if n[6] else None
+        })
+    
+    return jsonify(resultado)
+
+
+@bp.route('/api/notificaciones/no-leidas')
+@login_requerido
+def api_notificaciones_no_leidas():
+    """Cuenta las notificaciones no leídas del usuario actual."""
+    username = session.get('username')
+    if not username:
+        return jsonify({'count': 0})
+    
+    usuario = run_query(
+        "SELECT id_usuario FROM usuario WHERE LOWER(username) = :u",
+        {"u": username.lower()},
+        fetchone=True
+    )
+    
+    if not usuario:
+        return jsonify({'count': 0})
+    
+    id_usuario = usuario[0]
+    
+    count = run_query("""
+        SELECT COUNT(*) FROM notificacion
+        WHERE id_usuario = :id AND leida = FALSE
+    """, {"id": id_usuario}, fetchone=True)[0] or 0
+    
+    return jsonify({'count': count})
+
+
+@bp.route('/api/notificaciones/<int:id_notificacion>/marcar-leida', methods=['POST'])
+@login_requerido
+def api_marcar_notificacion_leida(id_notificacion):
+    """Marca una notificación como leída."""
+    username = session.get('username')
+    if not username:
+        return jsonify({'error': 'No autorizado'}), 401
+    
+    usuario = run_query(
+        "SELECT id_usuario FROM usuario WHERE LOWER(username) = :u",
+        {"u": username.lower()},
+        fetchone=True
+    )
+    
+    if not usuario:
+        return jsonify({'error': 'Usuario no encontrado'}), 404
+    
+    id_usuario = usuario[0]
+    
+    # Marcar como leída solo si pertenece al usuario
+    run_query("""
+        UPDATE notificacion
+        SET leida = TRUE
+        WHERE id_notificacion = :id AND id_usuario = :id_usuario
+    """, {"id": id_notificacion, "id_usuario": id_usuario}, commit=True)
+    
+    return jsonify({'success': True})
+
+
+@bp.route('/api/notificaciones/marcar-todas-leidas', methods=['POST'])
+@login_requerido
+def api_marcar_todas_leidas():
+    """Marca todas las notificaciones del usuario como leídas."""
+    username = session.get('username')
+    if not username:
+        return jsonify({'error': 'No autorizado'}), 401
+    
+    usuario = run_query(
+        "SELECT id_usuario FROM usuario WHERE LOWER(username) = :u",
+        {"u": username.lower()},
+        fetchone=True
+    )
+    
+    if not usuario:
+        return jsonify({'error': 'Usuario no encontrado'}), 404
+    
+    id_usuario = usuario[0]
+    
+    run_query("""
+        UPDATE notificacion
+        SET leida = TRUE
+        WHERE id_usuario = :id AND leida = FALSE
+    """, {"id": id_usuario}, commit=True)
+    
+    return jsonify({'success': True})
