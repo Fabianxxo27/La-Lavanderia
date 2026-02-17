@@ -68,12 +68,5 @@ def create_app(config_class=Config):
 
 
 # Crear instancia de la aplicación
-# IMPORTANTE: No ejecutar app.run() aquí
-# Render/producción usa: waitress-serve --listen=0.0.0.0:$PORT app:app
-# Desarrollo local usa: flask run
+# Esta instancia es importada por: waitress-serve app:app
 app = create_app()
-
-# Solo para desarrollo local interactivo
-if __name__ == '__main__':
-    print("Para desarrollo: flask run")
-    print("Para producción en Render: waitress-serve --listen=0.0.0.0:$PORT app:app")
