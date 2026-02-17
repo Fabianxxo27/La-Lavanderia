@@ -67,6 +67,14 @@ def create_app(config_class=Config):
     return app
 
 
+import os
+
 # Crear instancia de la aplicación
-# Esta instancia es importada por: waitress-serve app:app
+# Usado tanto por Render (python app.py) como por waitress/gunicorn (app:app)
 app = create_app()
+
+# Compatibilidad con Render (free tier) que ejecuta `python app.py` sin start command
+if __name__ == '__main__':
+    port = int(os.environ.get('PORT', 5000))
+    # Escuchar en 0.0.0.0 para que Render detecte el puerto
+    app.run(host='0.0.0.0', port=port, debug=False)
