@@ -304,25 +304,25 @@
 <!-- Quick Actions -->
 
 <div class="action-buttons">
-  <a href="{{ url_for('agregar_pedido') }}" class="action-btn-card">
+  <a href="{{ url_for('admin.agregar_pedido') }}" class="action-btn-card">
     <div class="action-icon">➕</div>
     <div class="action-title">Nuevo Pedido</div>
     <div class="action-description">Crear uno ahora</div>
   </a>
 
-  <a href="{{ url_for('cliente_pedidos') }}" class="action-btn-card">
+  <a href="{{ url_for('cliente.cliente_pedidos') }}" class="action-btn-card">
     <div class="action-icon">📋</div>
     <div class="action-title">Mis Pedidos</div>
     <div class="action-description">Ver historial</div>
   </a>
 
-  <a href="{{ url_for('cliente_recibos') }}" class="action-btn-card">
+  <a href="{{ url_for('cliente.cliente_recibos') }}" class="action-btn-card">
     <div class="action-icon">🧾</div>
     <div class="action-title">Recibos</div>
     <div class="action-description">Mis comprobantes</div>
   </a>
 
-  <a href="{{ url_for('cliente_promociones') }}" class="action-btn-card">
+  <a href="{{ url_for('cliente.cliente_promociones') }}" class="action-btn-card">
     <div class="action-icon">🎉</div>
     <div class="action-title">Promociones</div>
     <div class="action-description">Ver ofertas</div>
@@ -347,7 +347,7 @@
 </div>
 
 <div style="text-align: center; margin-top: 1rem;">
-  <a href="{{ url_for('cliente_pedidos') }}" class="btn-primary">Ver todos</a>
+  <a href="{{ url_for('cliente.cliente_pedidos') }}" class="btn-primary">Ver todos</a>
 </div>
 {% else %}
 <h2 class="section-title">Comienza Tu Viaje</h2>
@@ -355,7 +355,7 @@
   <div class="empty-state">
     <div class="empty-icon">📭</div>
     <div class="empty-text">Aún no tienes pedidos</div>
-    <a href="{{ url_for('agregar_pedido') }}" class="btn-primary">Crear primer pedido</a>
+    <a href="{{ url_for('admin.agregar_pedido') }}" class="btn-primary">Crear primer pedido</a>
   </div>
 </div>
 {% endif %}

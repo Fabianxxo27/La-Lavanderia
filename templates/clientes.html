@@ -411,12 +411,12 @@
       {% set icono_orden = '↑' if orden == 'asc' else '↓' %}
       {% set texto_orden = 'Más antiguos primero' if orden == 'desc' else 'Más recientes primero' %}
       
-      <a href="{{ url_for('clientes', orden=nuevo_orden) }}" class="btn-orden">
+      <a href="{{ url_for('admin.clientes', orden=nuevo_orden) }}" class="btn-orden">
         <span style="font-size: 1.2rem;">{{ icono_orden }}</span>
         {{ texto_orden }}
       </a>
       
-      <a href="{{ url_for('agregar_cliente') }}" class="btn-agregar">
+      <a href="{{ url_for('admin.agregar_cliente') }}" class="btn-agregar">
         <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
           <path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4z"/>
         </svg>
@@ -466,8 +466,8 @@
           <td>{{ c[3] }}</td>
           <td>
             <div class="action-buttons d-flex gap-2 align-items-center justify-content-center">
-              <a href="{{ url_for('actualizar_cliente', id_cliente=c[0]) }}" class="btn-accion btn-editar">Editar</a>
-              <form action="{{ url_for('eliminar_cliente', id_cliente=c[0]) }}" method="post" class="m-0">
+              <a href="{{ url_for('admin.actualizar_cliente', id_cliente=c[0]) }}" class="btn-accion btn-editar">Editar</a>
+              <form action="{{ url_for('admin.eliminar_cliente', id_cliente=c[0]) }}" method="post" class="m-0">
                 <button type="submit" class="btn-accion" style="background: #e74c3c; color: white;" onclick="return confirm('¿Estás seguro de eliminar este cliente?')" title="Eliminar Cliente">
                   <i class="fas fa-trash"></i> Eliminar
                 </button>
@@ -505,13 +505,13 @@
     
     <div class="pagination-controls">
       {% if pagina > 1 %}
-        <a href="{{ url_for('clientes', pagina=1, orden=orden) }}" class="btn-pagina btn-pagina-first" title="Primera página">
+        <a href="{{ url_for('admin.clientes', pagina=1, orden=orden) }}" class="btn-pagina btn-pagina-first" title="Primera página">
           <svg width="12" height="12" fill="currentColor" viewBox="0 0 16 16">
             <path fill-rule="evenodd" d="M11.854 3.646a.5.5 0 0 1 0 .708L8.207 8l3.647 3.646a.5.5 0 0 1-.708.708l-4-4a.5.5 0 0 1 0-.708l4-4a.5.5 0 0 1 .708 0zM4.5 1a.5.5 0 0 0-.5.5v13a.5.5 0 0 0 1 0v-13a.5.5 0 0 0-.5-.5z"/>
           </svg>
           Primera
         </a>
-        <a href="{{ url_for('clientes', pagina=pagina-1, orden=orden) }}" class="btn-pagina btn-pagina-prev" title="Página anterior">
+        <a href="{{ url_for('admin.clientes', pagina=pagina-1, orden=orden) }}" class="btn-pagina btn-pagina-prev" title="Página anterior">
           <svg width="12" height="12" fill="currentColor" viewBox="0 0 16 16">
             <path fill-rule="evenodd" d="M11.354 1.646a.5.5 0 0 1 0 .708L5.707 8l5.647 5.646a.5.5 0 0 1-.708.708l-6-6a.5.5 0 0 1 0-.708l6-6a.5.5 0 0 1 .708 0z"/>
           </svg>
@@ -537,19 +537,19 @@
           {% if p == pagina %}
             <span class="btn-pagina-number active">{{ p }}</span>
           {% else %}
-            <a href="{{ url_for('clientes', pagina=p, orden=orden) }}" class="btn-pagina-number">{{ p }}</a>
+            <a href="{{ url_for('admin.clientes', pagina=p, orden=orden) }}" class="btn-pagina-number">{{ p }}</a>
           {% endif %}
         {% endfor %}
       </div>
       
       {% if pagina < total_paginas %}
-        <a href="{{ url_for('clientes', pagina=pagina+1, orden=orden) }}" class="btn-pagina btn-pagina-next" title="Página siguiente">
+        <a href="{{ url_for('admin.clientes', pagina=pagina+1, orden=orden) }}" class="btn-pagina btn-pagina-next" title="Página siguiente">
           Siguiente
           <svg width="12" height="12" fill="currentColor" viewBox="0 0 16 16">
             <path fill-rule="evenodd" d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"/>
           </svg>
         </a>
-        <a href="{{ url_for('clientes', pagina=total_paginas, orden=orden) }}" class="btn-pagina btn-pagina-last" title="Última página">
+        <a href="{{ url_for('admin.clientes', pagina=total_paginas, orden=orden) }}" class="btn-pagina btn-pagina-last" title="Última página">
           Última
           <svg width="12" height="12" fill="currentColor" viewBox="0 0 16 16">
             <path fill-rule="evenodd" d="M4.146 3.646a.5.5 0 0 0 0 .708L7.793 8l-3.647 3.646a.5.5 0 0 0 .708.708l4-4a.5.5 0 0 0 0-.708l-4-4a.5.5 0 0 0-.708 0zM11.5 1a.5.5 0 0 1 .5.5v13a.5.5 0 0 1-1 0v-13a.5.5 0 0 1 .5-.5z"/>

@@ -182,7 +182,7 @@
     <p class="form-subtitle">Completa los datos del cliente. Los campos marcados con <span class="required-note">*</span> son obligatorios.</p>
   </div>
 
-  <form method="post" action="{{ url_for('agregar_cliente') }}" onsubmit="return validarFormulario(event)">
+  <form method="post" action="{{ url_for('admin.agregar_cliente') }}" onsubmit="return validarFormulario(event)">
     <div class="form-group">
       <label class="form-label">
         Nombre <span class="required-note">*</span>
@@ -276,7 +276,7 @@
 
     <div class="form-buttons">
       <button type="submit" class="btn btn-submit">✅ Guardar Cliente</button>
-      <a href="{{ url_for('clientes') }}" class="btn btn-cancel">❌ Cancelar</a>
+      <a href="{{ url_for('admin.clientes') }}" class="btn btn-cancel">❌ Cancelar</a>
     </div>
   </form>
 </div>

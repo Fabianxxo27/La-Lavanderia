@@ -397,13 +397,13 @@
   <body>
     <!-- Navbar -->
     <nav class="navbar">
-      <a href="{{ url_for('cliente_inicio') }}" class="navbar-brand" title="Ir al inicio">
+      <a href="{{ url_for('cliente.cliente_inicio') }}" class="navbar-brand" title="Ir al inicio">
         <img src="{{ url_for('static', filename='images/logo.png') }}" alt="logo" class="navbar-logo">
         <strong>La Lavandería</strong>
       </a>
 
       <div class="navbar-buttons">
-        <a href="{{ url_for('cliente_inicio') }}" class="btn btn-outline-primary" title="Regresar">
+        <a href="{{ url_for('cliente.cliente_inicio') }}" class="btn btn-outline-primary" title="Regresar">
           <i class="fas fa-arrow-left"></i> Atrás
         </a>
 
@@ -413,17 +413,17 @@
               <i class="fas fa-user"></i> {{ session.get('username') }}
             </button>
             <ul class="dropdown-menu">
-              <li><a class="dropdown-item" href="{{ url_for('cliente_inicio') }}">Dashboard</a></li>
-              <li><a class="dropdown-item" href="{{ url_for('cliente_pedidos') }}">Mis pedidos</a></li>
-              <li><a class="dropdown-item" href="{{ url_for('cliente_recibos') }}">Mis recibos</a></li>
-              <li><a class="dropdown-item" href="{{ url_for('cliente_promociones') }}">Promociones</a></li>
+              <li><a class="dropdown-item" href="{{ url_for('cliente.cliente_inicio') }}">Dashboard</a></li>
+              <li><a class="dropdown-item" href="{{ url_for('cliente.cliente_pedidos') }}">Mis pedidos</a></li>
+              <li><a class="dropdown-item" href="{{ url_for('cliente.cliente_recibos') }}">Mis recibos</a></li>
+              <li><a class="dropdown-item" href="{{ url_for('cliente.cliente_promociones') }}">Promociones</a></li>
               <li><div class="dropdown-divider"></div></li>
-              <li><a class="dropdown-item" href="{{ url_for('logout') }}">Cerrar sesión</a></li>
+              <li><a class="dropdown-item" href="{{ url_for('auth.logout') }}">Cerrar sesión</a></li>
             </ul>
           </div>
         {% else %}
-          <a class="btn btn-outline-primary" href="{{ url_for('login') }}">Iniciar sesión</a>
-          <a class="btn btn-success" href="{{ url_for('registro') }}">Registrarse</a>
+          <a class="btn btn-outline-primary" href="{{ url_for('auth.login') }}">Iniciar sesión</a>
+          <a class="btn btn-success" href="{{ url_for('auth.registro') }}">Registrarse</a>
         {% endif %}
       </div>
     </nav>

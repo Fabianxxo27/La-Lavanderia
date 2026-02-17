@@ -22,7 +22,7 @@ def cliente_inicio():
     """Dashboard del cliente con estadísticas y próximo nivel de descuento."""
     username = session.get('username')
     if not username:
-        return redirect(url_for('login'))
+        return redirect(url_for('auth.login'))
     
     # Obtener id_usuario (case-insensitive)
     usuario = run_query(
@@ -31,7 +31,7 @@ def cliente_inicio():
         fetchone=True
     )
     if not usuario:
-        return redirect(url_for('login'))
+        return redirect(url_for('auth.login'))
     
     id_cliente = usuario[0]
     
@@ -72,6 +72,9 @@ def cliente_inicio():
         nivel = "Sin nivel"
         descuento_porcentaje = 0
         siguiente_nivel = primer_nivel.get("nivel")
+        pedidos_faltantes = primer_nivel.get("min", 0) - pedidos_count
+        if pedidos_faltantes < 0:
+            pedidos_faltantes = 0
 
 
     iconos = {
@@ -139,7 +142,7 @@ def cliente_recibos():
     username = session.get('username')
     if not username:
         flash("No se pudo identificar al usuario.", "danger")
-        return redirect(url_for('login'))
+        return redirect(url_for('auth.login'))
     
     recibos = run_query("""
         SELECT r.id_recibo, r.id_pedido, r.monto, r.fecha,
@@ -172,7 +175,7 @@ def cliente_promociones():
     username = session.get('username')
     if not username:
         flash("No se pudo identificar al usuario.", "danger")
-        return redirect(url_for('login'))
+        return redirect(url_for('auth.login'))
     
     # Obtener id_usuario del cliente (case-insensitive)
     usuario = run_query(
@@ -183,7 +186,7 @@ def cliente_promociones():
     
     if not usuario:
         flash("Usuario no encontrado.", "danger")
-        return redirect(url_for('login'))
+        return redirect(url_for('auth.login'))
     
     id_usuario = usuario[0]
     

@@ -3,7 +3,7 @@
 
 {% block content %}
 <h3>Actualizar Cliente (usuario)</h3>
-<form method="post" action="{{ url_for('actualizar_cliente', id_cliente=id_cliente) }}">
+<form method="post" action="{{ url_for('admin.actualizar_cliente', id_cliente=id_cliente) }}">
   <div class="mb-3">
     <label class="form-label">Nombre</label>
     <input class="form-control" name="nombre" value="{{ nombre }}" required>
@@ -21,6 +21,6 @@
     <input class="form-control" name="password" type="password">
   </div>
   <button class="btn btn-primary">Actualizar</button>
-  <a href="{{ url_for('clientes') }}" class="btn btn-secondary">Cancelar</a>
+  <a href="{{ url_for('admin.clientes') }}" class="btn btn-secondary">Cancelar</a>
 </form>
 {% endblock %}

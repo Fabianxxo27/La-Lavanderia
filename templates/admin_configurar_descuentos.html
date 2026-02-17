@@ -28,7 +28,7 @@
                     <div class="alert alert-warning mb-4">
                         <i class="bi bi-exclamation-triangle"></i> No se encontró la tabla <strong>descuento_config</strong>.
                         Ejecuta las migraciones para habilitar este panel.
-                        <form method="post" action="{{ url_for('ejecutar_migraciones_admin') }}" class="mt-3">
+                        <form method="post" action="{{ url_for('admin.ejecutar_migraciones_admin') }}" class="mt-3">
                             <button type="submit" class="btn btn-warning btn-sm">
                                 <i class="bi bi-play-circle"></i> Ejecutar migraciones ahora
                             </button>
@@ -90,7 +90,7 @@
                                                         title="Eliminar Nivel">
                                                     <i class="fas fa-trash"></i> Eliminar
                                                 </button>
-                                                <form id="formEliminar{{ d[0] }}" action="{{ url_for('eliminar_descuento', id_config=d[0]) }}" method="post" style="display: none;"></form>
+                                                <form id="formEliminar{{ d[0] }}" action="{{ url_for('admin.eliminar_descuento', id_config=d[0]) }}" method="post" style="display: none;"></form>
                                                 {% else %}
                                                 <span class="text-muted">Sin acciones</span>
                                                 {% endif %}
@@ -106,7 +106,7 @@
                                                     <h5 class="modal-title">Editar Nivel: {{ d[1] }}</h5>
                                                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                                                 </div>
-                                                <form method="post" action="{{ url_for('editar_descuento', id_config=d[0]) }}">
+                                                <form method="post" action="{{ url_for('admin.editar_descuento', id_config=d[0]) }}">
                                                     <div class="modal-body">
                                                         <div class="mb-3">
                                                             <label class="form-label"><strong>Nombre del Nivel</strong></label>
@@ -167,7 +167,7 @@
                     </div>
 
                     <div class="mt-4">
-                        <a href="{{ url_for('inicio') }}" class="btn btn-secondary">
+                        <a href="{{ url_for('admin.inicio') }}" class="btn btn-secondary">
                             <i class="bi bi-arrow-left"></i> Volver al Inicio
                         </a>
                     </div>
@@ -187,7 +187,7 @@
                 </h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
-            <form method="post" action="{{ url_for('crear_descuento') }}">
+            <form method="post" action="{{ url_for('admin.crear_descuento') }}">
                 <div class="modal-body">
                     <div class="mb-3">
                         <label class="form-label"><strong>Nombre del Nivel *</strong></label>

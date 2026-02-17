@@ -92,7 +92,7 @@
                 </div>
                 
                 <div class="card-body">
-                    <form method="POST" action="{{ url_for('agregar_pedido') }}" id="formPedido">
+                    <form method="POST" action="{{ url_for('admin.agregar_pedido') }}" id="formPedido">
                         
                         <!-- Cliente (solo admin) -->
                         {% if rol == 'administrador' %}
@@ -217,7 +217,7 @@
 
                         <!-- Botones -->
                         <div class="d-flex gap-2 justify-content-end mt-4">
-                            <a href="{{ url_for('pedidos') if rol == 'administrador' else url_for('cliente_pedidos') }}" class="btn btn-secondary">
+                            <a href="{{ url_for('admin.pedidos') if rol == 'administrador' else url_for('cliente.cliente_pedidos') }}" class="btn btn-secondary">
                                 <i class="fas fa-times"></i> Cancelar
                             </a>
                             <button type="submit" class="btn btn-primary" id="btnCrear">
@@ -265,7 +265,7 @@
                     {% if rol != 'administrador' %}
                     <div class="alert alert-light small" style="border: 1px dashed #cbd5e0;">
                         <i class="fas fa-file-alt"></i> Términos del programa de descuentos: 
-                        <a href="{{ url_for('terminos_descuentos') }}" target="_blank">Ver aquí</a>
+                        <a href="{{ url_for('admin.terminos_descuentos') }}" target="_blank">Ver aquí</a>
                     </div>
                     {% endif %}
                     

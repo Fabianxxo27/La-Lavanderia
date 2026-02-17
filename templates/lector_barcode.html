@@ -626,7 +626,7 @@
     formData.append('barcode_image', selectedFile);
 
     try {
-      const response = await fetch('{{ url_for("lector_barcode") }}', {
+      const response = await fetch('{{ url_for("utils.lector_barcode") }}', {
         method: 'POST',
         body: formData
       });

@@ -125,7 +125,7 @@
                     </section>
 
                     <div class="text-center mt-4">
-                        <a href="{{ url_for('cliente_inicio') if session.get('rol') == 'cliente' else url_for('inicio') }}" 
+                        <a href="{{ url_for('cliente.cliente_inicio') if session.get('rol') == 'cliente' else url_for('admin.inicio') }}" 
                            class="btn btn-primary btn-lg">
                             <i class="bi bi-arrow-left"></i> Volver al Inicio
                         </a>

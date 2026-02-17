@@ -16,6 +16,7 @@ bp = Blueprint('api', __name__)
 @bp.route('/api/prendas_pedido/<int:id_pedido>')
 def api_prendas_pedido(id_pedido):
     """API para obtener prendas de un pedido en JSON (para cargas dinámicas)."""
+    from flask import jsonify
     username = session.get('username')
     rol = session.get('rol')
     
@@ -91,6 +92,7 @@ def api_prendas_pedido(id_pedido):
 @admin_requerido
 def api_autocomplete_clientes():
     """API para autocompletado de clientes."""
+    from flask import jsonify
     query = request.args.get('q', '').strip()
     
     if not query or len(query) < 2:
@@ -131,6 +133,7 @@ def api_autocomplete_clientes():
 @login_requerido
 def api_autocomplete_estados():
     """API para autocompletado de estados de pedidos."""
+    from flask import jsonify
     query = request.args.get('q', '').strip().lower()
     
     # Estados posibles
@@ -182,13 +185,13 @@ def api_notificaciones():
     resultado = []
     for n in notificaciones:
         resultado.append({
-            'id_notificacion': n[0],
+            'id': n[0],
             'titulo': n[1],
             'mensaje': n[2],
             'tipo': n[3],
             'leida': n[4],
             'url': n[5],
-            'fecha_creacion': n[6].isoformat() if n[6] else None
+            'fecha': n[6].isoformat() if n[6] else None
         })
     
     return jsonify(resultado)

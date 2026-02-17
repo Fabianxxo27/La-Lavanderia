@@ -90,7 +90,7 @@
                                     </td>
                                     <td style="text-align: center;">
                                         {% if r[5] %}
-                                        <img src="{{ url_for('generar_barcode', codigo=r[5]) }}" alt="{{ r[5] }}" style="max-width: 200px; height: auto;">
+                                        <img src="{{ url_for('utils.generar_barcode', codigo=r[5]) }}" alt="{{ r[5] }}" style="max-width: 200px; height: auto;">
                                         {% else %}
                                         <span class="text-muted">-</span>
                                         {% endif %}
@@ -105,7 +105,7 @@
                                         </strong>
                                     </td>
                                     <td class="text-center">
-                                        <a href="{{ url_for('descargar_recibo_pdf', id_pedido=r[1]) }}" class="btn btn-sm btn-danger" title="Descargar PDF">
+                                        <a href="{{ url_for('utils.descargar_recibo_pdf', id_pedido=r[1]) }}" class="btn btn-sm btn-danger" title="Descargar PDF">
                                             <i class="fas fa-file-pdf"></i>
                                         </a>
                                     </td>
@@ -159,7 +159,7 @@
                     <i class="fas fa-file-invoice fa-4x text-muted mb-3"></i>
                     <h4 class="text-muted">No tienes recibos generados</h4>
                     <p class="text-muted">Los recibos se generan automáticamente cuando completas un pedido</p>
-                    <a href="{{ url_for('agregar_pedido') }}" class="btn btn-primary btn-lg mt-3">
+                    <a href="{{ url_for('admin.agregar_pedido') }}" class="btn btn-primary btn-lg mt-3">
                         <i class="fas fa-plus-circle"></i> Crear Pedido
                     </a>
                 </div>

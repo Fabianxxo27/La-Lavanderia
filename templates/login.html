@@ -99,13 +99,13 @@
   <!-- Header -->
   <header class="site-header shadow-sm">
     <div class="container d-flex align-items-center justify-content-between py-3">
-      <a href="{{ url_for('index') }}" class="d-flex align-items-center gap-2 text-decoration-none">
+      <a href="{{ url_for('auth.index') }}" class="d-flex align-items-center gap-2 text-decoration-none">
         <img src="{{ url_for('static', filename='images/lavanderia.jpg') }}" alt="logo" style="width:48px;height:48px;border-radius:8px;border:2px solid #84af1d;">
         <div class="brand h5 mb-0">La Lavandería</div>
       </a>
       <div class="d-flex gap-2">
-        <a href="{{ url_for('login') }}" class="btn btn-outline-primary">Iniciar sesión</a>
-        <a href="{{ url_for('registro') }}" class="btn btn-success">Registrarse</a>
+        <a href="{{ url_for('auth.login') }}" class="btn btn-outline-primary">Iniciar sesión</a>
+        <a href="{{ url_for('auth.registro') }}" class="btn btn-success">Registrarse</a>
       </div>
     </div>
   </header>
@@ -138,7 +138,7 @@
         <button type="submit" class="btn btn-primary w-100">Ingresar</button>
       </form>
 
-      <p class="mt-3">¿No tienes cuenta? <a href="{{ url_for('registro') }}" class="text-success fw-bold">Regístrate aquí</a></p>
+      <p class="mt-3">¿No tienes cuenta? <a href="{{ url_for('auth.registro') }}" class="text-success fw-bold">Regístrate aquí</a></p>
     </div>
   </main>
 

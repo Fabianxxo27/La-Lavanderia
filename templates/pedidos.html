@@ -473,12 +473,12 @@
     {% set icono_orden = '↑' if orden == 'asc' else '↓' %}
     {% set texto_orden = 'Más antiguos primero' if orden == 'desc' else 'Más recientes primero' %}
     
-    <a href="{{ url_for('pedidos', cliente=cliente_filter, estado=estado_filter, desde=fecha_desde, hasta=fecha_hasta, orden=nuevo_orden) }}" class="btn-orden">
+    <a href="{{ url_for('admin.pedidos', cliente=cliente_filter, estado=estado_filter, desde=fecha_desde, hasta=fecha_hasta, orden=nuevo_orden) }}" class="btn-orden">
       <span style="font-size: 1.2rem;">{{ icono_orden }}</span>
       {{ texto_orden }}
     </a>
 
-    <a href="{{ url_for('agregar_pedido') }}" class="btn-crear">
+    <a href="{{ url_for('admin.agregar_pedido') }}" class="btn-crear">
       <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
         <path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4z"/>
       </svg>
@@ -490,7 +490,7 @@
 <!-- Filtros -->
 <div class="filter-section">
   <div class="filter-title">Filtrar Pedidos</div>
-  <form method="get" action="{{ url_for('pedidos') }}">
+  <form method="get" action="{{ url_for('admin.pedidos') }}">
     <input type="hidden" name="orden" value="{{ orden }}">
     <div class="filter-row">
       <div class="filter-group">
@@ -521,7 +521,7 @@
 
     <div class="filter-buttons" style="margin-top: 1rem;">
       <button type="submit" class="btn-filtrar">Filtrar</button>
-      <a href="{{ url_for('pedidos') }}" class="btn-limpiar">Limpiar Filtros</a>
+      <a href="{{ url_for('admin.pedidos') }}" class="btn-limpiar">Limpiar Filtros</a>
     </div>
   </form>
   <div class="result-count">
@@ -550,7 +550,7 @@
         <td><span class="pedido-id">#{{ p[0] }}</span></td>
         <td style="text-align: center;">
           {% if p[5] %}
-          <img src="{{ url_for('generar_barcode', codigo=p[5]) }}" alt="{{ p[5] }}" style="max-width: 200px; height: auto;">
+          <img src="{{ url_for('utils.generar_barcode', codigo=p[5]) }}" alt="{{ p[5] }}" style="max-width: 200px; height: auto;">
           {% else %}
           <span class="text-muted">-</span>
           {% endif %}
@@ -571,16 +571,16 @@
         <td>{{ p[4] or 'Sin cliente' }}</td>
         <td>
           <div class="action-buttons">
-            <a href="{{ url_for('pedido_detalles', id_pedido=p[0], ref=request.url) }}" class="btn btn-sm btn-accion btn-ver">Ver</a>
-            <a href="{{ url_for('descargar_recibo_pdf', id_pedido=p[0]) }}" class="btn btn-sm btn-accion" style="background: #e74c3c; color: white;" title="Descargar Recibo PDF">
+            <a href="{{ url_for('admin.pedido_detalles', id_pedido=p[0], ref=request.url) }}" class="btn btn-sm btn-accion btn-ver">Ver</a>
+            <a href="{{ url_for('utils.descargar_recibo_pdf', id_pedido=p[0]) }}" class="btn btn-sm btn-accion" style="background: #e74c3c; color: white;" title="Descargar Recibo PDF">
               <i class="fas fa-file-pdf"></i> PDF
             </a>
             {% if p[5] %}
-            <a href="{{ url_for('descargar_barcode', codigo=p[5]) }}" class="btn btn-sm btn-accion" style="background: #3498db; color: white;" title="Descargar Código de Barras">
+            <a href="{{ url_for('utils.descargar_barcode', codigo=p[5]) }}" class="btn btn-sm btn-accion" style="background: #3498db; color: white;" title="Descargar Código de Barras">
               <i class="fas fa-barcode"></i> Código
             </a>
             {% endif %}
-            <form action="{{ url_for('eliminar_pedido', id_pedido=p[0]) }}" method="post" class="d-inline-block m-0">
+            <form action="{{ url_for('admin.eliminar_pedido', id_pedido=p[0]) }}" method="post" class="d-inline-block m-0">
               <button type="submit" class="btn btn-sm btn-accion" style="background: #e74c3c; color: white;" onclick="return confirm('¿Estás seguro de que quieres eliminar este pedido?')" title="Eliminar Pedido">
                 <i class="fas fa-trash"></i> Eliminar
               </button>
@@ -596,7 +596,7 @@
     <div class="empty-icon"></div>
     <h4 style="color: #666; margin-bottom: 0.5rem;">No se encontraron pedidos</h4>
     <p style="margin-bottom: 1rem;">No hay pedidos que coincidan con los filtros aplicados.</p>
-    <a href="{{ url_for('pedidos') }}" style="color: #a6cc48; text-decoration: none; font-weight: 600;">
+    <a href="{{ url_for('admin.pedidos') }}" style="color: #a6cc48; text-decoration: none; font-weight: 600;">
       Limpiar filtros
     </a>
   </div>
@@ -621,13 +621,13 @@
   
   <div class="pagination-controls">
     {% if pagina > 1 %}
-      <a href="{{ url_for('pedidos', pagina=1, orden=orden, cliente=cliente_filter, estado=estado_filter, desde=fecha_desde, hasta=fecha_hasta) }}" class="btn-pagina btn-pagina-first" title="Primera página">
+      <a href="{{ url_for('admin.pedidos', pagina=1, orden=orden, cliente=cliente_filter, estado=estado_filter, desde=fecha_desde, hasta=fecha_hasta) }}" class="btn-pagina btn-pagina-first" title="Primera página">
         <svg width="12" height="12" fill="currentColor" viewBox="0 0 16 16">
           <path fill-rule="evenodd" d="M11.854 3.646a.5.5 0 0 1 0 .708L8.207 8l3.647 3.646a.5.5 0 0 1-.708.708l-4-4a.5.5 0 0 1 0-.708l4-4a.5.5 0 0 1 .708 0zM4.5 1a.5.5 0 0 0-.5.5v13a.5.5 0 0 0 1 0v-13a.5.5 0 0 0-.5-.5z"/>
         </svg>
         Primera
       </a>
-      <a href="{{ url_for('pedidos', pagina=pagina-1, orden=orden, cliente=cliente_filter, estado=estado_filter, desde=fecha_desde, hasta=fecha_hasta) }}" class="btn-pagina btn-pagina-prev" title="Página anterior">
+      <a href="{{ url_for('admin.pedidos', pagina=pagina-1, orden=orden, cliente=cliente_filter, estado=estado_filter, desde=fecha_desde, hasta=fecha_hasta) }}" class="btn-pagina btn-pagina-prev" title="Página anterior">
         <svg width="12" height="12" fill="currentColor" viewBox="0 0 16 16">
           <path fill-rule="evenodd" d="M11.354 1.646a.5.5 0 0 1 0 .708L5.707 8l5.647 5.646a.5.5 0 0 1-.708.708l-6-6a.5.5 0 0 1 0-.708l6-6a.5.5 0 0 1 .708 0z"/>
         </svg>
@@ -653,19 +653,19 @@
         {% if p == pagina %}
           <span class="btn-pagina-number active">{{ p }}</span>
         {% else %}
-          <a href="{{ url_for('pedidos', pagina=p, orden=orden, cliente=cliente_filter, estado=estado_filter, desde=fecha_desde, hasta=fecha_hasta) }}" class="btn-pagina-number">{{ p }}</a>
+          <a href="{{ url_for('admin.pedidos', pagina=p, orden=orden, cliente=cliente_filter, estado=estado_filter, desde=fecha_desde, hasta=fecha_hasta) }}" class="btn-pagina-number">{{ p }}</a>
         {% endif %}
       {% endfor %}
     </div>
     
     {% if pagina < total_paginas %}
-      <a href="{{ url_for('pedidos', pagina=pagina+1, orden=orden, cliente=cliente_filter, estado=estado_filter, desde=fecha_desde, hasta=fecha_hasta) }}" class="btn-pagina btn-pagina-next" title="Página siguiente">
+      <a href="{{ url_for('admin.pedidos', pagina=pagina+1, orden=orden, cliente=cliente_filter, estado=estado_filter, desde=fecha_desde, hasta=fecha_hasta) }}" class="btn-pagina btn-pagina-next" title="Página siguiente">
         Siguiente
         <svg width="12" height="12" fill="currentColor" viewBox="0 0 16 16">
           <path fill-rule="evenodd" d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"/>
         </svg>
       </a>
-      <a href="{{ url_for('pedidos', pagina=total_paginas, orden=orden, cliente=cliente_filter, estado=estado_filter, desde=fecha_desde, hasta=fecha_hasta) }}" class="btn-pagina btn-pagina-last" title="Última página">
+      <a href="{{ url_for('admin.pedidos', pagina=total_paginas, orden=orden, cliente=cliente_filter, estado=estado_filter, desde=fecha_desde, hasta=fecha_hasta) }}" class="btn-pagina btn-pagina-last" title="Última página">
         Última
         <svg width="12" height="12" fill="currentColor" viewBox="0 0 16 16">
           <path fill-rule="evenodd" d="M4.146 3.646a.5.5 0 0 0 0 .708L7.793 8l-3.647 3.646a.5.5 0 0 0 .708.708l4-4a.5.5 0 0 0 0-.708l-4-4a.5.5 0 0 0-.708 0zM11.5 1a.5.5 0 0 1 .5.5v13a.5.5 0 0 1-1 0v-13a.5.5 0 0 1 .5-.5z"/>

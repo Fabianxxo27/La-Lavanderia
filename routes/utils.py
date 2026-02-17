@@ -269,7 +269,8 @@ def lector_barcode():
 # VER PRENDAS DEL PEDIDO (CLIENTE Y ADMIN)
 # -----------------------------------------------
 @bp.route('/pedido_prendas/<int:id_pedido>')
-def pedido_prendas(id_pedido):
+@bp.route('/pedido/<int:id_pedido>/prendas')  # Ruta original para compatibilidad
+def ver_prendas_pedido(id_pedido):
     """Ver las prendas detalladas de un pedido (para cliente y admin)."""
     username = session.get('username')
     rol = session.get('rol')
@@ -360,6 +361,288 @@ def pedido_prendas(id_pedido):
 # -----------------------------------------------
 @bp.route('/generar_recibo/<int:id_pedido>')
 def generar_recibo(id_pedido):
+    """Genera y descarga el recibo en formato PDF."""
+    try:
+        # Obtener datos del pedido (compatible con o sin columnas de descuento)
+        try:
+            # Intentar con columnas de descuento
+            pedido = run_query("""
+                SELECT p.id_pedido, p.fecha_ingreso, p.fecha_entrega, p.estado, c.nombre, p.codigo_barras, u.email, p.direccion_recogida, p.direccion_entrega, p.porcentaje_descuento, p.nivel_descuento
+                FROM pedido p
+                LEFT JOIN cliente c ON p.id_cliente = c.id_cliente
+                LEFT JOIN usuario u ON c.id_cliente = u.id_usuario
+                WHERE p.id_pedido = :id
+            """, {"id": id_pedido}, fetchone=True)
+            tiene_columnas_descuento = True
+        except Exception as e:
+            # Si falla, usar sin columnas de descuento
+            pedido = run_query("""
+                SELECT p.id_pedido, p.fecha_ingreso, p.fecha_entrega, p.estado, c.nombre, p.codigo_barras, u.email, p.direccion_recogida, p.direccion_entrega
+                FROM pedido p
+                LEFT JOIN cliente c ON p.id_cliente = c.id_cliente
+                LEFT JOIN usuario u ON c.id_cliente = u.id_usuario
+                WHERE p.id_pedido = :id
+            """, {"id": id_pedido}, fetchone=True)
+            tiene_columnas_descuento = False
+        
+        if not pedido:
+            return "Pedido no encontrado", 404
+        
+        # Obtener prendas
+        prendas = run_query("""
+            SELECT tipo, descripcion, 
+                CASE tipo
+                    WHEN 'Camisa' THEN 5000
+                    WHEN 'Pantalón' THEN 6000
+                    WHEN 'Vestido' THEN 8000
+                    WHEN 'Chaqueta' THEN 10000
+                    WHEN 'Saco' THEN 7000
+                    WHEN 'Falda' THEN 5500
+                    WHEN 'Blusa' THEN 4500
+                    WHEN 'Abrigo' THEN 12000
+                    WHEN 'Suéter' THEN 6500
+                    WHEN 'Jeans' THEN 7000
+                    WHEN 'Corbata' THEN 3000
+                    WHEN 'Bufanda' THEN 3500
+                    WHEN 'Sábana' THEN 8000
+                    WHEN 'Edredón' THEN 15000
+                    WHEN 'Cortina' THEN 12000
+                    ELSE 5000
+                END as precio
+            FROM prenda
+            WHERE id_pedido = :id
+        """, {"id": id_pedido}, fetchall=True)
+        
+        # Obtener recibo y cliente
+        recibo = run_query("""
+            SELECT r.monto, r.fecha, r.id_cliente FROM recibo r WHERE id_pedido = :id
+        """, {"id": id_pedido}, fetchone=True)
+        
+        # Calcular descuento (usar guardado si existe, sino calcular)
+        subtotal = sum(p[2] for p in prendas)
+        
+        if tiene_columnas_descuento and len(pedido) >= 11:
+            # Usar descuento guardado en el pedido
+            descuento_porcentaje = pedido[9] or 0
+            nivel_descuento = pedido[10] or "Sin nivel"
+        else:
+            # Calcular descuento (método antiguo para compatibilidad)
+            descuento_monto_calculado = 0
+            descuento_porcentaje = 0
+            nivel_descuento = "Sin nivel"
+            
+            if recibo and subtotal > 0:
+                descuento_monto_calculado = subtotal - recibo[0]
+                if descuento_monto_calculado > 0:
+                    descuento_porcentaje = int((descuento_monto_calculado / subtotal) * 100)
+                    
+                    # Determinar nivel según porcentaje
+                    if descuento_porcentaje >= 15:
+                        nivel_descuento = "Oro"
+                    elif descuento_porcentaje >= 10:
+                        nivel_descuento = "Plata"
+                    elif descuento_porcentaje >= 5:
+                        nivel_descuento = "Bronce"
+        
+        descuento_monto = (subtotal * descuento_porcentaje) / 100 if descuento_porcentaje > 0 else 0
+        
+        # Crear PDF
+        buffer = BytesIO()
+        doc = SimpleDocTemplate(buffer, pagesize=letter)
+        styles = getSampleStyleSheet()
+        story = []
+        
+        # Título
+        title_style = styles['Title']
+        story.append(Paragraph("RECIBO - LA LAVANDERÍA", title_style))
+        story.append(Spacer(1, 0.3*inch))
+        
+        # Información del pedido
+        info_data = [
+            ['Pedido #:', str(pedido[0])],
+            ['Cliente:', pedido[4] or 'N/A'],
+            ['Email:', pedido[6] or 'No registrado'],
+            ['Fecha Ingreso:', str(pedido[1])],
+            ['Fecha Entrega:', str(pedido[2]) if pedido[2] else 'Por definir'],
+            ['Estado:', pedido[3]],
+        ]
+        
+        # Agregar direcciones si existen
+        if pedido[7]:  # direccion_recogida
+            info_data.append(['Dirección Recogida:', pedido[7]])
+        if pedido[8]:  # direccion_entrega
+            info_data.append(['Dirección Entrega:', pedido[8]])
+        
+        info_table = Table(info_data, colWidths=[2*inch, 4*inch])
+        info_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (0, -1), colors.lightgrey),
+            ('GRID', (0, 0), (-1, -1), 1, colors.black),
+            ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
+        ]))
+        story.append(info_table)
+        story.append(Spacer(1, 0.3*inch))
+        
+        # Agregar código de barras como imagen
+        if pedido[5]:
+            story.append(Paragraph("Código de Barras:", styles['Heading3']))
+            story.append(Spacer(1, 0.1*inch))
+            
+            # Generar imagen del código de barras
+            code128 = barcode.get_barcode_class('code128')
+            barcode_instance = code128(pedido[5], writer=ImageWriter())
+            barcode_buffer = BytesIO()
+            barcode_instance.write(barcode_buffer, options={
+                'module_width': 0.3,
+                'module_height': 10.0,
+                'quiet_zone': 2.0,
+                'font_size': 10,
+                'text_distance': 3.0,
+                'write_text': True
+            })
+            barcode_buffer.seek(0)
+            
+            # Agregar imagen al PDF
+            barcode_img = Image(barcode_buffer, width=4*inch, height=1*inch)
+            story.append(barcode_img)
+            story.append(Spacer(1, 0.3*inch))
+        
+        # Tabla de prendas
+        story.append(Paragraph("Prendas:", styles['Heading2']))
+        story.append(Spacer(1, 0.1*inch))
+        
+        prendas_data = [['Tipo', 'Descripción', 'Precio']]
+        total = 0
+        for prenda in prendas:
+            prendas_data.append([prenda[0], prenda[1] or '-', f'${prenda[2]:,}'])
+            total += prenda[2]
+        
+        prendas_table = Table(prendas_data, colWidths=[2*inch, 2.5*inch, 1.5*inch])
+        prendas_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('GRID', (0, 0), (-1, -1), 1, colors.black),
+            ('ALIGN', (2, 0), (2, -1), 'RIGHT'),
+        ]))
+        story.append(prendas_table)
+        story.append(Spacer(1, 0.2*inch))
+        
+        # Subtotal y descuento
+        if recibo:
+            # Subtotal
+            subtotal_data = [['Subtotal:', f'${subtotal:,.0f}']]
+            subtotal_table = Table(subtotal_data, colWidths=[4.5*inch, 1.5*inch])
+            subtotal_table.setStyle(TableStyle([
+                ('GRID', (0, 0), (-1, -1), 1, colors.black),
+                ('FONTNAME', (0, 0), (-1, -1), 'Helvetica'),
+                ('ALIGN', (1, 0), (1, -1), 'RIGHT'),
+            ]))
+            story.append(subtotal_table)
+            
+            # Descuento si aplica
+            if descuento_monto > 0:
+                story.append(Spacer(1, 0.1*inch))
+                descuento_data = [[f'Descuento {nivel_descuento} ({descuento_porcentaje}%):', f'-${descuento_monto:,.0f}']]
+                descuento_table = Table(descuento_data, colWidths=[4.5*inch, 1.5*inch])
+                descuento_table.setStyle(TableStyle([
+                    ('BACKGROUND', (0, 0), (-1, -1), colors.lightyellow),
+                    ('GRID', (0, 0), (-1, -1), 1, colors.black),
+                    ('FONTNAME', (0, 0), (-1, -1), 'Helvetica-Bold'),
+                    ('TEXTCOLOR', (1, 0), (1, -1), colors.red),
+                    ('ALIGN', (1, 0), (1, -1), 'RIGHT'),
+                ]))
+                story.append(descuento_table)
+            
+            story.append(Spacer(1, 0.1*inch))
+            
+            # Total final
+            total_data = [['TOTAL A PAGAR:', f'${recibo[0]:,.0f}']]
+            total_table = Table(total_data, colWidths=[4.5*inch, 1.5*inch])
+            total_table.setStyle(TableStyle([
+                ('BACKGROUND', (0, 0), (-1, -1), colors.lightgreen),
+                ('FONTNAME', (0, 0), (-1, -1), 'Helvetica-Bold'),
+                ('FONTSIZE', (0, 0), (-1, -1), 14),
+                ('GRID', (0, 0), (-1, -1), 1, colors.black),
+                ('ALIGN', (1, 0), (1, -1), 'RIGHT'),
+            ]))
+            story.append(total_table)
+        
+        # Generar PDF
+        doc.build(story)
+        buffer.seek(0)
+        
+        return send_file(
+            buffer,
+            mimetype='application/pdf',
+            as_attachment=True,
+            download_name=f'recibo_pedido_{id_pedido}.pdf'
+        )
+    except Exception as e:
+        print(f"Error generando PDF: {e}")
+        return "Error generando PDF", 500
+
+
+# -----------------------------------------------
+# GENERAR CÓDIGO DE BARRAS
+# -----------------------------------------------
+@bp.route('/barcode/<codigo>')
+def generar_barcode(codigo):
+    """Genera una imagen de código de barras en formato Code128."""
+    try:
+        # Crear el código de barras Code128
+        code128 = barcode.get_barcode_class('code128')
+        barcode_instance = code128(codigo, writer=ImageWriter())
+        
+        # Generar la imagen en memoria
+        buffer = BytesIO()
+        barcode_instance.write(buffer, options={
+            'module_width': 0.3,
+            'module_height': 10.0,
+            'quiet_zone': 2.0,
+            'font_size': 10,
+            'text_distance': 3.0,
+            'write_text': True
+        })
+        buffer.seek(0)
+        
+        # Retornar la imagen
+        return Response(buffer.getvalue(), mimetype='image/png')
+    except Exception as e:
+        print(f"Error generando código de barras: {e}")
+        return "Error generando código de barras", 500
+
+
+@bp.route('/descargar_barcode/<codigo>')
+def descargar_barcode(codigo):
+    """Descarga la imagen del código de barras."""
+    try:
+        code128 = barcode.get_barcode_class('code128')
+        barcode_instance = code128(codigo, writer=ImageWriter())
+        
+        buffer = BytesIO()
+        barcode_instance.write(buffer, options={
+            'module_width': 0.3,
+            'module_height': 10.0,
+            'quiet_zone': 2.0,
+            'font_size': 10,
+            'text_distance': 3.0,
+            'write_text': True
+        })
+        buffer.seek(0)
+        
+        return send_file(
+            buffer,
+            mimetype='image/png',
+            as_attachment=True,
+            download_name=f'barcode_{codigo}.png'
+        )
+    except Exception as e:
+        print(f"Error descargando código de barras: {e}")
+        return "Error", 500
+
+
+@bp.route('/descargar_recibo_pdf/<int:id_pedido>')
+def descargar_recibo_pdf(id_pedido):
     """Genera y descarga el recibo en formato PDF."""
     try:
         # Obtener datos del pedido (compatible con o sin columnas de descuento)
