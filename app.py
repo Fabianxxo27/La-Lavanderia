@@ -52,17 +52,15 @@ def create_app(config_class=Config):
     @app.errorhandler(404)
     def pagina_no_encontrada(e):
         """Página 404 personalizada"""
-        from flask import render_template
-        return render_template('404.html'), 404 if False else ('<h1>404 - Página no encontrada</h1>', 404)
+        return '<h1>404 - Página no encontrada</h1>', 404
 
     @app.errorhandler(500)
     def error_servidor(e):
         """Manejo de errores 500"""
-        from flask import render_template
         import traceback
         print(f"[ERROR 500] {e}")
         traceback.print_exc()
-        return render_template('500.html'), 500 if False else ('<h1>500 - Error del servidor</h1>', 500)
+        return '<h1>500 - Error del servidor</h1>', 500
     
     return app
 
