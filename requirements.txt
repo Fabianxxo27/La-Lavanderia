@@ -28,6 +28,9 @@ reportlab==4.0.7
 # Servidor WSGI
 waitress==2.1.2
 
+# WhatsApp Bot (Twilio)
+twilio==9.0.0
+
 # Dependencias indirectas (mantenidas para compatibilidad)
 click==8.1.8
 itsdangerous==2.2.0
