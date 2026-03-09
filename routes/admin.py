@@ -277,9 +277,16 @@ def actualizar_pedido(id_pedido):
     try:
         # Obtener datos del pedido y cliente antes de actualizar
         pedido_data = run_query("""
-            SELECT p.id_pedido, p.codigo_barras, p.fecha_entrega, c.nombre, c.email, p.id_cliente, p.estado
+            SELECT p.id_pedido,
+                   p.codigo_barras,
+                   p.fecha_entrega,
+                   COALESCE(NULLIF(c.nombre, ''), u.nombre, 'Cliente') AS nombre_cliente,
+                   COALESCE(NULLIF(c.email, ''), u.email) AS email_cliente,
+                   p.id_cliente,
+                   p.estado
             FROM pedido p
             LEFT JOIN cliente c ON p.id_cliente = c.id_cliente
+            LEFT JOIN usuario u ON p.id_cliente = u.id_usuario
             WHERE p.id_pedido = :id
         """, {"id": id_pedido}, fetchone=True)
         
@@ -331,44 +338,70 @@ def actualizar_pedido(id_pedido):
                     url=f'/cliente_pedidos'
                 )
         
-        # Enviar correo según el nuevo estado
-        if pedido_data and pedido_data[4]:
-            fecha_entrega = pedido_data[2]
+        # Enviar correo por cualquier cambio de estado (si hay email)
+        if pedido_data and pedido_data[4] and estado != estado_anterior:
+            fecha_entrega_raw = pedido_data[2]
+            fecha_entrega = fecha_entrega_raw.strftime('%Y-%m-%d') if fecha_entrega_raw else 'Por definir'
             email_cliente = pedido_data[4]
-            
-            if estado == "En proceso":
-                html = f"""
-                <html>
-                    <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-                        <div style="background: linear-gradient(135deg, #2196F3 0%, #1976D2 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
-                            <h1 style="color: white; margin: 0;">🔄 Pedido en Proceso</h1>
+
+            estados_email = {
+                "Pendiente": {
+                    "titulo": "🕐 Pedido Pendiente",
+                    "color_1": "#FFB300",
+                    "color_2": "#F57C00",
+                    "mensaje": f"Tu pedido <strong>{codigo}</strong> fue registrado y está pendiente de procesamiento."
+                },
+                "En proceso": {
+                    "titulo": "🔄 Pedido en Proceso",
+                    "color_1": "#2196F3",
+                    "color_2": "#1976D2",
+                    "mensaje": f"Tu pedido <strong>{codigo}</strong> está siendo procesado. La entrega estimada es el <strong>{fecha_entrega}</strong>."
+                },
+                "Completado": {
+                    "titulo": "✅ Pedido Completado",
+                    "color_1": "#4CAF50",
+                    "color_2": "#388E3C",
+                    "mensaje": f"Tu pedido <strong>{codigo}</strong> está completo y listo para entrega."
+                },
+                "Cancelado": {
+                    "titulo": "❌ Pedido Cancelado",
+                    "color_1": "#E53935",
+                    "color_2": "#C62828",
+                    "mensaje": f"Tu pedido <strong>{codigo}</strong> fue cancelado. Si tienes dudas, contáctanos."
+                }
+            }
+
+            data_estado = estados_email.get(
+                estado,
+                {
+                    "titulo": f"📌 Pedido actualizado: {estado}",
+                    "color_1": "#546E7A",
+                    "color_2": "#37474F",
+                    "mensaje": f"El estado de tu pedido <strong>{codigo}</strong> cambió a <strong>{estado}</strong>."
+                }
+            )
+
+            html = f"""
+            <html>
+                <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333;">
+                    <div style="background: linear-gradient(135deg, {data_estado['color_1']} 0%, {data_estado['color_2']} 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+                        <h1 style="color: white; margin: 0;">{data_estado['titulo']}</h1>
+                    </div>
+                    <div style="padding: 30px; background: #f9f9f9;">
+                        <h2 style="color: #1a4e7b;">Hola {nombre_cliente},</h2>
+                        <p>{data_estado['mensaje']}</p>
+                        <div style="background: white; border-left: 4px solid #1a4e7b; padding: 16px; margin-top: 16px; border-radius: 5px;">
+                            <p style="margin: 6px 0;"><strong>Pedido:</strong> {codigo}</p>
+                            <p style="margin: 6px 0;"><strong>Estado anterior:</strong> {estado_anterior}</p>
+                            <p style="margin: 6px 0;"><strong>Estado actual:</strong> {estado}</p>
+                            <p style="margin: 6px 0;"><strong>Entrega estimada:</strong> {fecha_entrega}</p>
                         </div>
-                        <div style="padding: 30px; background: #f9f9f9;">
-                            <h2 style="color: #1a4e7b;">Hola {nombre_cliente},</h2>
-                            <p>Tu pedido <strong>{codigo}</strong> está siendo procesado.</p>
-                            <p>Estamos lavando tu ropa con el mayor cuidado. La entregaremos el <strong>{fecha_entrega}</strong>.</p>
-                        </div>
-                    </body>
-                </html>
-                """
-                send_email_async(email_cliente, f"Pedido {codigo} en Proceso", html)
-            
-            elif estado == "Completado":
-                html = f"""
-                <html>
-                    <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-                        <div style="background: linear-gradient(135deg, #4CAF50 0%, #388E3C 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
-                            <h1 style="color: white; margin: 0;">✅ Pedido Completado</h1>
-                        </div>
-                        <div style="padding: 30px; background: #f9f9f9;">
-                            <h2 style="color: #1a4e7b;">Hola {nombre_cliente},</h2>
-                            <p>¡Buenas noticias! Tu pedido <strong>{codigo}</strong> está listo.</p>
-                            <p>Tu ropa está limpia y lista para ser entregada. La recibirás pronto en tu domicilio.</p>
-                        </div>
-                    </body>
-                </html>
-                """
-                send_email_async(email_cliente, f"Pedido {codigo} Completado y Listo", html)
+                    </div>
+                </body>
+            </html>
+            """
+
+            send_email_async(email_cliente, f"Actualización de pedido {codigo}: {estado}", html)
         
         flash('Pedido actualizado correctamente.', 'success')
     except Exception as e:
@@ -2508,13 +2541,19 @@ def agregar_pedido():
             
             # 10. Obtener datos del cliente para el flash
             cliente_data = run_query(
-                "SELECT nombre, email FROM cliente WHERE id_cliente = :id",
+                """
+                SELECT COALESCE(NULLIF(c.nombre, ''), u.nombre, 'Cliente') AS nombre_cliente,
+                       COALESCE(NULLIF(c.email, ''), u.email) AS email_cliente
+                FROM cliente c
+                LEFT JOIN usuario u ON c.id_cliente = u.id_usuario
+                WHERE c.id_cliente = :id
+                """,
                 {"id": id_cliente},
                 fetchone=True
             )
             
             # Enviar correo de confirmación de pedido creado (asíncrono)
-            if cliente_data:
+            if cliente_data and cliente_data[1]:
                 nombre_cliente = cliente_data[0]
                 email_cliente = cliente_data[1]
                 
