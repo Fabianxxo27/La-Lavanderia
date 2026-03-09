@@ -11,5 +11,5 @@ CREATE TABLE IF NOT EXISTS verification_codes (
 );
 
 -- Índice para búsquedas rápidas
-CREATE INDEX idx_verification_email_type ON verification_codes(email, tipo);
-CREATE INDEX idx_verification_code ON verification_codes(code);
+CREATE INDEX IF NOT EXISTS idx_verification_email_type ON verification_codes(email, tipo);
+CREATE INDEX IF NOT EXISTS idx_verification_code ON verification_codes(code);
