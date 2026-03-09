@@ -323,9 +323,8 @@
                                     <td>{{ prenda[0] }}</td>
                                     <td class="text-center">{{ prenda[1] }}</td>
                                     <td class="text-end">
-                                        <div class="progress" style="height: 18px; background-color: #eee;">
-                                            <div class="progress-bar" role="progressbar"
-                                                 style="width: {{ pct }}%; background-color: #2c3e50; font-size: 0.72rem;">
+                                        <div class="progress reportes-progress">
+                                            <div class="progress-bar reportes-progress-bar" role="progressbar" data-width="{{ pct }}">
                                                 {{ pct }}%
                                             </div>
                                         </div>
@@ -718,6 +717,10 @@
         setTimeout(function() { el.classList.add('out'); setTimeout(function() { el.remove(); }, 300); }, 2500);
     }
 
+    document.querySelectorAll('.reportes-progress-bar[data-width]').forEach(function(bar) {
+        bar.style.width = bar.getAttribute('data-width') + '%';
+    });
+
     document.getElementById('searchEstado')?.addEventListener('keyup', function() {
         buscarEnTabla('tablaEstados', this.value);
     });
@@ -871,6 +874,16 @@
     }
     .reportes-table th.sortable:hover {
         background-color: #eef1f4;
+    }
+
+    /* Progress bars */
+    .reportes-progress {
+        height: 18px;
+        background-color: #eee;
+    }
+    .reportes-progress-bar {
+        background-color: #2c3e50;
+        font-size: 0.72rem;
     }
 
     /* Small toggle buttons */
