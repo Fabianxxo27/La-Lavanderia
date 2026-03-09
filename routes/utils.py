@@ -14,10 +14,9 @@ import datetime
 import barcode
 from barcode.writer import ImageWriter
 from reportlab.lib.pagesizes import letter
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.lib.units import inch
-from reportlab.lib.enums import TA_CENTER, TA_RIGHT
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image, HRFlowable
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image
 from reportlab.lib import colors
 from pyzbar.pyzbar import decode
 from PIL import Image as PILImage
@@ -449,70 +448,46 @@ def generar_recibo(id_pedido):
         
         # Crear PDF
         buffer = BytesIO()
-        doc = SimpleDocTemplate(buffer, pagesize=letter,
-                                topMargin=0.5*inch, bottomMargin=0.7*inch,
-                                leftMargin=0.75*inch, rightMargin=0.75*inch)
+        doc = SimpleDocTemplate(buffer, pagesize=letter)
         styles = getSampleStyleSheet()
-
-        brand_dark = colors.HexColor('#2c3e50')
-        brand_gold = colors.HexColor('#f1c40f')
-        brand_light = colors.HexColor('#f8f9fa')
-        text_gray = colors.HexColor('#555555')
-
-        style_title = ParagraphStyle('ReciboTitle1', parent=styles['Title'],
-                                     fontSize=20, textColor=brand_dark,
-                                     alignment=TA_CENTER, spaceAfter=4)
-        style_subtitle = ParagraphStyle('ReciboSub1', parent=styles['Normal'],
-                                        fontSize=9, textColor=text_gray,
-                                        alignment=TA_CENTER, spaceAfter=6)
-        style_section = ParagraphStyle('ReciboSection1', parent=styles['Heading3'],
-                                       fontSize=11, textColor=brand_dark,
-                                       spaceBefore=14, spaceAfter=6)
-        style_footer = ParagraphStyle('ReciboFooter1', parent=styles['Normal'],
-                                      fontSize=8, textColor=text_gray,
-                                      alignment=TA_CENTER)
-
         story = []
-
-        story.append(Paragraph("LA LAVANDERÍA", style_title))
-        story.append(Paragraph("Servicio profesional de lavandería", style_subtitle))
-        story.append(HRFlowable(width="100%", thickness=2, color=brand_gold,
-                                spaceAfter=12, spaceBefore=2))
-        story.append(Paragraph(f"Recibo de pedido #{pedido[0]}", ParagraphStyle(
-            'ReciboNum1', parent=styles['Normal'], fontSize=10,
-            textColor=text_gray, alignment=TA_CENTER, spaceAfter=14)))
-
-        story.append(Paragraph("Información del pedido", style_section))
+        
+        # Título
+        title_style = styles['Title']
+        story.append(Paragraph("RECIBO - LA LAVANDERÍA", title_style))
+        story.append(Spacer(1, 0.3*inch))
+        
+        # Información del pedido
         info_data = [
-            ['Cliente', pedido[4] or 'N/A'],
-            ['Email', pedido[6] or 'No registrado'],
-            ['Fecha de ingreso', str(pedido[1])],
-            ['Fecha de entrega', str(pedido[2]) if pedido[2] else 'Por definir'],
-            ['Estado', pedido[3]],
+            ['Pedido #:', str(pedido[0])],
+            ['Cliente:', pedido[4] or 'N/A'],
+            ['Email:', pedido[6] or 'No registrado'],
+            ['Fecha Ingreso:', str(pedido[1])],
+            ['Fecha Entrega:', str(pedido[2]) if pedido[2] else 'Por definir'],
+            ['Estado:', pedido[3]],
         ]
-        if pedido[7]:
-            info_data.append(['Dirección recogida', pedido[7]])
-        if pedido[8]:
-            info_data.append(['Dirección entrega', pedido[8]])
-
-        info_table = Table(info_data, colWidths=[2*inch, 4.2*inch])
+        
+        # Agregar direcciones si existen
+        if pedido[7]:  # direccion_recogida
+            info_data.append(['Dirección Recogida:', pedido[7]])
+        if pedido[8]:  # direccion_entrega
+            info_data.append(['Dirección Entrega:', pedido[8]])
+        
+        info_table = Table(info_data, colWidths=[2*inch, 4*inch])
         info_table.setStyle(TableStyle([
-            ('BACKGROUND', (0, 0), (0, -1), brand_light),
-            ('TEXTCOLOR', (0, 0), (0, -1), brand_dark),
+            ('BACKGROUND', (0, 0), (0, -1), colors.lightgrey),
+            ('GRID', (0, 0), (-1, -1), 1, colors.black),
             ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
-            ('FONTNAME', (1, 0), (1, -1), 'Helvetica'),
-            ('FONTSIZE', (0, 0), (-1, -1), 9),
-            ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#dee2e6')),
-            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-            ('TOPPADDING', (0, 0), (-1, -1), 6),
-            ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
-            ('LEFTPADDING', (0, 0), (-1, -1), 8),
         ]))
         story.append(info_table)
-
+        story.append(Spacer(1, 0.3*inch))
+        
+        # Agregar código de barras como imagen
         if pedido[5]:
-            story.append(Spacer(1, 0.2*inch))
-            story.append(Paragraph("Código de barras", style_section))
+            story.append(Paragraph("Código de Barras:", styles['Heading3']))
+            story.append(Spacer(1, 0.1*inch))
+            
+            # Generar imagen del código de barras
             code128 = barcode.get_barcode_class('code128')
             barcode_instance = code128(pedido[5], writer=ImageWriter())
             barcode_buffer = BytesIO()
@@ -525,74 +500,72 @@ def generar_recibo(id_pedido):
                 'write_text': True
             })
             barcode_buffer.seek(0)
-            barcode_img = Image(barcode_buffer, width=3.5*inch, height=0.9*inch)
+            
+            # Agregar imagen al PDF
+            barcode_img = Image(barcode_buffer, width=4*inch, height=1*inch)
             story.append(barcode_img)
-
-        story.append(Spacer(1, 0.15*inch))
-        story.append(Paragraph("Detalle de prendas", style_section))
-
+            story.append(Spacer(1, 0.3*inch))
+        
+        # Tabla de prendas
+        story.append(Paragraph("Prendas:", styles['Heading2']))
+        story.append(Spacer(1, 0.1*inch))
+        
         prendas_data = [['Tipo', 'Descripción', 'Precio']]
         total = 0
         for prenda in prendas:
             prendas_data.append([prenda[0], prenda[1] or '-', f'${prenda[2]:,}'])
             total += prenda[2]
-
-        prendas_table = Table(prendas_data, colWidths=[2*inch, 2.7*inch, 1.5*inch])
+        
+        prendas_table = Table(prendas_data, colWidths=[2*inch, 2.5*inch, 1.5*inch])
         prendas_table.setStyle(TableStyle([
-            ('BACKGROUND', (0, 0), (-1, 0), brand_dark),
-            ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+            ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
             ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-            ('FONTSIZE', (0, 0), (-1, 0), 9),
-            ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
-            ('FONTSIZE', (0, 1), (-1, -1), 9),
-            ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#dee2e6')),
+            ('GRID', (0, 0), (-1, -1), 1, colors.black),
             ('ALIGN', (2, 0), (2, -1), 'RIGHT'),
-            ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, brand_light]),
-            ('TOPPADDING', (0, 0), (-1, -1), 5),
-            ('BOTTOMPADDING', (0, 0), (-1, -1), 5),
-            ('LEFTPADDING', (0, 0), (-1, -1), 8),
-            ('RIGHTPADDING', (0, 0), (-1, -1), 8),
         ]))
         story.append(prendas_table)
-        story.append(Spacer(1, 0.15*inch))
-
+        story.append(Spacer(1, 0.2*inch))
+        
+        # Subtotal y descuento
         if recibo:
-            totales_data = [['Subtotal', f'${subtotal:,.0f}']]
-            if descuento_monto > 0:
-                totales_data.append([f'Descuento {nivel_descuento} ({descuento_porcentaje}%)', f'-${descuento_monto:,.0f}'])
-            totales_data.append(['TOTAL A PAGAR', f'${recibo[0]:,.0f}'])
-
-            totales_table = Table(totales_data, colWidths=[4.7*inch, 1.5*inch])
-            totales_styles = [
+            # Subtotal
+            subtotal_data = [['Subtotal:', f'${subtotal:,.0f}']]
+            subtotal_table = Table(subtotal_data, colWidths=[4.5*inch, 1.5*inch])
+            subtotal_table.setStyle(TableStyle([
+                ('GRID', (0, 0), (-1, -1), 1, colors.black),
                 ('FONTNAME', (0, 0), (-1, -1), 'Helvetica'),
-                ('FONTSIZE', (0, 0), (-1, -1), 9),
                 ('ALIGN', (1, 0), (1, -1), 'RIGHT'),
-                ('TOPPADDING', (0, 0), (-1, -1), 5),
-                ('BOTTOMPADDING', (0, 0), (-1, -1), 5),
-                ('LEFTPADDING', (0, 0), (-1, -1), 8),
-                ('RIGHTPADDING', (0, 0), (-1, -1), 8),
-                ('LINEABOVE', (0, 0), (-1, 0), 0.5, colors.HexColor('#dee2e6')),
-            ]
-            last_row = len(totales_data) - 1
-            totales_styles.extend([
-                ('BACKGROUND', (0, last_row), (-1, last_row), brand_dark),
-                ('TEXTCOLOR', (0, last_row), (-1, last_row), colors.white),
-                ('FONTNAME', (0, last_row), (-1, last_row), 'Helvetica-Bold'),
-                ('FONTSIZE', (0, last_row), (-1, last_row), 11),
-            ])
+            ]))
+            story.append(subtotal_table)
+            
+            # Descuento si aplica
             if descuento_monto > 0:
-                totales_styles.extend([
-                    ('TEXTCOLOR', (1, 1), (1, 1), colors.HexColor('#c0392b')),
-                    ('FONTNAME', (0, 1), (-1, 1), 'Helvetica-Oblique'),
-                ])
-            totales_table.setStyle(TableStyle(totales_styles))
-            story.append(totales_table)
-
-        story.append(Spacer(1, 0.4*inch))
-        story.append(HRFlowable(width="100%", thickness=0.5, color=colors.HexColor('#dee2e6'),
-                                spaceAfter=8))
-        story.append(Paragraph("Gracias por confiar en La Lavandería", style_footer))
-        story.append(Paragraph(f"Documento generado el {datetime.date.today().strftime('%d/%m/%Y')}", style_footer))
+                story.append(Spacer(1, 0.1*inch))
+                descuento_data = [[f'Descuento {nivel_descuento} ({descuento_porcentaje}%):', f'-${descuento_monto:,.0f}']]
+                descuento_table = Table(descuento_data, colWidths=[4.5*inch, 1.5*inch])
+                descuento_table.setStyle(TableStyle([
+                    ('BACKGROUND', (0, 0), (-1, -1), colors.lightyellow),
+                    ('GRID', (0, 0), (-1, -1), 1, colors.black),
+                    ('FONTNAME', (0, 0), (-1, -1), 'Helvetica-Bold'),
+                    ('TEXTCOLOR', (1, 0), (1, -1), colors.red),
+                    ('ALIGN', (1, 0), (1, -1), 'RIGHT'),
+                ]))
+                story.append(descuento_table)
+            
+            story.append(Spacer(1, 0.1*inch))
+            
+            # Total final
+            total_data = [['TOTAL A PAGAR:', f'${recibo[0]:,.0f}']]
+            total_table = Table(total_data, colWidths=[4.5*inch, 1.5*inch])
+            total_table.setStyle(TableStyle([
+                ('BACKGROUND', (0, 0), (-1, -1), colors.lightgreen),
+                ('FONTNAME', (0, 0), (-1, -1), 'Helvetica-Bold'),
+                ('FONTSIZE', (0, 0), (-1, -1), 14),
+                ('GRID', (0, 0), (-1, -1), 1, colors.black),
+                ('ALIGN', (1, 0), (1, -1), 'RIGHT'),
+            ]))
+            story.append(total_table)
         
         # Generar PDF
         doc.build(story)
@@ -757,70 +730,46 @@ def descargar_recibo_pdf(id_pedido):
         
         # Crear PDF
         buffer = BytesIO()
-        doc = SimpleDocTemplate(buffer, pagesize=letter,
-                                topMargin=0.5*inch, bottomMargin=0.7*inch,
-                                leftMargin=0.75*inch, rightMargin=0.75*inch)
+        doc = SimpleDocTemplate(buffer, pagesize=letter)
         styles = getSampleStyleSheet()
-
-        brand_dark = colors.HexColor('#2c3e50')
-        brand_gold = colors.HexColor('#f1c40f')
-        brand_light = colors.HexColor('#f8f9fa')
-        text_gray = colors.HexColor('#555555')
-
-        style_title = ParagraphStyle('ReciboTitle2', parent=styles['Title'],
-                                     fontSize=20, textColor=brand_dark,
-                                     alignment=TA_CENTER, spaceAfter=4)
-        style_subtitle = ParagraphStyle('ReciboSub2', parent=styles['Normal'],
-                                        fontSize=9, textColor=text_gray,
-                                        alignment=TA_CENTER, spaceAfter=6)
-        style_section = ParagraphStyle('ReciboSection2', parent=styles['Heading3'],
-                                       fontSize=11, textColor=brand_dark,
-                                       spaceBefore=14, spaceAfter=6)
-        style_footer = ParagraphStyle('ReciboFooter2', parent=styles['Normal'],
-                                      fontSize=8, textColor=text_gray,
-                                      alignment=TA_CENTER)
-
         story = []
-
-        story.append(Paragraph("LA LAVANDERÍA", style_title))
-        story.append(Paragraph("Servicio profesional de lavandería", style_subtitle))
-        story.append(HRFlowable(width="100%", thickness=2, color=brand_gold,
-                                spaceAfter=12, spaceBefore=2))
-        story.append(Paragraph(f"Recibo de pedido #{pedido[0]}", ParagraphStyle(
-            'ReciboNum2', parent=styles['Normal'], fontSize=10,
-            textColor=text_gray, alignment=TA_CENTER, spaceAfter=14)))
-
-        story.append(Paragraph("Información del pedido", style_section))
+        
+        # Título
+        title_style = styles['Title']
+        story.append(Paragraph("RECIBO - LA LAVANDERÍA", title_style))
+        story.append(Spacer(1, 0.3*inch))
+        
+        # Información del pedido
         info_data = [
-            ['Cliente', pedido[4] or 'N/A'],
-            ['Email', pedido[6] or 'No registrado'],
-            ['Fecha de ingreso', str(pedido[1])],
-            ['Fecha de entrega', str(pedido[2]) if pedido[2] else 'Por definir'],
-            ['Estado', pedido[3]],
+            ['Pedido #:', str(pedido[0])],
+            ['Cliente:', pedido[4] or 'N/A'],
+            ['Email:', pedido[6] or 'No registrado'],
+            ['Fecha Ingreso:', str(pedido[1])],
+            ['Fecha Entrega:', str(pedido[2]) if pedido[2] else 'Por definir'],
+            ['Estado:', pedido[3]],
         ]
-        if pedido[7]:
-            info_data.append(['Dirección recogida', pedido[7]])
-        if pedido[8]:
-            info_data.append(['Dirección entrega', pedido[8]])
-
-        info_table = Table(info_data, colWidths=[2*inch, 4.2*inch])
+        
+        # Agregar direcciones si existen
+        if pedido[7]:  # direccion_recogida
+            info_data.append(['Dirección Recogida:', pedido[7]])
+        if pedido[8]:  # direccion_entrega
+            info_data.append(['Dirección Entrega:', pedido[8]])
+        
+        info_table = Table(info_data, colWidths=[2*inch, 4*inch])
         info_table.setStyle(TableStyle([
-            ('BACKGROUND', (0, 0), (0, -1), brand_light),
-            ('TEXTCOLOR', (0, 0), (0, -1), brand_dark),
+            ('BACKGROUND', (0, 0), (0, -1), colors.lightgrey),
+            ('GRID', (0, 0), (-1, -1), 1, colors.black),
             ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
-            ('FONTNAME', (1, 0), (1, -1), 'Helvetica'),
-            ('FONTSIZE', (0, 0), (-1, -1), 9),
-            ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#dee2e6')),
-            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-            ('TOPPADDING', (0, 0), (-1, -1), 6),
-            ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
-            ('LEFTPADDING', (0, 0), (-1, -1), 8),
         ]))
         story.append(info_table)
-
+        story.append(Spacer(1, 0.3*inch))
+        
+        # Agregar código de barras como imagen
         if pedido[5]:
-            story.append(Spacer(1, 0.2*inch))
-            story.append(Paragraph("Código de barras", style_section))
+            story.append(Paragraph("Código de Barras:", styles['Heading3']))
+            story.append(Spacer(1, 0.1*inch))
+            
+            # Generar imagen del código de barras
             code128 = barcode.get_barcode_class('code128')
             barcode_instance = code128(pedido[5], writer=ImageWriter())
             barcode_buffer = BytesIO()
@@ -833,74 +782,72 @@ def descargar_recibo_pdf(id_pedido):
                 'write_text': True
             })
             barcode_buffer.seek(0)
-            barcode_img = Image(barcode_buffer, width=3.5*inch, height=0.9*inch)
+            
+            # Agregar imagen al PDF
+            barcode_img = Image(barcode_buffer, width=4*inch, height=1*inch)
             story.append(barcode_img)
-
-        story.append(Spacer(1, 0.15*inch))
-        story.append(Paragraph("Detalle de prendas", style_section))
-
+            story.append(Spacer(1, 0.3*inch))
+        
+        # Tabla de prendas
+        story.append(Paragraph("Prendas:", styles['Heading2']))
+        story.append(Spacer(1, 0.1*inch))
+        
         prendas_data = [['Tipo', 'Descripción', 'Precio']]
         total = 0
         for prenda in prendas:
             prendas_data.append([prenda[0], prenda[1] or '-', f'${prenda[2]:,}'])
             total += prenda[2]
-
-        prendas_table = Table(prendas_data, colWidths=[2*inch, 2.7*inch, 1.5*inch])
+        
+        prendas_table = Table(prendas_data, colWidths=[2*inch, 2.5*inch, 1.5*inch])
         prendas_table.setStyle(TableStyle([
-            ('BACKGROUND', (0, 0), (-1, 0), brand_dark),
-            ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+            ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
             ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-            ('FONTSIZE', (0, 0), (-1, 0), 9),
-            ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
-            ('FONTSIZE', (0, 1), (-1, -1), 9),
-            ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#dee2e6')),
+            ('GRID', (0, 0), (-1, -1), 1, colors.black),
             ('ALIGN', (2, 0), (2, -1), 'RIGHT'),
-            ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, brand_light]),
-            ('TOPPADDING', (0, 0), (-1, -1), 5),
-            ('BOTTOMPADDING', (0, 0), (-1, -1), 5),
-            ('LEFTPADDING', (0, 0), (-1, -1), 8),
-            ('RIGHTPADDING', (0, 0), (-1, -1), 8),
         ]))
         story.append(prendas_table)
-        story.append(Spacer(1, 0.15*inch))
-
+        story.append(Spacer(1, 0.2*inch))
+        
+        # Subtotal y descuento
         if recibo:
-            totales_data = [['Subtotal', f'${subtotal:,.0f}']]
-            if descuento_monto > 0:
-                totales_data.append([f'Descuento {nivel_descuento} ({descuento_porcentaje}%)', f'-${descuento_monto:,.0f}'])
-            totales_data.append(['TOTAL A PAGAR', f'${recibo[0]:,.0f}'])
-
-            totales_table = Table(totales_data, colWidths=[4.7*inch, 1.5*inch])
-            totales_styles = [
+            # Subtotal
+            subtotal_data = [['Subtotal:', f'${subtotal:,.0f}']]
+            subtotal_table = Table(subtotal_data, colWidths=[4.5*inch, 1.5*inch])
+            subtotal_table.setStyle(TableStyle([
+                ('GRID', (0, 0), (-1, -1), 1, colors.black),
                 ('FONTNAME', (0, 0), (-1, -1), 'Helvetica'),
-                ('FONTSIZE', (0, 0), (-1, -1), 9),
                 ('ALIGN', (1, 0), (1, -1), 'RIGHT'),
-                ('TOPPADDING', (0, 0), (-1, -1), 5),
-                ('BOTTOMPADDING', (0, 0), (-1, -1), 5),
-                ('LEFTPADDING', (0, 0), (-1, -1), 8),
-                ('RIGHTPADDING', (0, 0), (-1, -1), 8),
-                ('LINEABOVE', (0, 0), (-1, 0), 0.5, colors.HexColor('#dee2e6')),
-            ]
-            last_row = len(totales_data) - 1
-            totales_styles.extend([
-                ('BACKGROUND', (0, last_row), (-1, last_row), brand_dark),
-                ('TEXTCOLOR', (0, last_row), (-1, last_row), colors.white),
-                ('FONTNAME', (0, last_row), (-1, last_row), 'Helvetica-Bold'),
-                ('FONTSIZE', (0, last_row), (-1, last_row), 11),
-            ])
+            ]))
+            story.append(subtotal_table)
+            
+            # Descuento si aplica
             if descuento_monto > 0:
-                totales_styles.extend([
-                    ('TEXTCOLOR', (1, 1), (1, 1), colors.HexColor('#c0392b')),
-                    ('FONTNAME', (0, 1), (-1, 1), 'Helvetica-Oblique'),
-                ])
-            totales_table.setStyle(TableStyle(totales_styles))
-            story.append(totales_table)
-
-        story.append(Spacer(1, 0.4*inch))
-        story.append(HRFlowable(width="100%", thickness=0.5, color=colors.HexColor('#dee2e6'),
-                                spaceAfter=8))
-        story.append(Paragraph("Gracias por confiar en La Lavandería", style_footer))
-        story.append(Paragraph(f"Documento generado el {datetime.date.today().strftime('%d/%m/%Y')}", style_footer))
+                story.append(Spacer(1, 0.1*inch))
+                descuento_data = [[f'Descuento {nivel_descuento} ({descuento_porcentaje}%):', f'-${descuento_monto:,.0f}']]
+                descuento_table = Table(descuento_data, colWidths=[4.5*inch, 1.5*inch])
+                descuento_table.setStyle(TableStyle([
+                    ('BACKGROUND', (0, 0), (-1, -1), colors.lightyellow),
+                    ('GRID', (0, 0), (-1, -1), 1, colors.black),
+                    ('FONTNAME', (0, 0), (-1, -1), 'Helvetica-Bold'),
+                    ('TEXTCOLOR', (1, 0), (1, -1), colors.red),
+                    ('ALIGN', (1, 0), (1, -1), 'RIGHT'),
+                ]))
+                story.append(descuento_table)
+            
+            story.append(Spacer(1, 0.1*inch))
+            
+            # Total final
+            total_data = [['TOTAL A PAGAR:', f'${recibo[0]:,.0f}']]
+            total_table = Table(total_data, colWidths=[4.5*inch, 1.5*inch])
+            total_table.setStyle(TableStyle([
+                ('BACKGROUND', (0, 0), (-1, -1), colors.lightgreen),
+                ('FONTNAME', (0, 0), (-1, -1), 'Helvetica-Bold'),
+                ('FONTSIZE', (0, 0), (-1, -1), 14),
+                ('GRID', (0, 0), (-1, -1), 1, colors.black),
+                ('ALIGN', (1, 0), (1, -1), 'RIGHT'),
+            ]))
+            story.append(total_table)
         
         # Generar PDF
         doc.build(story)

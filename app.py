@@ -33,12 +33,14 @@ def create_app(config_class=Config):
     from routes.admin import bp as admin_bp
     from routes.api import bp as api_bp
     from routes.utils import bp as utils_bp
+    from routes.whatsapp import bp as whatsapp_bp
     
     app.register_blueprint(auth_bp)
     app.register_blueprint(cliente_bp)
     app.register_blueprint(admin_bp)
     app.register_blueprint(api_bp)
     app.register_blueprint(utils_bp)
+    app.register_blueprint(whatsapp_bp)
     
     # Error handlers
     @app.after_request

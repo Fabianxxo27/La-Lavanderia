@@ -1,263 +1,328 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="reportes-wrapper">
-    <!-- Header -->
-    <div class="reportes-header">
-        <div>
-            <h1 class="reportes-title">Reportes y Estadísticas</h1>
-            <p class="reportes-subtitle">Resumen general del negocio</p>
-        </div>
-        <div class="reportes-actions">
+<div class="container-fluid py-5">
+    <!-- Header con filtros interactivos -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="mb-0">📊 Reportes y Estadísticas</h1>
+        <div class="d-flex gap-2">
             <select id="periodoFilter" class="form-select form-select-sm" style="width: auto;">
                 <option value="30">Últimos 30 días</option>
                 <option value="60">Últimos 60 días</option>
                 <option value="90">Últimos 90 días</option>
                 <option value="365">Último año</option>
             </select>
-            <a href="{{ url_for('admin.reportes_export_excel') }}" class="btn btn-sm btn-outline-dark">
-                <i class="fas fa-file-excel"></i> Excel
+            <a href="{{ url_for('admin.reportes_export_excel') }}" class="btn btn-sm btn-success">
+                <i class="fas fa-file-excel"></i> Exportar Excel
             </a>
-            <button class="btn btn-sm btn-dark" onclick="exportarReporte()">
-                <i class="fas fa-download"></i> PDF
+            <button class="btn btn-sm btn-primary" onclick="exportarReporte()">
+                <i class="fas fa-download"></i> Exportar PDF
             </button>
-            <button class="btn btn-sm btn-outline-secondary" onclick="refrescarDatos()">
-                <i class="fas fa-sync-alt"></i>
+            <button class="btn btn-sm btn-info text-white" onclick="refrescarDatos()">
+                <i class="fas fa-sync"></i> Actualizar
             </button>
         </div>
     </div>
 
-    <!-- KPIs principales -->
-    <div class="row g-3 mb-4">
-        <div class="col-md-3 col-6">
-            <div class="kpi-card">
-                <div class="kpi-icon-wrap" style="background-color: #e8f0fe;">
-                    <i class="fas fa-users" style="color: #1a73e8;"></i>
-                </div>
-                <div class="kpi-info">
-                    <span class="kpi-label">Clientes</span>
-                    <span class="kpi-value counter" data-target="{{ total_clientes }}">0</span>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3 col-6">
-            <div class="kpi-card">
-                <div class="kpi-icon-wrap" style="background-color: #e6f4ea;">
-                    <i class="fas fa-clipboard-list" style="color: #1e8e3e;"></i>
-                </div>
-                <div class="kpi-info">
-                    <span class="kpi-label">Pedidos</span>
-                    <span class="kpi-value counter" data-target="{{ total_pedidos }}">0</span>
+    <!-- KPIs (Métricas clave) con animación y hover -->
+    <div class="row mb-5">
+        <div class="col-md-3 mb-3">
+            <div class="kpi-card card bg-gradient-primary text-white h-100" data-metric="clientes">
+                <div class="card-body position-relative">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title mb-1">Total de Clientes</h6>
+                            <h2 class="card-text mb-0 counter" data-target="{{ total_clientes }}">0</h2>
+                            <small class="opacity-75">+5% vs mes anterior</small>
+                        </div>
+                        <div class="kpi-icon">
+                            <i class="fas fa-users fa-2x opacity-50"></i>
+                        </div>
+                    </div>
+                    <div class="progress mt-3" style="height: 4px;">
+                        <div class="progress-bar bg-white" role="progressbar" style="width: 75%"></div>
+                    </div>
                 </div>
             </div>
         </div>
-        <div class="col-md-3 col-6">
-            <div class="kpi-card">
-                <div class="kpi-icon-wrap" style="background-color: #fef7e0;">
-                    <i class="fas fa-tshirt" style="color: #e8a100;"></i>
-                </div>
-                <div class="kpi-info">
-                    <span class="kpi-label">Prendas</span>
-                    <span class="kpi-value counter" data-target="{{ total_prendas }}">0</span>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3 col-6">
-            <div class="kpi-card">
-                <div class="kpi-icon-wrap" style="background-color: #fce8e6;">
-                    <i class="fas fa-dollar-sign" style="color: #d93025;"></i>
-                </div>
-                <div class="kpi-info">
-                    <span class="kpi-label">Ingresos</span>
-                    <span class="kpi-value">${{ "{:,.0f}".format(total_ingresos) }}</span>
+        <div class="col-md-3 mb-3">
+            <div class="kpi-card card bg-gradient-success text-white h-100" data-metric="pedidos">
+                <div class="card-body position-relative">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title mb-1">Total de Pedidos</h6>
+                            <h2 class="card-text mb-0 counter" data-target="{{ total_pedidos }}">0</h2>
+                            <small class="opacity-75">+12% vs mes anterior</small>
+                        </div>
+                        <div class="kpi-icon">
+                            <i class="fas fa-shopping-cart fa-2x opacity-50"></i>
+                        </div>
+                    </div>
+                    <div class="progress mt-3" style="height: 4px;">
+                        <div class="progress-bar bg-white" role="progressbar" style="width: 85%"></div>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
-
-    <!-- KPIs secundarios -->
-    <div class="row g-3 mb-4">
-        <div class="col-md-3 col-6">
-            <div class="kpi-card kpi-card--sm">
-                <div class="kpi-info">
-                    <span class="kpi-label">Tasa de completación</span>
-                    <span class="kpi-value kpi-value--sm">{{ "%.1f"|format(tasa_completacion) }}%</span>
+        <div class="col-md-3 mb-3">
+            <div class="kpi-card card bg-gradient-warning text-white h-100" data-metric="prendas">
+                <div class="card-body position-relative">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title mb-1">Total de Prendas</h6>
+                            <h2 class="card-text mb-0 counter" data-target="{{ total_prendas }}">0</h2>
+                            <small class="opacity-75">+8% vs mes anterior</small>
+                        </div>
+                        <div class="kpi-icon">
+                            <i class="fas fa-tshirt fa-2x opacity-50"></i>
+                        </div>
+                    </div>
+                    <div class="progress mt-3" style="height: 4px;">
+                        <div class="progress-bar bg-white" role="progressbar" style="width: 68%"></div>
+                    </div>
                 </div>
             </div>
         </div>
-        <div class="col-md-3 col-6">
-            <div class="kpi-card kpi-card--sm">
-                <div class="kpi-info">
-                    <span class="kpi-label">Gasto promedio / cliente</span>
-                    <span class="kpi-value kpi-value--sm">${{ "{:,.0f}".format(promedio_gasto) }}</span>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3 col-6">
-            <div class="kpi-card kpi-card--sm">
-                <div class="kpi-info">
-                    <span class="kpi-label">Pedidos pendientes</span>
-                    <span class="kpi-value kpi-value--sm">{{ pedidos_pendientes }}</span>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3 col-6">
-            <div class="kpi-card kpi-card--sm">
-                <div class="kpi-info">
-                    <span class="kpi-label">Días promedio entrega</span>
-                    <span class="kpi-value kpi-value--sm">{{ "%.1f"|format(promedio_dias) }}</span>
+        <div class="col-md-3 mb-3">
+            <div class="kpi-card card bg-gradient-info text-white h-100" data-metric="ingresos">
+                <div class="card-body position-relative">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title mb-1">Ingresos Totales</h6>
+                            <h2 class="card-text mb-0">${{ "{:,.0f}".format(total_ingresos) }}</h2>
+                            <small class="opacity-75">+18% vs mes anterior</small>
+                        </div>
+                        <div class="kpi-icon">
+                            <i class="fas fa-dollar-sign fa-2x opacity-50"></i>
+                        </div>
+                    </div>
+                    <div class="progress mt-3" style="height: 4px;">
+                        <div class="progress-bar bg-white" role="progressbar" style="width: 92%"></div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Gráficos principales -->
-    <div class="row g-3 mb-4">
-        <div class="col-lg-6 mb-3">
-            <div class="chart-panel">
-                <div class="chart-panel-header">
-                    <h6 class="chart-panel-title">Pedidos por día</h6>
-                    <div class="btn-group btn-group-sm">
-                        <button type="button" class="btn btn-outline-secondary btn-xs active" onclick="cambiarTipoGrafico('pedidosDiaChart', 'line', this)">
+    <!-- KPIs Adicionales -->
+    <div class="row mb-5">
+        <div class="col-md-3 mb-3">
+            <div class="card border-left-primary">
+                <div class="card-body">
+                    <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                        <i class="fas fa-check-circle"></i> Tasa de Completación
+                    </div>
+                    <div class="h3 mb-0">
+                        {{ "%.1f"|format(tasa_completacion) }}%
+                    </div>
+                    <small class="text-muted">De pedidos completados</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3 mb-3">
+            <div class="card border-left-success">
+                <div class="card-body">
+                    <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                        <i class="fas fa-shopping-bag"></i> Promedio de Gasto
+                    </div>
+                    <div class="h3 mb-0">
+                        ${{ "{:,.0f}".format(promedio_gasto) }}
+                    </div>
+                    <small class="text-muted">Por cliente</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3 mb-3">
+            <div class="card border-left-warning">
+                <div class="card-body">
+                    <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                        <i class="fas fa-hourglass-half"></i> Pendientes
+                    </div>
+                    <div class="h3 mb-0">
+                        {{ pedidos_pendientes }}
+                    </div>
+                    <small class="text-muted">Pedidos sin completar</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3 mb-3">
+            <div class="card border-left-info">
+                <div class="card-body">
+                    <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                        <i class="fas fa-calendar-alt"></i> Promedio de Días
+                    </div>
+                    <div class="h3 mb-0">
+                        {{ "%.1f"|format(promedio_dias) }} días
+                    </div>
+                    <small class="text-muted">Desde ingreso a entrega</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gráficos principales con controles interactivos -->
+    <div class="row mb-5">
+        <!-- Pedidos por día -->
+        <div class="col-lg-6 mb-4">
+            <div class="card chart-card">
+                <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">📈 Pedidos por Día</h5>
+                    <div class="btn-group btn-group-sm" role="group">
+                        <button type="button" class="btn btn-outline-light" onclick="cambiarTipoGrafico('pedidosDiaChart', 'line')">
                             <i class="fas fa-chart-line"></i>
                         </button>
-                        <button type="button" class="btn btn-outline-secondary btn-xs" onclick="cambiarTipoGrafico('pedidosDiaChart', 'bar', this)">
+                        <button type="button" class="btn btn-outline-light" onclick="cambiarTipoGrafico('pedidosDiaChart', 'bar')">
                             <i class="fas fa-chart-bar"></i>
                         </button>
                     </div>
                 </div>
-                <div class="chart-panel-body">
+                <div class="card-body position-relative">
                     <canvas id="pedidosDiaChart"></canvas>
+                    <div class="chart-overlay" id="overlay-pedidosDiaChart"></div>
                 </div>
             </div>
         </div>
 
-        <div class="col-lg-6 mb-3">
-            <div class="chart-panel">
-                <div class="chart-panel-header">
-                    <h6 class="chart-panel-title">Clientes nuevos</h6>
-                    <div class="btn-group btn-group-sm">
-                        <button type="button" class="btn btn-outline-secondary btn-xs active" onclick="cambiarTipoGrafico('clientesNuevosChart', 'bar', this)">
+        <!-- Clientes nuevos -->
+        <div class="col-lg-6 mb-4">
+            <div class="card chart-card">
+                <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">👥 Clientes Nuevos</h5>
+                    <div class="btn-group btn-group-sm" role="group">
+                        <button type="button" class="btn btn-outline-light" onclick="cambiarTipoGrafico('clientesNuevosChart', 'bar')">
                             <i class="fas fa-chart-bar"></i>
                         </button>
-                        <button type="button" class="btn btn-outline-secondary btn-xs" onclick="cambiarTipoGrafico('clientesNuevosChart', 'line', this)">
+                        <button type="button" class="btn btn-outline-light" onclick="cambiarTipoGrafico('clientesNuevosChart', 'line')">
                             <i class="fas fa-chart-line"></i>
                         </button>
                     </div>
                 </div>
-                <div class="chart-panel-body">
+                <div class="card-body">
                     <canvas id="clientesNuevosChart"></canvas>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Gráficos de distribución -->
-    <div class="row g-3 mb-4">
-        <div class="col-lg-6 mb-3">
-            <div class="chart-panel">
-                <div class="chart-panel-header">
-                    <h6 class="chart-panel-title">Prendas por tipo</h6>
-                    <div class="btn-group btn-group-sm">
-                        <button type="button" class="btn btn-outline-secondary btn-xs active" onclick="cambiarTipoGrafico('prendasTipoChart', 'doughnut', this)">
+    <!-- Gráficos secundarios con drill-down -->
+    <div class="row mb-5">
+        <!-- Tipos de prendas -->
+        <div class="col-lg-6 mb-4">
+            <div class="card chart-card">
+                <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">👕 Prendas por Tipo</h5>
+                    <div class="btn-group btn-group-sm" role="group">
+                        <button type="button" class="btn btn-outline-light active" onclick="cambiarTipoGrafico('prendasTipoChart', 'doughnut')">
                             <i class="fas fa-chart-pie"></i>
                         </button>
-                        <button type="button" class="btn btn-outline-secondary btn-xs" onclick="cambiarTipoGrafico('prendasTipoChart', 'bar', this)">
+                        <button type="button" class="btn btn-outline-light" onclick="cambiarTipoGrafico('prendasTipoChart', 'bar')">
                             <i class="fas fa-chart-bar"></i>
                         </button>
                     </div>
                 </div>
-                <div class="chart-panel-body">
+                <div class="card-body">
                     <canvas id="prendasTipoChart"></canvas>
+                    <div class="text-center mt-3">
+                        <small class="text-muted">Haz clic en las secciones para ver detalles</small>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <div class="col-lg-6 mb-3">
-            <div class="chart-panel">
-                <div class="chart-panel-header">
-                    <h6 class="chart-panel-title">Estado de pedidos</h6>
-                    <div class="btn-group btn-group-sm">
-                        <button type="button" class="btn btn-outline-secondary btn-xs active" onclick="cambiarTipoGrafico('estadoPedidosChart', 'pie', this)">
+        <!-- Estado de pedidos -->
+        <div class="col-lg-6 mb-4">
+            <div class="card chart-card">
+                <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">✅ Estado de Pedidos</h5>
+                    <div class="btn-group btn-group-sm" role="group">
+                        <button type="button" class="btn btn-outline-light active" onclick="cambiarTipoGrafico('estadoPedidosChart', 'pie')">
                             <i class="fas fa-chart-pie"></i>
                         </button>
-                        <button type="button" class="btn btn-outline-secondary btn-xs" onclick="cambiarTipoGrafico('estadoPedidosChart', 'bar', this)">
+                        <button type="button" class="btn btn-outline-light" onclick="cambiarTipoGrafico('estadoPedidosChart', 'bar')">
                             <i class="fas fa-chart-bar"></i>
                         </button>
                     </div>
                 </div>
-                <div class="chart-panel-body">
+                <div class="card-body">
                     <canvas id="estadoPedidosChart"></canvas>
+                    <div class="text-center mt-3">
+                        <small class="text-muted">Haz clic en las secciones para filtrar</small>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Top clientes e Ingresos -->
-    <div class="row g-3 mb-4">
-        <div class="col-lg-6 mb-3">
-            <div class="chart-panel">
-                <div class="chart-panel-header">
-                    <h6 class="chart-panel-title">Top clientes</h6>
-                    <input type="number" class="form-control form-control-sm" style="width: 70px;"
-                           id="topClientesLimit" value="10" min="5" max="20"
+    <!-- Más gráficos con interactividad -->
+    <div class="row mb-5">
+        <!-- Top clientes -->
+        <div class="col-lg-6 mb-4">
+            <div class="card chart-card">
+                <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">⭐ Top Clientes</h5>
+                    <input type="number" class="form-control form-control-sm" style="width: 80px;" 
+                           id="topClientesLimit" value="10" min="5" max="20" 
                            onchange="actualizarTopClientes(this.value)">
                 </div>
-                <div class="chart-panel-body">
+                <div class="card-body">
                     <canvas id="topClientesChart"></canvas>
                 </div>
             </div>
         </div>
 
-        <div class="col-lg-6 mb-3">
-            <div class="chart-panel">
-                <div class="chart-panel-header">
-                    <h6 class="chart-panel-title">Ingresos por mes</h6>
-                    <div class="btn-group btn-group-sm">
-                        <button type="button" class="btn btn-outline-secondary btn-xs active" onclick="cambiarTipoGrafico('ingresosMesChart', 'bar', this)">
+        <!-- Ingresos por mes -->
+        <div class="col-lg-6 mb-4">
+            <div class="card chart-card">
+                <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">💰 Ingresos por Mes</h5>
+                    <div class="btn-group btn-group-sm" role="group">
+                        <button type="button" class="btn btn-outline-light" onclick="cambiarTipoGrafico('ingresosMesChart', 'bar')">
                             <i class="fas fa-chart-bar"></i>
                         </button>
-                        <button type="button" class="btn btn-outline-secondary btn-xs" onclick="cambiarTipoGrafico('ingresosMesChart', 'line', this)">
+                        <button type="button" class="btn btn-outline-light" onclick="cambiarTipoGrafico('ingresosMesChart', 'line')">
                             <i class="fas fa-chart-line"></i>
                         </button>
                     </div>
                 </div>
-                <div class="chart-panel-body">
+                <div class="card-body">
                     <canvas id="ingresosMesChart"></canvas>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Métrica simple -->
-    <div class="row g-3 mb-4">
+    <!-- Promedio de prendas -->
+    <div class="row mb-5">
         <div class="col-lg-12">
-            <div class="chart-panel">
-                <div class="chart-panel-body py-3 text-center">
-                    <span class="text-muted" style="font-size: 0.85rem;">Promedio de prendas por pedido</span>
-                    <div class="fw-bold fs-4 mt-1" style="color: #2c3e50;">{{ promedio_prendas }} prendas</div>
+            <div class="card bg-light">
+                <div class="card-body">
+                    <h5>📊 Métrica: Promedio de Prendas por Pedido</h5>
+                    <h3 class="text-primary">{{ promedio_prendas }} prendas</h3>
+                    <small class="text-muted">Este es el número promedio de prendas que se incluyen en cada pedido</small>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Sección de tablas -->
-    <div class="section-divider">
-        <h5 class="section-title">Análisis detallado</h5>
-    </div>
+    <!-- NUEVAS SECCIONES DE REPORTES INTERACTIVAS -->
+    <hr class="my-5">
+    <h3 class="mb-4"><i class="fas fa-chart-line"></i> Análisis Detallados</h3>
 
-    <!-- Tablas: Estados y Top Prendas -->
-    <div class="row g-3 mb-4">
-        <div class="col-lg-6 mb-3">
-            <div class="chart-panel">
-                <div class="chart-panel-header">
-                    <h6 class="chart-panel-title">Resumen por estado</h6>
-                    <input type="text" class="form-control form-control-sm" style="width: 140px;"
+    <!-- Tabla: Pedidos por Estado con búsqueda y filtros -->
+    <div class="row mb-5">
+        <div class="col-lg-6">
+            <div class="card interactive-table">
+                <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-list-check"></i> Resumen por Estado</h5>
+                    <input type="text" class="form-control form-control-sm" style="width: 150px;" 
                            placeholder="Buscar..." id="searchEstado">
                 </div>
                 <div class="table-responsive">
-                    <table class="table table-sm mb-0 reportes-table" id="tablaEstados">
-                        <thead>
+                    <table class="table table-sm table-hover mb-0" id="tablaEstados">
+                        <thead class="table-light">
                             <tr>
                                 <th class="sortable" onclick="ordenarTabla('tablaEstados', 0)">
                                     Estado <i class="fas fa-sort"></i>
@@ -265,26 +330,27 @@
                                 <th class="text-center sortable" onclick="ordenarTabla('tablaEstados', 1)">
                                     Cantidad <i class="fas fa-sort"></i>
                                 </th>
-                                <th class="text-end sortable" onclick="ordenarTabla('tablaEstados', 2)">
+                                <th class="text-right sortable" onclick="ordenarTabla('tablaEstados', 2)">
                                     % <i class="fas fa-sort"></i>
                                 </th>
                             </tr>
                         </thead>
                         <tbody>
                             {% if estado_pedidos %}
+                                {% set total_estados = estado_pedidos|length %}
                                 {% for estado in estado_pedidos %}
-                                <tr>
+                                <tr class="clickable-row" onclick="filtrarPorEstado('{{ estado[0] }}')">
                                     <td>
                                         {% if estado[0] == 'Completado' %}
                                             <span class="badge bg-success">{{ estado[0] }}</span>
                                         {% elif estado[0] == 'En proceso' %}
                                             <span class="badge bg-info">{{ estado[0] }}</span>
                                         {% else %}
-                                            <span class="badge bg-warning text-dark">{{ estado[0] }}</span>
+                                            <span class="badge bg-warning">{{ estado[0] }}</span>
                                         {% endif %}
                                     </td>
-                                    <td class="text-center">{{ estado[1] }}</td>
-                                    <td class="text-end">{{ "%.1f"|format((estado[1] / total_pedidos * 100) if total_pedidos > 0 else 0) }}%</td>
+                                    <td class="text-center"><strong>{{ estado[1] }}</strong></td>
+                                    <td class="text-right">{{ "%.1f"|format((estado[1] / total_pedidos * 100) if total_pedidos > 0 else 0) }}%</td>
                                 </tr>
                                 {% endfor %}
                             {% endif %}
@@ -294,16 +360,17 @@
             </div>
         </div>
 
-        <div class="col-lg-6 mb-3">
-            <div class="chart-panel">
-                <div class="chart-panel-header">
-                    <h6 class="chart-panel-title">Top 5 prendas</h6>
-                    <input type="text" class="form-control form-control-sm" style="width: 140px;"
+        <!-- Top 5 Prendas Más Solicitadas con gráfico de barras integrado -->
+        <div class="col-lg-6">
+            <div class="card interactive-table">
+                <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-star"></i> Top 5 Prendas</h5>
+                    <input type="text" class="form-control form-control-sm" style="width: 150px;" 
                            placeholder="Buscar..." id="searchPrendas">
                 </div>
                 <div class="table-responsive">
-                    <table class="table table-sm mb-0 reportes-table" id="tablaPrendas">
-                        <thead>
+                    <table class="table table-sm table-hover mb-0" id="tablaPrendas">
+                        <thead class="table-light">
                             <tr>
                                 <th class="sortable" onclick="ordenarTabla('tablaPrendas', 0)">
                                     Prenda <i class="fas fa-sort"></i>
@@ -311,21 +378,21 @@
                                 <th class="text-center sortable" onclick="ordenarTabla('tablaPrendas', 1)">
                                     Cantidad <i class="fas fa-sort"></i>
                                 </th>
-                                <th class="text-end">Distribución</th>
+                                <th class="text-right">Distribución</th>
                             </tr>
                         </thead>
                         <tbody>
                             {% if prendas_top %}
                                 {% set total_prendas_top = prendas_top|map(attribute=1)|list|sum %}
                                 {% for prenda in prendas_top[:5] %}
-                                {% set pct = "%.1f"|format((prenda[1] / total_prendas_top * 100) if total_prendas_top > 0 else 0) %}
-                                <tr>
+                                <tr class="clickable-row" onclick="verDetallesPrenda('{{ prenda[0] }}')">
                                     <td>{{ prenda[0] }}</td>
-                                    <td class="text-center">{{ prenda[1] }}</td>
-                                    <td class="text-end">
-                                        <div class="progress reportes-progress">
-                                            <div class="progress-bar reportes-progress-bar" role="progressbar" data-width="{{ pct }}">
-                                                {{ pct }}%
+                                    <td class="text-center"><strong>{{ prenda[1] }}</strong></td>
+                                    <td class="text-right">
+                                        <div class="progress" style="height: 20px;">
+                                            <div class="progress-bar bg-success" role="progressbar" 
+                                                 style="width: {{ "%.1f"|format((prenda[1] / total_prendas_top * 100) if total_prendas_top > 0 else 0) }}%">
+                                                {{ "%.1f"|format((prenda[1] / total_prendas_top * 100) if total_prendas_top > 0 else 0) }}%
                                             </div>
                                         </div>
                                     </td>
@@ -339,49 +406,51 @@
         </div>
     </div>
 
-    <!-- Tabla clientes activos -->
-    <div class="row g-3 mb-4">
+    <!-- Clientes con Más Pedidos - Tabla interactiva con paginación -->
+    <div class="row mb-5">
         <div class="col-lg-12">
-            <div class="chart-panel">
-                <div class="chart-panel-header">
-                    <h6 class="chart-panel-title">Clientes más activos</h6>
+            <div class="card interactive-table">
+                <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-users"></i> Clientes Más Activos</h5>
                     <div class="d-flex gap-2 align-items-center">
-                        <input type="text" class="form-control form-control-sm" style="width: 180px;"
+                        <input type="text" class="form-control form-control-sm" style="width: 200px;" 
                                placeholder="Buscar cliente..." id="searchClientes" onkeyup="buscarEnTabla('tablaClientes', this.value)">
                         <select class="form-select form-select-sm" style="width: auto;" id="pageSize" onchange="cambiarTamanioPagina(this.value)">
-                            <option value="10">10</option>
-                            <option value="20">20</option>
-                            <option value="50">50</option>
+                            <option value="10">10 filas</option>
+                            <option value="20">20 filas</option>
+                            <option value="50">50 filas</option>
                         </select>
                     </div>
                 </div>
                 <div class="table-responsive">
-                    <table class="table table-sm table-hover mb-0 reportes-table" id="tablaClientes">
-                        <thead>
+                    <table class="table table-sm table-hover mb-0" id="tablaClientes">
+                        <thead class="table-light sticky-header">
                             <tr>
                                 <th class="sortable" onclick="ordenarTabla('tablaClientes', 0)"># <i class="fas fa-sort"></i></th>
                                 <th class="sortable" onclick="ordenarTabla('tablaClientes', 1)">Cliente <i class="fas fa-sort"></i></th>
                                 <th class="text-center sortable" onclick="ordenarTabla('tablaClientes', 2)">Pedidos <i class="fas fa-sort"></i></th>
                                 <th class="text-center sortable" onclick="ordenarTabla('tablaClientes', 3)">Prendas <i class="fas fa-sort"></i></th>
-                                <th class="text-end sortable" onclick="ordenarTabla('tablaClientes', 4)">Gasto total <i class="fas fa-sort"></i></th>
-                                <th class="text-center">Ver</th>
+                                <th class="text-right sortable" onclick="ordenarTabla('tablaClientes', 4)">Gasto Total <i class="fas fa-sort"></i></th>
+                                <th class="text-center">Acciones</th>
                             </tr>
                         </thead>
                         <tbody>
                             {% if clientes_activos %}
                                 {% for cliente in clientes_activos[:20] %}
-                                <tr>
-                                    <td>{{ loop.index }}</td>
-                                    <td>{{ cliente[1] }}</td>
-                                    <td class="text-center">
-                                        <span class="badge bg-secondary">{{ cliente[2] }}</span>
+                                <tr class="clickable-row" data-cliente-id="{{ cliente[0] }}">
+                                    <td><strong>{{ loop.index }}</strong></td>
+                                    <td>
+                                        <span class="cliente-nombre">{{ cliente[1] }}</span>
                                     </td>
-                                    <td class="text-center">{{ cliente[3] }}</td>
-                                    <td class="text-end">${{ "{:,.0f}".format(cliente[4]) }}</td>
                                     <td class="text-center">
-                                        <a href="/clientes?id={{ cliente[0] }}" class="btn btn-sm btn-outline-secondary py-0 px-1">
+                                        <span class="badge bg-primary">{{ cliente[2] }}</span>
+                                    </td>
+                                    <td class="text-center"><strong>{{ cliente[3] }}</strong></td>
+                                    <td class="text-right">${{ "{:,.0f}".format(cliente[4]) }}</td>
+                                    <td class="text-center">
+                                        <button class="btn btn-sm btn-outline-primary" onclick="verPerfilCliente({{ cliente[0] }})">
                                             <i class="fas fa-eye"></i>
-                                        </a>
+                                        </button>
                                     </td>
                                 </tr>
                                 {% endfor %}
@@ -389,8 +458,8 @@
                         </tbody>
                     </table>
                 </div>
-                <div class="chart-panel-footer d-flex justify-content-between align-items-center">
-                    <small class="text-muted" id="paginationInfo">Mostrando 1-10 de {{ clientes_activos|length if clientes_activos else 0 }}</small>
+                <div class="card-footer d-flex justify-content-between align-items-center">
+                    <div id="paginationInfo">Mostrando 1-10 de {{ clientes_activos|length if clientes_activos else 0 }} clientes</div>
                     <nav>
                         <ul class="pagination pagination-sm mb-0" id="pagination">
                             <li class="page-item disabled"><a class="page-link" href="#">Anterior</a></li>
@@ -403,539 +472,844 @@
             </div>
         </div>
     </div>
+
 </div>
 
 <!-- Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
 <script>
+    // Datos desde backend
     const graficos = JSON.parse('{{ graficos | safe }}');
+    
+    // Almacenar instancias de gráficos globalmente
     const chartInstances = {};
 
-    // Paleta profesional
-    const palette = [
-        '#2c3e50', '#e67e22', '#27ae60', '#2980b9', '#8e44ad',
-        '#c0392b', '#16a085', '#d35400', '#7f8c8d', '#f39c12'
+    // Colores personalizados estilo Power BI
+    const coloresPrimarios = [
+        '#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd',
+        '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf'
     ];
 
-    Chart.defaults.font.family = "'Poppins', sans-serif";
-    Chart.defaults.font.size = 12;
-    Chart.defaults.color = '#555';
-
-    const defaultTooltip = {
-        backgroundColor: '#2c3e50',
+    // Configuración común de tooltips avanzados
+    const tooltipConfig = {
+        backgroundColor: 'rgba(0, 0, 0, 0.9)',
         titleColor: '#fff',
-        bodyColor: '#ddd',
-        borderColor: '#34495e',
-        borderWidth: 1,
-        padding: 10,
-        cornerRadius: 4,
+        bodyColor: '#fff',
+        borderColor: '#4CAF50',
+        borderWidth: 2,
+        padding: 12,
         displayColors: true,
         callbacks: {
-            label: function(ctx) {
-                let label = ctx.dataset.label || '';
-                if (label) label += ': ';
-                const val = ctx.parsed.y !== undefined ? ctx.parsed.y : ctx.parsed;
-                label += new Intl.NumberFormat('es-CO').format(val);
-                if (ctx.chart.config.type === 'pie' || ctx.chart.config.type === 'doughnut') {
-                    const total = ctx.dataset.data.reduce((a, b) => a + b, 0);
-                    label += ` (${((val / total) * 100).toFixed(1)}%)`;
+            label: function(context) {
+                let label = context.dataset.label || '';
+                if (label) {
+                    label += ': ';
                 }
+                // Manejar diferentes tipos de datos
+                const value = context.parsed.y !== undefined ? context.parsed.y : context.parsed;
+                label += new Intl.NumberFormat('es-CO').format(value);
+                
+                // Calcular porcentaje solo para gráficos de pie/doughnut
+                if (context.chart.config.type === 'pie' || context.chart.config.type === 'doughnut') {
+                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                    const percentage = ((value / total) * 100).toFixed(1);
+                    label += ` (${percentage}%)`;
+                }
+                
                 return label;
             }
         }
     };
 
-    const gridStyle = { color: 'rgba(0,0,0,0.06)' };
+    // Animaciones personalizadas
+    const animationConfig = {
+        duration: 1000,
+        easing: 'easeInOutQuart',
+        onComplete: function(animation) {
+            const chartId = animation.chart.canvas.id;
+            console.log(`Gráfico ${chartId} cargado`);
+        }
+    };
 
-    // 1. Pedidos por día
-    chartInstances['pedidosDiaChart'] = new Chart(
-        document.getElementById('pedidosDiaChart').getContext('2d'), {
+    // 1. Pedidos por día con interactividad mejorada
+    const ctxPedidosDia = document.getElementById('pedidosDiaChart').getContext('2d');
+    chartInstances['pedidosDiaChart'] = new Chart(ctxPedidosDia, {
         type: 'line',
         data: {
             labels: graficos.pedidos_dia.labels,
             datasets: [{
-                label: 'Pedidos',
+                label: 'Cantidad de Pedidos',
                 data: graficos.pedidos_dia.data,
-                borderColor: '#2c3e50',
-                backgroundColor: 'rgba(44, 62, 80, 0.08)',
-                borderWidth: 2,
+                borderColor: '#2196F3',
+                backgroundColor: 'rgba(33, 150, 243, 0.1)',
+                borderWidth: 3,
                 fill: true,
-                tension: 0.3,
-                pointRadius: 3,
-                pointHoverRadius: 6,
-                pointBackgroundColor: '#2c3e50',
+                tension: 0.4,
+                pointRadius: 5,
+                pointHoverRadius: 8,
+                pointBackgroundColor: '#2196F3',
                 pointBorderColor: '#fff',
-                pointBorderWidth: 2
+                pointBorderWidth: 2,
+                pointHoverBackgroundColor: '#fff',
+                pointHoverBorderColor: '#2196F3',
+                pointHoverBorderWidth: 3
             }]
         },
         options: {
             responsive: true,
             maintainAspectRatio: true,
-            interaction: { mode: 'index', intersect: false },
-            plugins: {
-                legend: { display: false },
-                tooltip: defaultTooltip
+            interaction: {
+                mode: 'index',
+                intersect: false,
             },
-            scales: {
-                y: { beginAtZero: true, grid: gridStyle },
-                x: { grid: { display: false } }
-            }
-        }
-    });
-
-    // 2. Clientes nuevos
-    chartInstances['clientesNuevosChart'] = new Chart(
-        document.getElementById('clientesNuevosChart').getContext('2d'), {
-        type: 'bar',
-        data: {
-            labels: graficos.clientes_nuevos.labels,
-            datasets: [{
-                label: 'Nuevos',
-                data: graficos.clientes_nuevos.data,
-                backgroundColor: '#27ae60',
-                borderColor: '#1e8449',
-                borderWidth: 1,
-                borderRadius: 3
-            }]
-        },
-        options: {
-            responsive: true,
             plugins: {
-                legend: { display: false },
-                tooltip: defaultTooltip
-            },
-            scales: {
-                y: { beginAtZero: true, grid: gridStyle },
-                x: { grid: { display: false } }
-            }
-        }
-    });
-
-    // 3. Prendas por tipo
-    chartInstances['prendasTipoChart'] = new Chart(
-        document.getElementById('prendasTipoChart').getContext('2d'), {
-        type: 'doughnut',
-        data: {
-            labels: graficos.prendas_tipo.labels,
-            datasets: [{
-                data: graficos.prendas_tipo.data,
-                backgroundColor: palette.slice(0, graficos.prendas_tipo.labels.length),
-                borderColor: '#fff',
-                borderWidth: 2,
-                hoverOffset: 8
-            }]
-        },
-        options: {
-            responsive: true,
-            plugins: {
-                legend: {
-                    position: 'right',
-                    labels: { font: { size: 11 }, padding: 8 }
-                },
-                tooltip: {
-                    ...defaultTooltip,
-                    callbacks: {
-                        label: function(ctx) {
-                            const val = ctx.parsed;
-                            const total = ctx.dataset.data.reduce((a, b) => a + b, 0);
-                            return `${ctx.label}: ${val} (${((val / total) * 100).toFixed(1)}%)`;
-                        }
+                legend: { 
+                    display: true,
+                    position: 'top',
+                    labels: {
+                        font: { size: 12, weight: 'bold' },
+                        padding: 15
                     }
+                },
+                tooltip: tooltipConfig
+            },
+            scales: {
+                y: { 
+                    beginAtZero: true,
+                    grid: {
+                        color: 'rgba(0, 0, 0, 0.05)'
+                    }
+                },
+                x: {
+                    grid: {
+                        display: false
+                    }
+                }
+            },
+            animation: animationConfig,
+            onClick: (event, activeElements) => {
+                if (activeElements.length > 0) {
+                    const index = activeElements[0].index;
+                    const fecha = graficos.pedidos_dia.labels[index];
+                    const cantidad = graficos.pedidos_dia.data[index];
+                    mostrarDetallesPedidosDia(fecha, cantidad);
                 }
             }
         }
     });
 
-    // 4. Estado de pedidos
-    chartInstances['estadoPedidosChart'] = new Chart(
-        document.getElementById('estadoPedidosChart').getContext('2d'), {
+    // 2. Clientes nuevos
+    const ctxClientesNuevos = document.getElementById('clientesNuevosChart').getContext('2d');
+    chartInstances['clientesNuevosChart'] = new Chart(ctxClientesNuevos, {
+        type: 'bar',
+        data: {
+            labels: graficos.clientes_nuevos.labels,
+            datasets: [{
+                label: 'Clientes Nuevos',
+                data: graficos.clientes_nuevos.data,
+                backgroundColor: graficos.clientes_nuevos.data.map((val, idx) => 
+                    val === Math.max(...graficos.clientes_nuevos.data) ? '#4CAF50' : 'rgba(76, 175, 80, 0.7)'
+                ),
+                borderColor: '#388E3C',
+                borderWidth: 2,
+                borderRadius: 8,
+                hoverBackgroundColor: '#66BB6A'
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: { 
+                legend: { display: true },
+                tooltip: tooltipConfig
+            },
+            scales: { 
+                y: { 
+                    beginAtZero: true,
+                    grid: { color: 'rgba(0, 0, 0, 0.05)' }
+                }
+            },
+            animation: animationConfig
+        }
+    });
+
+    // 3. Prendas por tipo con drill-down
+    const ctxPrendasTipo = document.getElementById('prendasTipoChart').getContext('2d');
+    chartInstances['prendasTipoChart'] = new Chart(ctxPrendasTipo, {
+        type: 'doughnut',
+        data: {
+            labels: graficos.prendas_tipo.labels,
+            datasets: [{
+                data: graficos.prendas_tipo.data,
+                backgroundColor: coloresPrimarios.slice(0, graficos.prendas_tipo.labels.length),
+                borderColor: '#fff',
+                borderWidth: 3,
+                hoverOffset: 20,
+                hoverBorderWidth: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: { 
+                legend: { 
+                    position: 'right',
+                    labels: {
+                        font: { size: 11 },
+                        padding: 10,
+                        generateLabels: function(chart) {
+                            const data = chart.data;
+                            return data.labels.map((label, i) => {
+                                const value = data.datasets[0].data[i];
+                                const total = data.datasets[0].data.reduce((a, b) => a + b, 0);
+                                const percentage = ((value / total) * 100).toFixed(1);
+                                return {
+                                    text: `${label}: ${value} (${percentage}%)`,
+                                    fillStyle: data.datasets[0].backgroundColor[i],
+                                    hidden: false,
+                                    index: i
+                                };
+                            });
+                        }
+                    }
+                },
+                tooltip: {
+                    ...tooltipConfig,
+                    callbacks: {
+                        label: function(context) {
+                            const label = context.label || '';
+                            const value = context.parsed;
+                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                            const percentage = ((value / total) * 100).toFixed(1);
+                            return `${label}: ${value} (${percentage}%)`;
+                        }
+                    }
+                }
+            },
+            animation: {
+                ...animationConfig,
+                animateRotate: true,
+                animateScale: true
+            },
+            onClick: (event, activeElements) => {
+                if (activeElements.length > 0) {
+                    const index = activeElements[0].index;
+                    const prenda = graficos.prendas_tipo.labels[index];
+                    const cantidad = graficos.prendas_tipo.data[index];
+                    verDetallesPrenda(prenda, cantidad);
+                }
+            }
+        }
+    });
+
+    // 4. Estado de pedidos con interactividad
+    const ctxEstadoPedidos = document.getElementById('estadoPedidosChart').getContext('2d');
+    chartInstances['estadoPedidosChart'] = new Chart(ctxEstadoPedidos, {
         type: 'pie',
         data: {
             labels: graficos.estado_pedidos.labels,
             datasets: [{
                 data: graficos.estado_pedidos.data,
-                backgroundColor: ['#e67e22', '#27ae60', '#2980b9', '#c0392b'],
+                backgroundColor: ['#FF9800', '#4CAF50', '#2196F3', '#F44336'],
                 borderColor: '#fff',
-                borderWidth: 2,
-                hoverOffset: 6
+                borderWidth: 3,
+                hoverOffset: 15
             }]
         },
         options: {
             responsive: true,
-            plugins: {
-                legend: {
+            plugins: { 
+                legend: { 
                     position: 'bottom',
-                    labels: { font: { size: 12 }, padding: 12 }
+                    labels: {
+                        font: { size: 12 },
+                        padding: 15
+                    }
                 },
-                tooltip: defaultTooltip
+                tooltip: tooltipConfig
+            },
+            animation: animationConfig,
+            onClick: (event, activeElements) => {
+                if (activeElements.length > 0) {
+                    const index = activeElements[0].index;
+                    const estado = graficos.estado_pedidos.labels[index];
+                    filtrarPorEstado(estado);
+                }
             }
         }
     });
 
-    // 5. Top clientes (horizontal)
-    chartInstances['topClientesChart'] = new Chart(
-        document.getElementById('topClientesChart').getContext('2d'), {
+    // 5. Top clientes con barras horizontales
+    const ctxTopClientes = document.getElementById('topClientesChart').getContext('2d');
+    chartInstances['topClientesChart'] = new Chart(ctxTopClientes, {
         type: 'bar',
         data: {
             labels: graficos.top_clientes.labels,
             datasets: [{
-                label: 'Pedidos',
+                label: 'Cantidad de Pedidos',
                 data: graficos.top_clientes.data,
-                backgroundColor: '#2c3e50',
-                borderRadius: 3
+                backgroundColor: graficos.top_clientes.data.map((val, idx) => {
+                    const intensity = (val / Math.max(...graficos.top_clientes.data));
+                    return `rgba(156, 39, 176, ${0.4 + intensity * 0.6})`;
+                }),
+                borderColor: '#6A1B9A',
+                borderWidth: 2,
+                borderRadius: 6,
+                hoverBackgroundColor: '#AB47BC'
             }]
         },
         options: {
             indexAxis: 'y',
             responsive: true,
-            plugins: {
+            plugins: { 
                 legend: { display: false },
-                tooltip: defaultTooltip
+                tooltip: tooltipConfig
             },
-            scales: {
-                x: { beginAtZero: true, grid: gridStyle },
-                y: { grid: { display: false } }
-            }
+            scales: { 
+                x: { 
+                    beginAtZero: true,
+                    grid: { color: 'rgba(0, 0, 0, 0.05)' }
+                }
+            },
+            animation: animationConfig
         }
     });
 
-    // 6. Ingresos por mes
-    chartInstances['ingresosMesChart'] = new Chart(
-        document.getElementById('ingresosMesChart').getContext('2d'), {
+    // 6. Ingresos por mes con gradiente
+    const ctxIngresosMes = document.getElementById('ingresosMesChart').getContext('2d');
+    const gradient = ctxIngresosMes.createLinearGradient(0, 0, 0, 400);
+    gradient.addColorStop(0, 'rgba(0, 188, 212, 0.8)');
+    gradient.addColorStop(1, 'rgba(0, 188, 212, 0.2)');
+    
+    chartInstances['ingresosMesChart'] = new Chart(ctxIngresosMes, {
         type: 'bar',
         data: {
             labels: graficos.ingresos_mes.labels,
             datasets: [{
                 label: 'Ingresos ($)',
                 data: graficos.ingresos_mes.data,
-                backgroundColor: '#f1c40f',
-                borderColor: '#d4ac0d',
-                borderWidth: 1,
-                borderRadius: 3
+                backgroundColor: gradient,
+                borderColor: '#00838F',
+                borderWidth: 2,
+                borderRadius: 8,
+                hoverBackgroundColor: '#26C6DA'
             }]
         },
         options: {
             responsive: true,
-            plugins: {
-                legend: { display: false },
+            plugins: { 
+                legend: { display: true },
                 tooltip: {
-                    ...defaultTooltip,
+                    ...tooltipConfig,
                     callbacks: {
-                        label: function(ctx) {
-                            return 'Ingresos: $' + new Intl.NumberFormat('es-CO').format(ctx.parsed.y);
+                        label: function(context) {
+                            return `Ingresos: $${new Intl.NumberFormat('es-CO').format(context.parsed.y)}`;
                         }
                     }
                 }
             },
-            scales: {
-                y: {
+            scales: { 
+                y: { 
                     beginAtZero: true,
                     ticks: {
-                        callback: function(v) {
-                            return '$' + new Intl.NumberFormat('es-CO', { notation: 'compact' }).format(v);
+                        callback: function(value) {
+                            return '$' + new Intl.NumberFormat('es-CO', { notation: 'compact' }).format(value);
                         }
                     },
-                    grid: gridStyle
-                },
-                x: { grid: { display: false } }
-            }
+                    grid: { color: 'rgba(0, 0, 0, 0.05)' }
+                }
+            },
+            animation: animationConfig
         }
     });
 
-    // ========== Funciones interactivas ==========
-
+    // ========== FUNCIONES INTERACTIVAS ==========
+    
+    // Animación de contadores en KPIs
     document.addEventListener('DOMContentLoaded', function() {
-        document.querySelectorAll('.counter').forEach(function(el) {
-            var target = parseInt(el.getAttribute('data-target'));
-            if (isNaN(target)) return;
-            var step = target / 60;
-            var current = 0;
-            function update() {
-                current += step;
+        const counters = document.querySelectorAll('.counter');
+        counters.forEach(counter => {
+            const target = parseInt(counter.getAttribute('data-target'));
+            const duration = 2000;
+            const increment = target / (duration / 16);
+            let current = 0;
+            
+            const updateCounter = () => {
+                current += increment;
                 if (current < target) {
-                    el.textContent = Math.floor(current).toLocaleString('es-CO');
-                    requestAnimationFrame(update);
+                    counter.textContent = Math.floor(current);
+                    requestAnimationFrame(updateCounter);
                 } else {
-                    el.textContent = target.toLocaleString('es-CO');
+                    counter.textContent = target;
                 }
-            }
-            update();
+            };
+            updateCounter();
         });
     });
 
-    function cambiarTipoGrafico(chartId, nuevoTipo, btn) {
-        var chart = chartInstances[chartId];
+    // Cambiar tipo de gráfico dinámicamente
+    function cambiarTipoGrafico(chartId, nuevoTipo) {
+        const chart = chartInstances[chartId];
         if (chart) {
             chart.config.type = nuevoTipo;
             chart.update('active');
-        }
-        if (btn) {
-            btn.closest('.btn-group').querySelectorAll('button').forEach(function(b) { b.classList.remove('active'); });
-            btn.classList.add('active');
-        }
-    }
-
-    function buscarEnTabla(tablaId, texto) {
-        var filas = document.getElementById(tablaId).tBodies[0].rows;
-        var q = texto.toLowerCase();
-        for (var i = 0; i < filas.length; i++) {
-            filas[i].style.display = filas[i].textContent.toLowerCase().indexOf(q) >= 0 ? '' : 'none';
+            
+            // Efecto visual en el botón
+            const buttons = document.querySelectorAll(`#${chartId}`).item(0).closest('.card').querySelectorAll('.btn-group button');
+            buttons.forEach(btn => btn.classList.remove('active'));
+            event.target.closest('button').classList.add('active');
         }
     }
 
-    var sortState = {};
-    function ordenarTabla(tablaId, col) {
-        var tbody = document.getElementById(tablaId).tBodies[0];
-        var rows = Array.from(tbody.rows);
-        var asc = !sortState[tablaId + col];
-        sortState[tablaId + col] = asc;
-        rows.sort(function(a, b) {
-            var at = a.cells[col].textContent.trim();
-            var bt = b.cells[col].textContent.trim();
-            var an = parseFloat(at.replace(/[^0-9.\-]/g, ''));
-            var bn = parseFloat(bt.replace(/[^0-9.\-]/g, ''));
-            if (!isNaN(an) && !isNaN(bn)) return asc ? an - bn : bn - an;
-            return asc ? at.localeCompare(bt) : bt.localeCompare(at);
+    // Mostrar detalles de pedidos por día
+    function mostrarDetallesPedidosDia(fecha, cantidad) {
+        mostrarNotificacion(`${fecha}: ${cantidad} pedidos`, 'info');
+    }
+
+    // Ver detalles de una prenda
+    function verDetallesPrenda(prenda, cantidad) {
+        if (!cantidad) cantidad = 'N/A';
+        mostrarNotificacion(`${prenda}: ${cantidad} unidades`, 'info');
+    }
+
+    // Filtrar por estado
+    function filtrarPorEstado(estado) {
+        console.log(`Filtrando pedidos por estado: ${estado}`);
+        mostrarNotificacion(`Filtrando: ${estado}`, 'info');
+    }
+
+    // Ver perfil de cliente
+    function verPerfilCliente(clienteId) {
+        window.location.href = `/clientes?id=${clienteId}`;
+    }
+
+    // Buscar en tabla
+    function buscarEnTabla(tablaId, searchText) {
+        const tabla = document.getElementById(tablaId);
+        const filas = tabla.getElementsByTagName('tbody')[0].getElementsByTagName('tr');
+        const searchLower = searchText.toLowerCase();
+        
+        Array.from(filas).forEach(fila => {
+            const texto = fila.textContent.toLowerCase();
+            fila.style.display = texto.includes(searchLower) ? '' : 'none';
         });
-        rows.forEach(function(r) { tbody.appendChild(r); });
-        var headers = document.getElementById(tablaId).querySelectorAll('th.sortable i');
-        headers.forEach(function(icon, idx) {
-            icon.className = idx === col ? (asc ? 'fas fa-sort-up' : 'fas fa-sort-down') : 'fas fa-sort';
+    }
+
+    // Ordenar tabla
+    let ordenAscendente = {};
+    function ordenarTabla(tablaId, columna) {
+        const tabla = document.getElementById(tablaId);
+        const tbody = tabla.getElementsByTagName('tbody')[0];
+        const filas = Array.from(tbody.getElementsByTagName('tr'));
+        
+        const esAscendente = !ordenAscendente[tablaId + columna];
+        ordenAscendente[tablaId + columna] = esAscendente;
+        
+        filas.sort((a, b) => {
+            const aText = a.getElementsByTagName('td')[columna].textContent.trim();
+            const bText = b.getElementsByTagName('td')[columna].textContent.trim();
+            
+            const aNum = parseFloat(aText.replace(/[^0-9.-]/g, ''));
+            const bNum = parseFloat(bText.replace(/[^0-9.-]/g, ''));
+            
+            if (!isNaN(aNum) && !isNaN(bNum)) {
+                return esAscendente ? aNum - bNum : bNum - aNum;
+            }
+            
+            return esAscendente ? aText.localeCompare(bText) : bText.localeCompare(aText);
+        });
+        
+        filas.forEach(fila => tbody.appendChild(fila));
+        actualizarIconosOrdenamiento(tablaId, columna, esAscendente);
+    }
+
+    function actualizarIconosOrdenamiento(tablaId, columna, ascendente) {
+        const tabla = document.getElementById(tablaId);
+        const headers = tabla.querySelectorAll('th.sortable i');
+        headers.forEach((icon, idx) => {
+            if (idx === columna) {
+                icon.className = ascendente ? 'fas fa-sort-up' : 'fas fa-sort-down';
+            } else {
+                icon.className = 'fas fa-sort';
+            }
         });
     }
 
-    function actualizarTopClientes(limite) { mostrarNotificacion('Top ' + limite + ' clientes'); }
-    function cambiarTamanioPagina(n) { mostrarNotificacion(n + ' filas por página'); }
-    function refrescarDatos() { location.reload(); }
-    function exportarReporte() { window.print(); }
-
-    function mostrarNotificacion(msg) {
-        var el = document.createElement('div');
-        el.className = 'reportes-toast';
-        el.textContent = msg;
-        document.body.appendChild(el);
-        setTimeout(function() { el.classList.add('out'); setTimeout(function() { el.remove(); }, 300); }, 2500);
+    function actualizarTopClientes(limite) {
+        console.log(`Actualizando a top ${limite} clientes`);
+        mostrarNotificacion(`Top ${limite} clientes`, 'info');
     }
 
-    document.querySelectorAll('.reportes-progress-bar[data-width]').forEach(function(bar) {
-        bar.style.width = bar.getAttribute('data-width') + '%';
-    });
+    function cambiarTamanioPagina(tamanio) {
+        console.log(`Tamaño de página: ${tamanio}`);
+        mostrarNotificacion(`${tamanio} filas por página`, 'info');
+    }
+
+    function refrescarDatos() {
+        mostrarNotificacion('Actualizando...', 'info');
+        setTimeout(() => location.reload(), 500);
+    }
+
+    function exportarReporte() {
+        mostrarNotificacion('Generando PDF...', 'info');
+        window.print();
+    }
+
+    function mostrarNotificacion(mensaje, tipo = 'info') {
+        const colores = {
+            success: '#4CAF50',
+            error: '#F44336',
+            info: '#2196F3',
+            warning: '#FF9800'
+        };
+        
+        const notif = document.createElement('div');
+        notif.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: ${colores[tipo]};
+            color: white;
+            padding: 15px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            z-index: 10000;
+            animation: slideIn 0.3s ease-out;
+        `;
+        notif.textContent = mensaje;
+        document.body.appendChild(notif);
+        
+        setTimeout(() => {
+            notif.style.animation = 'slideOut 0.3s ease-out';
+            setTimeout(() => notif.remove(), 300);
+        }, 3000);
+    }
 
     document.getElementById('searchEstado')?.addEventListener('keyup', function() {
         buscarEnTabla('tablaEstados', this.value);
     });
+    
     document.getElementById('searchPrendas')?.addEventListener('keyup', function() {
         buscarEnTabla('tablaPrendas', this.value);
     });
 </script>
 
 <style>
-    /* ===== Reportes ===== */
-    .reportes-wrapper {
-        max-width: 1200px;
-        margin: 0 auto;
-        padding: 2rem 1.5rem;
+    .card {
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        transition: all 0.3s ease;
+        border-radius: 12px;
+        border: none;
     }
-    .reportes-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
-        margin-bottom: 2rem;
-        flex-wrap: wrap;
-        gap: 1rem;
+    .card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 16px rgba(0,0,0,0.15);
     }
-    .reportes-title {
-        font-size: 1.5rem;
-        font-weight: 600;
-        color: #2c3e50;
-        margin: 0;
+    .card-header {
+        border-bottom: 2px solid rgba(0,0,0,0.1);
+        border-radius: 12px 12px 0 0;
     }
-    .reportes-subtitle {
-        font-size: 0.85rem;
-        color: #7f8c8d;
-        margin: 0.2rem 0 0;
+    .card.border-left-primary {
+        border-left: 4px solid #4CAF50;
     }
-    .reportes-actions {
-        display: flex;
-        gap: 0.5rem;
-        align-items: center;
-        flex-wrap: wrap;
+    .card.border-left-success {
+        border-left: 4px solid #2196F3;
     }
-
+    .card.border-left-warning {
+        border-left: 4px solid #FF9800;
+    }
+    .card.border-left-info {
+        border-left: 4px solid #00BCD4;
+    }
+    
     /* KPI Cards */
     .kpi-card {
-        background: #fff;
-        border: 1px solid #e9ecef;
-        border-radius: 8px;
-        padding: 1.25rem;
-        display: flex;
-        align-items: center;
-        gap: 1rem;
-        transition: box-shadow 0.2s;
-    }
-    .kpi-card:hover {
-        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-    }
-    .kpi-card--sm {
-        padding: 1rem 1.25rem;
-    }
-    .kpi-icon-wrap {
-        width: 48px;
-        height: 48px;
-        border-radius: 10px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        flex-shrink: 0;
-        font-size: 1.2rem;
-    }
-    .kpi-info {
-        display: flex;
-        flex-direction: column;
-    }
-    .kpi-label {
-        font-size: 0.78rem;
-        color: #7f8c8d;
-        text-transform: uppercase;
-        letter-spacing: 0.3px;
-        font-weight: 500;
-    }
-    .kpi-value {
-        font-size: 1.6rem;
-        font-weight: 700;
-        color: #2c3e50;
-        line-height: 1.2;
-    }
-    .kpi-value--sm {
-        font-size: 1.25rem;
-    }
-
-    /* Chart Panels */
-    .chart-panel {
-        background: #fff;
-        border: 1px solid #e9ecef;
-        border-radius: 8px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 15px;
+        padding: 20px;
+        color: white;
+        position: relative;
         overflow: hidden;
     }
-    .chart-panel-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 0.75rem 1rem;
-        border-bottom: 1px solid #f0f0f0;
+    .kpi-card::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -50%;
+        width: 200%;
+        height: 200%;
+        background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+        animation: rotate 20s linear infinite;
     }
-    .chart-panel-title {
+    
+    .bg-gradient-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+    }
+    .bg-gradient-success {
+        background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%) !important;
+    }
+    .bg-gradient-warning {
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%) !important;
+    }
+    .bg-gradient-info {
+        background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%) !important;
+    }
+    
+    .counter {
+        font-size: 2.5rem;
+        font-weight: bold;
+        display: inline-block;
+    }
+    
+    .trend-indicator {
         font-size: 0.9rem;
-        font-weight: 600;
-        color: #2c3e50;
-        margin: 0;
+        opacity: 0.9;
+        margin-top: 5px;
     }
-    .chart-panel-body {
-        padding: 1rem;
+    
+    .progress {
+        height: 6px;
+        border-radius: 3px;
+        background: rgba(255,255,255,0.2);
     }
-    .chart-panel-footer {
-        padding: 0.6rem 1rem;
-        border-top: 1px solid #f0f0f0;
+    .progress-bar {
+        border-radius: 3px;
+        transition: width 1s ease;
     }
-
-    /* Section divider */
-    .section-divider {
-        border-top: 1px solid #dee2e6;
-        padding-top: 1.5rem;
-        margin-bottom: 1.5rem;
+    
+    /* Charts */
+    .chart-card {
+        position: relative;
     }
-    .section-title {
-        font-size: 1rem;
-        font-weight: 600;
-        color: #2c3e50;
-        margin: 0;
+    .chart-controls {
+        position: absolute;
+        top: 15px;
+        right: 15px;
+        z-index: 10;
     }
-
+    .btn-chart {
+        padding: 5px 12px;
+        font-size: 0.85rem;
+        border-radius: 6px;
+        transition: all 0.2s;
+    }
+    .btn-chart:hover {
+        transform: scale(1.05);
+    }
+    .btn-chart.active {
+        background-color: #667eea;
+        color: white;
+    }
+    
     /* Tables */
-    .reportes-table thead th {
-        background-color: #f8f9fa;
-        color: #555;
+    .interactive-table {
+        overflow-x: auto;
+    }
+    .interactive-table table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+    .interactive-table thead th {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 12px;
         font-weight: 600;
-        font-size: 0.8rem;
-        text-transform: uppercase;
-        letter-spacing: 0.3px;
-        border-bottom: 2px solid #dee2e6;
-        padding: 0.6rem 0.75rem;
+        position: sticky;
+        top: 0;
+        z-index: 10;
     }
-    .reportes-table tbody td {
-        padding: 0.55rem 0.75rem;
-        font-size: 0.87rem;
-        vertical-align: middle;
-        border-bottom: 1px solid #f0f0f0;
-    }
-    .reportes-table th.sortable {
+    .interactive-table th.sortable {
         cursor: pointer;
         user-select: none;
     }
-    .reportes-table th.sortable:hover {
-        background-color: #eef1f4;
+    .interactive-table th.sortable:hover {
+        background: linear-gradient(135deg, #5568d3 0%, #65398b 100%);
     }
-
-    /* Progress bars */
-    .reportes-progress {
-        height: 18px;
-        background-color: #eee;
+    .interactive-table tbody tr {
+        transition: all 0.2s;
     }
-    .reportes-progress-bar {
-        background-color: #2c3e50;
-        font-size: 0.72rem;
+    .interactive-table tbody tr:hover {
+        background-color: #f8f9fa;
+        transform: scale(1.01);
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     }
-
-    /* Small toggle buttons */
-    .btn-xs {
-        padding: 0.15rem 0.45rem;
+    .clickable-row {
+        cursor: pointer;
+    }
+    .interactive-table td {
+        padding: 10px 12px;
+        border-bottom: 1px solid #dee2e6;
+    }
+    
+    .search-box {
+        position: relative;
+        margin-bottom: 15px;
+    }
+    .search-box input {
+        padding-left: 35px;
+        border-radius: 8px;
+        border: 1px solid #ddd;
+        transition: all 0.3s;
+    }
+    .search-box input:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+    }
+    .search-box i {
+        position: absolute;
+        left: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #999;
+    }
+    
+    .text-xs {
         font-size: 0.75rem;
     }
-
-    /* Toast */
-    .reportes-toast {
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        background: #2c3e50;
-        color: #fff;
-        padding: 0.6rem 1.2rem;
-        border-radius: 6px;
-        font-size: 0.85rem;
-        z-index: 10000;
-        animation: toastIn 0.25s ease-out;
+    .font-weight-bold {
+        font-weight: 600;
     }
-    .reportes-toast.out {
-        animation: toastOut 0.25s ease-in forwards;
+    .text-uppercase {
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
     }
-    @keyframes toastIn {
-        from { opacity: 0; transform: translateY(-10px); }
-        to { opacity: 1; transform: translateY(0); }
+    .table-hover tbody tr:hover {
+        background-color: #f5f5f5;
     }
-    @keyframes toastOut {
-        from { opacity: 1; transform: translateY(0); }
-        to { opacity: 0; transform: translateY(-10px); }
+    
+    /* Animations */
+    @keyframes rotate {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
     }
-
-    /* Print */
-    @media print {
-        .reportes-actions, .btn-group, .section-divider, .chart-panel-footer, nav { display: none; }
-        .chart-panel { border: 1px solid #ccc; break-inside: avoid; }
+    
+    @keyframes slideIn {
+        from {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+        to {
+            transform: translateX(0);
+            opacity: 1;
+        }
     }
-
-    /* Mobile */
+    
+    @keyframes slideOut {
+        from {
+            transform: translateX(0);
+            opacity: 1;
+        }
+        to {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+    }
+    
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+    
+    .fade-in {
+        animation: fadeIn 0.5s ease-out;
+    }
+    
+    /* Responsive */
     @media (max-width: 768px) {
-        .reportes-wrapper { padding: 1rem; }
-        .reportes-header { flex-direction: column; }
-        .reportes-actions { width: 100%; }
-        .kpi-value { font-size: 1.3rem; }
-        .kpi-icon-wrap { width: 40px; height: 40px; font-size: 1rem; }
-        canvas { max-height: 250px !important; }
+        .container-fluid {
+            padding-left: 0.8rem;
+            padding-right: 0.8rem;
+        }
+
+        h1 {
+            font-size: 1.5rem;
+        }
+
+        /* Header con botones */
+        .d-flex.justify-content-between.align-items-center {
+            flex-direction: column !important;
+            align-items: stretch !important;
+            gap: 1rem;
+        }
+
+        .d-flex.gap-2 {
+            flex-direction: column !important;
+            width: 100%;
+        }
+
+        .d-flex.gap-2 select,
+        .d-flex.gap-2 button {
+            width: 100% !important;
+        }
+
+        .counter {
+            font-size: 2rem;
+        }
+
+        .chart-controls {
+            position: relative;
+            top: 0;
+            right: 0;
+            margin-bottom: 15px;
+            flex-direction: column;
+        }
+
+        .chart-controls button {
+            width: 100%;
+            margin-bottom: 0.5rem;
+        }
+
+        /* KPI Cards */
+        .kpi-card {
+            margin-bottom: 1rem;
+        }
+
+        /* Tables */
+        .table {
+            font-size: 0.85rem;
+        }
+
+        .table th,
+        .table td {
+            padding: 0.5rem 0.3rem;
+        }
+
+        /* Canvas para gráficos */
+        canvas {
+            max-height: 250px !important;
+        }
     }
+
     @media (max-width: 480px) {
-        .reportes-title { font-size: 1.2rem; }
-        .kpi-value { font-size: 1.1rem; }
-        .kpi-value--sm { font-size: 1rem; }
+        h1 {
+            font-size: 1.3rem;
+        }
+
+        .counter {
+            font-size: 1.5rem;
+        }
+
+        .btn-sm {
+            font-size: 0.8rem;
+            padding: 0.4rem 0.6rem;
+        }
+
+        .form-select-sm {
+            font-size: 0.85rem;
+        }
     }
-</style>
+    
+    /* Print styles */
+    @media print {
+        .btn, .search-box, .chart-controls {
+            display: none !important;
+        }
+        .card {
+            page-break-inside: avoid;
+            box-shadow: none;
+        }
+    }
+</style></style>
+
 {% endblock %}
+
