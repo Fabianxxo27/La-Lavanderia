@@ -4,7 +4,8 @@ Rutas del panel de administración
 """
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session, send_file, Response, jsonify
 from werkzeug.security import generate_password_hash
-from models import run_query, ensure_cliente_exists
+from sqlalchemy import text
+from models import run_query, ensure_cliente_exists, db
 from services import limpiar_texto, validar_email, send_email_async
 from decorators import login_requerido, admin_requerido
 from helpers import admin_only, obtener_esquema_descuento_cliente, ejecutar_sql_file, get_safe_redirect
@@ -1078,11 +1079,42 @@ def eliminar_cliente(id_cliente):
         return redirect(url_for('auth.index'))
     
     try:
-        run_query(
-            "DELETE FROM usuario WHERE id_usuario = :id AND rol = 'cliente'",
+        usuario_obj = run_query(
+            "SELECT id_usuario FROM usuario WHERE id_usuario = :id AND rol = 'cliente'",
             {"id": id_cliente},
-            commit=True
+            fetchone=True
         )
+
+        if not usuario_obj:
+            flash('Cliente no encontrado o no válido para eliminación.', 'warning')
+            return redirect(get_safe_redirect())
+
+        # Eliminar datos relacionados en una transacción para evitar huérfanos.
+        with db.engine.begin() as conn:
+            conn.execute(
+                text("""
+                    DELETE FROM recibo
+                    WHERE id_cliente = :id
+                       OR id_pedido IN (
+                           SELECT id_pedido
+                           FROM pedido
+                           WHERE id_cliente = :id
+                       )
+                """),
+                {"id": id_cliente}
+            )
+
+            # Al eliminar cliente, pedido y cliente_promocion se limpian por CASCADE.
+            conn.execute(
+                text("DELETE FROM cliente WHERE id_cliente = :id"),
+                {"id": id_cliente}
+            )
+
+            conn.execute(
+                text("DELETE FROM usuario WHERE id_usuario = :id AND rol = 'cliente'"),
+                {"id": id_cliente}
+            )
+
         flash('Cliente eliminado correctamente.', 'success')
     except Exception as e:
         flash(f'Error al eliminar cliente: {e}', 'danger')
