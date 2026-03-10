@@ -2625,6 +2625,11 @@ def agregar_pedido():
                                 <p><strong>🚚 Servicio a Domicilio</strong></p>
                                 <p>Recogeremos tu ropa en la dirección indicada y la entregaremos limpia en la fecha estimada.</p>
                             </div>
+
+                            <div style="background: #fff8e1; border-left: 4px solid #ffb300; padding: 16px; margin: 20px 0; border-radius: 5px;">
+                                <p style="margin: 0;"><strong>📎 Código de barras adjunto</strong></p>
+                                <p style="margin: 8px 0 0 0;">En este correo encontrarás la imagen del código de barras del pedido para consulta y seguimiento.</p>
+                            </div>
                         </div>
                         <div style="background: #1a4e7b; color: white; padding: 20px; text-align: center; border-radius: 0 0 10px 10px;">
                             <p style="margin: 0;">La Lavandería - Servicio a Domicilio</p>
@@ -2632,7 +2637,36 @@ def agregar_pedido():
                     </body>
                 </html>
                 """
-                send_email_async(email_cliente, f"Pedido {id_pedido} Creado - La Lavanderia", html_pedido)
+
+                # Generar imagen PNG del código de barras para adjuntar al correo
+                email_attachments = []
+                try:
+                    code128 = barcode.get_barcode_class('code128')
+                    barcode_instance = code128(codigo_barras, writer=ImageWriter())
+                    barcode_buffer = BytesIO()
+                    barcode_instance.write(barcode_buffer, options={
+                        'module_width': 0.3,
+                        'module_height': 10.0,
+                        'quiet_zone': 2.0,
+                        'font_size': 10,
+                        'text_distance': 3.0,
+                        'write_text': True
+                    })
+                    email_attachments.append({
+                        'filename': f'barcode_{codigo_barras}.png',
+                        'content_bytes': barcode_buffer.getvalue(),
+                        'mime_type': 'image/png',
+                        'disposition': 'attachment'
+                    })
+                except Exception as barcode_error:
+                    print(f"[WARN] No se pudo adjuntar código de barras en correo del pedido #{id_pedido}: {barcode_error}", flush=True)
+
+                send_email_async(
+                    email_cliente,
+                    f"Pedido {id_pedido} Creado - La Lavanderia",
+                    html_pedido,
+                    attachments=email_attachments
+                )
             
             # Mensaje con descuento aplicado y código de barras
             if descuento_porcentaje_aplicado > 0:
