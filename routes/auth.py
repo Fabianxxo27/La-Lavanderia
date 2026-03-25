@@ -2,6 +2,7 @@
 Blueprint de autenticación
 Maneja registro, login y logout de usuarios
 """
+import os
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session, current_app
 from werkzeug.security import generate_password_hash, check_password_hash
 from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
@@ -12,15 +13,28 @@ from decorators import login_requerido
 bp = Blueprint('auth', __name__)
 
 
+def _get_reset_secret_key():
+    """Clave estable para firmar enlaces de reset entre reinicios de la app."""
+    # Recomendado: configurar PASSWORD_RESET_SECRET en Render.
+    # Fallback razonable: SECRET_KEY del entorno.
+    # Ultimo fallback: SENDGRID_API_KEY (estable si no existe SECRET_KEY en env).
+    return (
+        os.getenv('PASSWORD_RESET_SECRET')
+        or os.getenv('SECRET_KEY')
+        or os.getenv('SENDGRID_API_KEY')
+        or current_app.config['SECRET_KEY']
+    )
+
+
 def _crear_token_reset_fallback(email):
     """Genera token firmado sin depender de BD."""
-    serializer = URLSafeTimedSerializer(current_app.config['SECRET_KEY'])
+    serializer = URLSafeTimedSerializer(_get_reset_secret_key())
     return serializer.dumps(email, salt='password-reset')
 
 
 def _validar_token_reset_fallback(token, max_age=1800):
     """Valida token firmado generado con itsdangerous."""
-    serializer = URLSafeTimedSerializer(current_app.config['SECRET_KEY'])
+    serializer = URLSafeTimedSerializer(_get_reset_secret_key())
     try:
         return serializer.loads(token, salt='password-reset', max_age=max_age)
     except SignatureExpired:
