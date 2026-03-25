@@ -59,6 +59,28 @@
         gap: 0.5rem;
       }
 
+      .quick-links {
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+      }
+
+      .quick-link {
+        text-decoration: none;
+        color: #1a4e7b;
+        background: #ffffffcc;
+        border: 1px solid #1a4e7b33;
+        border-radius: 8px;
+        padding: 0.35rem 0.65rem;
+        font-size: 0.85rem;
+        font-weight: 600;
+      }
+
+      .quick-link:hover {
+        background: #1a4e7b;
+        color: #fff;
+      }
+
       .btn-outline-primary {
         border-color: #1a4e7b;
         color: #1a4e7b;
@@ -396,6 +418,14 @@
           <img src="https://cdn-icons-png.flaticon.com/512/271/271220.png" alt="Regresar" />
           Regresar
         </a>
+        {% if session.get('rol', '').strip().lower() == 'administrador' %}
+          <div class="quick-links" aria-label="Navegación rápida">
+            <a href="{{ url_for('admin.inicio') }}" class="quick-link">Inicio</a>
+            <a href="{{ url_for('admin.pedidos') }}" class="quick-link">Pedidos</a>
+            <a href="{{ url_for('admin.clientes') }}" class="quick-link">Clientes</a>
+            <a href="{{ url_for('admin.reportes') }}" class="quick-link">Reportes</a>
+          </div>
+        {% endif %}
         {% if session.get('username') %}
           {# Mostrar nombre de usuario y dropdown con Cerrar sesión #}
           <div class="dropdown">
@@ -424,6 +454,8 @@
           {% endfor %}
         {% endif %}
       {% endwith %}
+
+      {% block breadcrumbs %}{% endblock %}
 
       {% block content %}{% endblock %}
     </div>
@@ -533,30 +565,33 @@
         }
       }
       
-      // Marcar todas como leídas
-      markAllRead.addEventListener('click', async () => {
-        try {
-          await fetch('/api/notificaciones/marcar-todas-leidas', { method: 'POST' });
-          notificaciones.forEach(n => n.leida = true);
-          renderNotifications();
-          updateBadge();
-        } catch (error) {
-          console.error('Error marcando todas:', error);
-        }
-      });
-      
-      // Toggle dropdown
-      notifBell.addEventListener('click', (e) => {
-        e.stopPropagation();
-        notifDropdown.classList.toggle('show');
-      });
-      
-      // Cerrar al hacer clic fuera
-      document.addEventListener('click', (e) => {
-        if (!notifBell.contains(e.target) && !notifDropdown.contains(e.target)) {
-          notifDropdown.classList.remove('show');
-        }
-      });
+      // Evitar errores JS cuando el layout no tenga el bloque visual de notificaciones.
+      if (notifBell && notifBadge && notifDropdown && notifList && markAllRead) {
+        // Marcar todas como leídas
+        markAllRead.addEventListener('click', async () => {
+          try {
+            await fetch('/api/notificaciones/marcar-todas-leidas', { method: 'POST' });
+            notificaciones.forEach(n => n.leida = true);
+            renderNotifications();
+            updateBadge();
+          } catch (error) {
+            console.error('Error marcando todas:', error);
+          }
+        });
+        
+        // Toggle dropdown
+        notifBell.addEventListener('click', (e) => {
+          e.stopPropagation();
+          notifDropdown.classList.toggle('show');
+        });
+        
+        // Cerrar al hacer clic fuera
+        document.addEventListener('click', (e) => {
+          if (!notifBell.contains(e.target) && !notifDropdown.contains(e.target)) {
+            notifDropdown.classList.remove('show');
+          }
+        });
+      }
       
       // Cargar al inicio
       if (document.readyState === 'loading') {

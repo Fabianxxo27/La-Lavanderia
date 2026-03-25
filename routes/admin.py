@@ -267,13 +267,24 @@ def calendario_pedidos():
 # ACTUALIZAR PEDIDO
 # -----------------------------------------------
 @bp.route('/actualizar_pedido/<int:id_pedido>', methods=['POST'])
+@login_requerido
+@admin_requerido
 def actualizar_pedido(id_pedido):
     """Actualizar estado de un pedido."""
     if not admin_only():
         flash('Acceso denegado.', 'danger')
         return redirect(url_for('auth.index'))
     
-    estado = request.form.get('estado')
+    estado = (request.form.get('estado') or '').strip()
+    estados_validos = {'Pendiente', 'En proceso', 'Completado', 'Cancelado'}
+
+    if not estado:
+        flash('Debes seleccionar un estado antes de guardar.', 'warning')
+        return redirect(url_for('admin.pedido_detalles', id_pedido=id_pedido))
+
+    if estado not in estados_validos:
+        flash('Estado inválido. Selecciona una opción permitida.', 'warning')
+        return redirect(url_for('admin.pedido_detalles', id_pedido=id_pedido))
     
     try:
         # Obtener datos del pedido y cliente antes de actualizar
@@ -299,6 +310,10 @@ def actualizar_pedido(id_pedido):
         id_cliente = pedido_data[5]
         codigo = pedido_data[1] or f"#{id_pedido}"
         nombre_cliente = pedido_data[3]
+
+        if estado == estado_anterior:
+            flash('No se aplicaron cambios: el pedido ya tenía ese estado.', 'info')
+            return redirect(url_for('admin.pedido_detalles', id_pedido=id_pedido))
         
         # Actualizar estado
         run_query(
@@ -1032,6 +1047,8 @@ def agregar_cliente():
 # ACTUALIZAR CLIENTE
 # -----------------------------------------------
 @bp.route('/actualizar_cliente/<int:id_cliente>', methods=['GET', 'POST'])
+@login_requerido
+@admin_requerido
 def actualizar_cliente(id_cliente):
     """Actualizar datos de un cliente."""
     if not admin_only():
@@ -1039,7 +1056,14 @@ def actualizar_cliente(id_cliente):
         return redirect(url_for('auth.index'))
     
     cliente = run_query(
-        "SELECT id_cliente, nombre, email, telefono, direccion FROM cliente WHERE id_cliente = :id",
+        """
+        SELECT u.id_usuario, u.nombre, u.username, u.email,
+               COALESCE(c.telefono, '') AS telefono,
+               COALESCE(c.direccion, '') AS direccion
+        FROM usuario u
+        LEFT JOIN cliente c ON c.id_cliente = u.id_usuario
+        WHERE u.id_usuario = :id AND u.rol = 'cliente'
+        """,
         {"id": id_cliente},
         fetchone=True
     )
@@ -1047,25 +1071,106 @@ def actualizar_cliente(id_cliente):
     if not cliente:
         flash('Cliente no encontrado.', 'danger')
         return redirect(url_for('admin.clientes'))
+
+    cliente_data = {
+        'id_cliente': cliente[0],
+        'nombre': cliente[1] or '',
+        'username': cliente[2] or '',
+        'email': cliente[3] or '',
+        'telefono': cliente[4] or '',
+        'direccion': cliente[5] or '',
+    }
     
     if request.method == 'POST':
-        nombre = request.form.get('nombre')
-        email = request.form.get('email')
-        telefono = request.form.get('telefono')
-        direccion = request.form.get('direccion')
+        nombre = limpiar_texto(request.form.get('nombre', ''), 120)
+        username = limpiar_texto(request.form.get('username', ''), 60)
+        email = limpiar_texto(request.form.get('email', ''), 120)
+        telefono = limpiar_texto(request.form.get('telefono', ''), 40)
+        direccion = limpiar_texto(request.form.get('direccion', ''), 220)
+
+        errores = []
+
+        if not nombre:
+            errores.append('El nombre es obligatorio.')
+
+        if not username:
+            errores.append('El username es obligatorio.')
+        elif len(username) < 3:
+            errores.append('El username debe tener al menos 3 caracteres.')
+
+        if not email:
+            errores.append('El email es obligatorio.')
+        elif not validar_email(email):
+            errores.append('El formato del email no es válido.')
+
+        if telefono:
+            import re
+            if not re.match(r'^[0-9+()\-\s]{7,20}$', telefono):
+                errores.append('El teléfono solo puede tener números, espacios y los símbolos + ( ) -.')
+
+        duplicado = run_query(
+            """
+            SELECT id_usuario
+            FROM usuario
+            WHERE (LOWER(username) = LOWER(:u) OR LOWER(email) = LOWER(:e))
+              AND id_usuario <> :id
+            LIMIT 1
+            """,
+            {"u": username, "e": email, "id": id_cliente},
+            fetchone=True
+        )
+        if duplicado:
+            errores.append('Ya existe otro usuario con ese username o email.')
+
+        if errores:
+            for error in errores:
+                flash(error, 'warning')
+            form_data = {
+                'id_cliente': id_cliente,
+                'nombre': nombre,
+                'username': username,
+                'email': email,
+                'telefono': telefono,
+                'direccion': direccion,
+            }
+            return render_template('actualizar_cliente.html', cliente=form_data, id_cliente=id_cliente)
         
         try:
+            ensure_cliente_exists(id_cliente)
+
             run_query(
-                "UPDATE cliente SET nombre = :n, email = :e, telefono = :t, direccion = :d WHERE id_cliente = :id",
-                {"n": nombre, "e": email, "t": telefono, "d": direccion, "id": id_cliente},
+                """
+                UPDATE usuario
+                SET nombre = :n,
+                    username = :u,
+                    email = :e
+                WHERE id_usuario = :id AND rol = 'cliente'
+                """,
+                {"n": nombre, "u": username, "e": email, "id": id_cliente},
                 commit=True
             )
+
+            run_query(
+                """
+                INSERT INTO cliente (id_cliente, nombre, email, telefono, direccion)
+                VALUES (:id, :n, :e, :t, :d)
+                ON CONFLICT (id_cliente)
+                DO UPDATE SET
+                    nombre = EXCLUDED.nombre,
+                    email = EXCLUDED.email,
+                    telefono = EXCLUDED.telefono,
+                    direccion = EXCLUDED.direccion
+                """,
+                {"id": id_cliente, "n": nombre, "e": email, "t": telefono, "d": direccion},
+                commit=True
+            )
+
             flash('Cliente actualizado correctamente.', 'success')
-            return redirect(get_safe_redirect())
+            return redirect(url_for('admin.actualizar_cliente', id_cliente=id_cliente))
         except Exception as e:
             flash(f'Error al actualizar cliente: {e}', 'danger')
     
-    return render_template('actualizar_cliente.html', cliente=cliente, id_cliente=id_cliente)
+    return render_template('actualizar_cliente.html', cliente=cliente_data, id_cliente=id_cliente)
 
 
 # -----------------------------------------------

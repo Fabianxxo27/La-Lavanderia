@@ -1,195 +1,180 @@
-# La Lavandería - Sistema de Gestión
+# La Lavanderia
 
-Sistema completo de gestión para lavandería con programa de descuentos por lealtad, servicio a domicilio y gestión de pedidos.
+Sistema web para gestionar clientes, pedidos, descuentos por lealtad, reportes y notificaciones de una lavanderia.
 
-## 🚀 Inicio Rápido
+Este README esta escrito para que puedas levantar el proyecto aunque no tengas mucha experiencia.
 
-### 1. Instalación Local
+## Que hace este sistema
+
+- Registro e inicio de sesion.
+- Panel de administrador para clientes y pedidos.
+- Configuracion de descuentos por niveles.
+- Reportes en PDF y Excel.
+- Soporte de codigos de barras.
+- Notificaciones por correo.
+
+## Requisitos minimos
+
+- Python 3.10 o superior.
+- PostgreSQL (local o remoto).
+- `pip` actualizado.
+
+## Arranque rapido (local)
+
+1. Clona el repositorio y entra a la carpeta.
 
 ```bash
-# Clonar el repositorio
 git clone https://github.com/Fabianxxo27/La-Lavanderia.git
 cd La-Lavanderia
+```
 
-# Instalar dependencias
+2. Crea y activa un entorno virtual.
+
+En Windows PowerShell:
+
+```powershell
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+```
+
+3. Instala dependencias.
+
+```bash
 pip install -r requirements.txt
+```
 
-# Configurar variables de entorno
-cp .env.example .env
-# Edita .env con tus credenciales
+4. Crea el archivo `.env` basado en `.env.example` y agrega tus datos.
 
-# Ejecutar migraciones
-python ejecutar_migraciones.py
+Variables recomendadas:
 
-# Iniciar aplicación
+```env
+SECRET_KEY=pon_una_clave_larga_y_unica
+DATABASE_URL=postgresql://usuario:password@host:5432/base_de_datos
+
+SMTP_SERVER=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=tu_correo@gmail.com
+SMTP_PASSWORD=tu_app_password
+```
+
+Notas:
+
+- Si no defines `DATABASE_URL`, la app intenta usar `credentials.py`.
+- En produccion no se recomienda usar `credentials.py`.
+
+5. Ejecuta la aplicacion.
+
+```bash
 python app.py
 ```
 
-### 2. Desplegar en Render
+6. Abre en tu navegador:
 
-1. Conecta tu repositorio de GitHub a Render
-2. Configura las variables de entorno (ver sección Configuración)
-3. Render desplegará automáticamente
-4. Ejecuta migraciones desde el panel admin: `/admin/configurar-descuentos`
-
----
-
-## ⚙️ Configuración
-
-### Variables de Entorno Requeridas
-
-#### Base de Datos
-```env
-DATABASE_URL=postgresql://usuario:pass@host:5432/database
+```text
+http://127.0.0.1:5000
 ```
 
-#### Seguridad
-```env
-SECRET_KEY=tu_clave_secreta_aleatoria
+## Migraciones de base de datos
+
+Tienes dos caminos.
+
+### Opcion A (recomendada): desde el panel admin
+
+1. Inicia sesion como administrador.
+2. Entra a `/admin/configurar-descuentos`.
+3. Ejecuta migraciones desde ese panel.
+
+### Opcion B: por terminal
+
+Ejecuta una migracion manual con:
+
+```bash
+python scripts/ejecutar_migracion.py migrations/create_verification_codes.sql
 ```
 
-#### Correo (Gmail)
-```env
-SMTP_SERVER=smtp.gmail.com
-SMTP_PORT=587
-SMTP_USER=tucorreo@gmail.com
-SMTP_PASSWORD=tu_app_password_16_caracteres
-```
+Si no pasas archivo, usa por defecto `migrations/create_verification_codes.sql`.
 
----
+## Archivos necesarios para ejecutar la app
 
-## 📧 Configurar Correo Gmail
+Estos si son parte del funcionamiento normal:
 
-### Paso 1: Activar Verificación en 2 Pasos
-1. Ve a https://myaccount.google.com/security
-2. Habilita **Verificación en dos pasos**
+- `app.py`
+- `config.py`
+- `requirements.txt`
+- `models/`
+- `routes/`
+- `services/`
+- `decorators/`
+- `templates/`
+- `static/`
+- `migrations/` (necesario cuando aplicas cambios de esquema)
+- `helpers.py`
 
-### Paso 2: Crear App Password
-1. En la misma página de seguridad, busca **Contraseñas de aplicaciones**
-2. Selecciona **Correo** → **Otro (nombre personalizado)**
-3. Escribe: **"La Lavandería App"**
-4. **Copia los 16 caracteres** que aparecen (sin espacios)
+## Archivos que no son estrictamente necesarios para la ejecucion
 
-### Paso 3: Configurar en Render
-1. Ve a tu servicio en Render → **Environment**
-2. Agrega las variables:
-   - `SMTP_SERVER` = `smtp.gmail.com`
-   - `SMTP_PORT` = `587`
-   - `SMTP_USER` = tu correo completo
-   - `SMTP_PASSWORD` = los 16 caracteres copiados
-3. Guarda y Render reiniciará automáticamente
+Puedes correr la app sin estos archivos (algunos son utiles solo para despliegue, documentacion o mantenimiento):
 
-**Prueba:** Registra un usuario nuevo → Debe llegar correo de bienvenida
+- `CONFIGURAR_CORREO_RENDER.md`
+- `SETUP_SENDGRID.md`
+- `REFACTORIZACION_MVC.md`
+- `RUTAS_ADMIN_EXTRAIDAS.txt`
+- `scripts/_check_template_diff_temp.py`
+- `scripts/_compare_mvc_diff_temp.py`
+- `scripts/_compare_mvc_temp.py`
+- `deploy.bat`
+- `fabianmedina_miapp.sql` (dump/respaldo SQL)
+- `wsgi.py` (solo si arrancas con servidor WSGI como waitress/gunicorn)
+- `Procfile` (solo para ciertos despliegues)
+- `render.yaml` (solo para Render)
+- `Dockerfile` (solo si usas Docker)
+- `__pycache__/` (cache de Python, se puede borrar)
 
----
+Importante:
 
-## 🗄️ Migraciones de Base de Datos
+- No borres `credentials.py` si tu entorno local depende de ese archivo y no usas `DATABASE_URL`.
+- No borres `.env` ni `.env.example`.
 
-Las migraciones se ejecutan automáticamente desde el panel admin:
+## Errores comunes y solucion
 
-1. Ingresa como administrador
-2. Ve a `/admin/configurar-descuentos`
-3. Haz clic en **"Ejecutar migraciones ahora"**
+### Error: tabla `descuento_config` no existe
 
-Esto crea:
-- Columnas de dirección en pedidos (servicio a domicilio)
-- Tabla de configuración de descuentos
+Ejecuta migraciones desde `/admin/configurar-descuentos` o por terminal.
 
-**Alternativa manual:** Ejecuta `python ejecutar_migraciones.py` desde terminal
+### Error: no llegan correos
 
----
+- Revisa `SMTP_USER` y `SMTP_PASSWORD`.
+- Si usas Gmail, utiliza App Password.
+- Verifica puerto `587`.
 
-## ✨ Características
+### Error: no conecta a la base de datos
 
-### Para Clientes
-- ✅ Registro y login
-- ✅ Crear pedidos con múltiples prendas
-- ✅ Servicio a domicilio (dirección de recogida y entrega)
-- ✅ Ver historial de pedidos y recibos
-- ✅ Programa de descuentos por lealtad (Bronce → Platino)
-- ✅ Notificaciones por correo (registro, pedidos, cambios de estado)
+- Revisa `DATABASE_URL`.
+- Si estas en local con `credentials.py`, valida usuario, password, host y base.
 
-### Para Administradores
-- ✅ Gestión completa de clientes
-- ✅ Gestión de pedidos
-- ✅ Configurar niveles de descuento dinámicos
-- ✅ Reportes en PDF y Excel
-- ✅ Registro rápido de clientes
-- ✅ Calendario de pedidos
-- ✅ Códigos de barras para pedidos
+## Estructura general
 
----
-
-## 📋 Estructura del Proyecto
-
-```
+```text
 La-Lavanderia/
-├── app.py                      # Aplicación principal Flask
-├── credentials.py              # Credenciales locales (no en producción)
-├── ejecutar_migraciones.py     # Script automático de migraciones
-├── requirements.txt            # Dependencias Python
-├── .env.example               # Plantilla de variables de entorno
-├── migrations/                # Scripts SQL de migración
-│   ├── add_direcciones_to_pedido.sql
-│   └── create_descuento_config.sql
-├── static/                    # Archivos estáticos (CSS, imágenes)
-└── templates/                 # Plantillas HTML Jinja2
+   app.py
+   config.py
+   requirements.txt
+   models/
+   routes/
+   services/
+   templates/
+   static/
+   migrations/
 ```
 
----
+## Despliegue
 
-## 🔧 Solución de Problemas
+El proyecto esta preparado para desplegar en Render.
 
-### Error: "tabla descuento_config no existe"
-**Solución:** Ejecuta las migraciones desde `/admin/configurar-descuentos`
+- Si usas Render, revisa `render.yaml` y `Procfile`.
+- Si usas Docker, revisa `Dockerfile`.
 
-### Error: "Los correos no llegan"
-**Solución:** 
-1. Verifica que usas App Password (16 caracteres), NO tu contraseña de Gmail
-2. Confirma puerto `587` y servidor `smtp.gmail.com`
-3. Revisa la carpeta de SPAM
-4. Genera una nueva App Password si persiste el error
+## Soporte
 
-### Error: "Modal de registro rápido no abre"
-**Solución:** Verifica que Bootstrap 5 esté cargado correctamente
+Si encuentras un problema, abre un issue en:
 
----
-
-## 📚 Tecnologías
-
-- **Backend:** Flask 2.2.5, SQLAlchemy 2.0.43, PostgreSQL
-- **Frontend:** Bootstrap 5, Jinja2
-- **Email:** SMTP (Gmail)
-- **Exportación:** ReportLab (PDF), Pandas + OpenPyXL (Excel)
-- **Códigos:** python-barcode, pyzbar
-- **Deployment:** Render
-
----
-
-## 👥 Roles de Usuario
-
-### Administrador
-- Acceso completo al sistema
-- Gestión de clientes y pedidos
-- Configuración de descuentos
-- Reportes y estadísticas
-
-### Cliente
-- Ver y crear pedidos
-- Historial personal
-- Recibos y promociones
-- Seguimiento de nivel de lealtad
-
----
-
-## 📞 Soporte
-
-Para consultas técnicas o problemas con el sistema:
-- **Email:** soporte@lalavanderia.com
-- **GitHub Issues:** https://github.com/Fabianxxo27/La-Lavanderia/issues
-
----
-
-## 📄 Licencia
-
-© 2024 La Lavandería. Todos los derechos reservados.
+`https://github.com/Fabianxxo27/La-Lavanderia/issues`

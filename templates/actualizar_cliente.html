@@ -2,25 +2,80 @@
 {% block title %}Actualizar Cliente - La Lavandería{% endblock %}
 
 {% block content %}
-<h3>Actualizar Cliente (usuario)</h3>
-<form method="post" action="{{ url_for('admin.actualizar_cliente', id_cliente=id_cliente) }}">
-  <div class="mb-3">
-    <label class="form-label">Nombre</label>
-    <input class="form-control" name="nombre" value="{{ nombre }}" required>
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+  <div>
+    <h2 class="mb-1" style="color:#1a4e7b; font-weight:700;">Editar cliente</h2>
+    <small class="text-muted">ID cliente: #{{ id_cliente }}</small>
   </div>
-  <div class="mb-3">
-    <label class="form-label">Username</label>
-    <input class="form-control" name="username" value="{{ username }}" required>
+  <div class="d-flex gap-2">
+    <a href="{{ url_for('admin.clientes') }}" class="btn btn-outline-secondary">Volver a clientes</a>
+    <a href="{{ url_for('admin.pedidos') }}" class="btn btn-outline-primary">Ir a pedidos</a>
   </div>
-  <div class="mb-3">
-    <label class="form-label">Email</label>
-    <input class="form-control" name="email" type="email" value="{{ email }}" required>
+</div>
+
+<div class="card border-0 shadow-sm" style="border-radius: 12px;">
+  <div class="card-body p-4">
+    <form method="post" action="{{ url_for('admin.actualizar_cliente', id_cliente=id_cliente) }}" novalidate>
+      <div class="row g-3">
+        <div class="col-md-6">
+          <label class="form-label fw-semibold">Nombre completo</label>
+          <input
+            class="form-control"
+            name="nombre"
+            value="{{ cliente.nombre if cliente else '' }}"
+            maxlength="120"
+            required
+          >
+        </div>
+
+        <div class="col-md-6">
+          <label class="form-label fw-semibold">Username</label>
+          <input
+            class="form-control"
+            name="username"
+            value="{{ cliente.username if cliente else '' }}"
+            minlength="3"
+            maxlength="60"
+            required
+          >
+          <small class="text-muted">Minimo 3 caracteres, sin espacios raros.</small>
+        </div>
+
+        <div class="col-md-6">
+          <label class="form-label fw-semibold">Correo</label>
+          <input
+            class="form-control"
+            name="email"
+            type="email"
+            value="{{ cliente.email if cliente else '' }}"
+            maxlength="120"
+            required
+          >
+        </div>
+
+        <div class="col-md-6">
+          <label class="form-label fw-semibold">Telefono</label>
+          <input
+            class="form-control"
+            name="telefono"
+            type="text"
+            value="{{ cliente.telefono if cliente else '' }}"
+            maxlength="40"
+            placeholder="Ej: +57 300 123 4567"
+          >
+        </div>
+
+        <div class="col-12">
+          <label class="form-label fw-semibold">Direccion</label>
+          <textarea class="form-control" name="direccion" rows="3" maxlength="220" placeholder="Direccion de recogida o entrega">{{ cliente.direccion if cliente else '' }}</textarea>
+        </div>
+      </div>
+
+      <div class="d-flex justify-content-end gap-2 mt-4">
+        <a href="{{ url_for('admin.clientes') }}" class="btn btn-light">Cancelar</a>
+        <button class="btn btn-primary" type="submit">Guardar cambios</button>
+      </div>
+    </form>
   </div>
-  <div class="mb-3">
-    <label class="form-label">Nueva contraseña (dejar en blanco para no cambiar)</label>
-    <input class="form-control" name="password" type="password">
-  </div>
-  <button class="btn btn-primary">Actualizar</button>
-  <a href="{{ url_for('admin.clientes') }}" class="btn btn-secondary">Cancelar</a>
-</form>
+</div>
 {% endblock %}
