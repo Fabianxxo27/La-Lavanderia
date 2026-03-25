@@ -12,7 +12,7 @@ class VerificationCodeModel(db.Model):
     
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(120), nullable=False, index=True)
-    code = db.Column(db.String(10), nullable=False, index=True)
+    code = db.Column(db.String(100), nullable=False, index=True)
     tipo = db.Column(db.String(50), nullable=False)  # 'email_verification', 'password_reset'
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     expires_at = db.Column(db.DateTime, default=lambda: datetime.utcnow() + timedelta(minutes=15))

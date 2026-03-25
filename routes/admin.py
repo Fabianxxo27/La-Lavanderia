@@ -1277,7 +1277,7 @@ def ejecutar_migraciones_admin():
         flash('Acceso denegado.', 'danger')
         return redirect(url_for('auth.index'))
 
-    archivos = ['add_direcciones_to_pedido.sql', 'create_descuento_config.sql', 'add_descuento_to_pedido.sql', 'create_cliente_esquema_descuento.sql']
+    archivos = ['add_direcciones_to_pedido.sql', 'create_descuento_config.sql', 'add_descuento_to_pedido.sql', 'create_cliente_esquema_descuento.sql', 'create_verification_codes.sql', 'alter_verification_codes_token.sql']
     errores = []
 
     for archivo in archivos:

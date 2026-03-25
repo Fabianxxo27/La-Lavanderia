@@ -218,6 +218,58 @@ def enviar_email_verificacion(email, nombre):
     return codigo
 
 
+def generar_token_reset(email):
+    """
+    Genera un token URL-safe para restablecer contraseña y lo guarda en BD.
+    El token expira en 30 minutos.
+
+    Returns:
+        token (str) o None si hubo error
+    """
+    token = secrets.token_urlsafe(48)
+    try:
+        VerificationCodeModel.limpiar_expirados()
+        # Eliminar cualquier token previo del mismo tipo para este email
+        VerificationCodeModel.query.filter_by(email=email, tipo='password_reset').delete()
+        vc = VerificationCodeModel(
+            email=email,
+            code=token,
+            tipo='password_reset',
+            expires_at=datetime.utcnow() + timedelta(minutes=30)
+        )
+        db.session.add(vc)
+        db.session.commit()
+        return token
+    except Exception as e:
+        print(f"[ERROR] Generando token reset: {e}")
+        db.session.rollback()
+        return None
+
+
+def validar_token_reset(token):
+    """
+    Valida un token de restablecimiento de contraseña.
+
+    Returns:
+        email del usuario si el token es válido y no expiró, None en caso contrario
+    """
+    try:
+        vc = VerificationCodeModel.query.filter_by(
+            code=token, tipo='password_reset', used=False
+        ).first()
+        if not vc:
+            return None
+        if vc.is_expired():
+            vc.mark_as_used()
+            return None
+        email = vc.email
+        vc.mark_as_used()
+        return email
+    except Exception as e:
+        print(f"[ERROR] Validando token reset: {e}")
+        return None
+
+
 def enviar_email_reseteo_contrasena(email, nombre):
     """
     Envía un email para reseteo de contraseña con código.
