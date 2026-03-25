@@ -226,7 +226,10 @@ def generar_token_reset(email):
     Returns:
         token (str) o None si hubo error
     """
-    token = secrets.token_urlsafe(48)
+    # Token corto para compatibilidad con esquemas antiguos (VARCHAR(10))
+    # y evitar fallos silenciosos en despliegues donde la migración no corrió.
+    alphabet = string.ascii_letters + string.digits
+    token = ''.join(secrets.choice(alphabet) for _ in range(10))
     try:
         VerificationCodeModel.limpiar_expirados()
         # Eliminar cualquier token previo del mismo tipo para este email
