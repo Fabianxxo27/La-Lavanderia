@@ -213,29 +213,11 @@
       </div>
 
       <div class="security-box">
-        <h2 class="profile-section-title">Cambiar contraseña</h2>
-        <p class="profile-section-text">Si no quieres cambiarla, deja estos campos vacíos.</p>
-        <div class="helper-box">
-          La nueva contraseña debe ser diferente a la actual y cumplir las reglas mínimas de seguridad.
-        </div>
-
-        <div class="form-grid">
-          <div class="field-block-full">
-            <label for="current_password" class="form-label fw-semibold">Contraseña actual</label>
-            <input type="password" class="form-control" id="current_password" name="current_password"
-                   placeholder="Ingresa tu contraseña actual">
-          </div>
-          <div>
-            <label for="new_password" class="form-label fw-semibold">Nueva contraseña</label>
-            <input type="password" class="form-control" id="new_password" name="new_password"
-                   placeholder="Mínimo 6 caracteres">
-          </div>
-          <div>
-            <label for="confirm_password" class="form-label fw-semibold">Confirmar nueva contraseña</label>
-            <input type="password" class="form-control" id="confirm_password" name="confirm_password"
-                   placeholder="Repite la nueva contraseña">
-          </div>
-        </div>
+        <h2 class="profile-section-title">Seguridad de la cuenta</h2>
+        <p class="profile-section-text">Gestiona la seguridad de tu cuenta desde aquí.</p>
+        <a href="{{ url_for('cliente.cliente_cambiar_contrasena') }}" class="btn btn-outline-danger btn-lg w-100">
+          <i class="fas fa-key me-2"></i>Cambiar contraseña
+        </a>
       </div>
 
       <div class="mt-4 d-flex justify-content-end">

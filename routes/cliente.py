@@ -25,7 +25,7 @@ def cliente_perfil():
 
     cliente = run_query(
         """
-        SELECT u.id_usuario, u.nombre, u.username, u.email, u.password,
+        SELECT u.id_usuario, u.nombre, u.username, u.email,
                COALESCE(c.telefono, '') AS telefono,
                COALESCE(c.direccion, '') AS direccion
         FROM usuario u
@@ -45,44 +45,21 @@ def cliente_perfil():
         'nombre': cliente[1] or '',
         'username': cliente[2] or '',
         'email': cliente[3] or '',
-        'telefono': cliente[5] or '',
-        'direccion': cliente[6] or '',
+        'telefono': cliente[4] or '',
+        'direccion': cliente[5] or '',
     }
 
     if request.method == 'POST':
         telefono = limpiar_texto(request.form.get('telefono', ''), 40)
         direccion = limpiar_texto(request.form.get('direccion', ''), 220)
-        current_password = request.form.get('current_password', '').strip()
-        new_password = request.form.get('new_password', '')
-        confirm_password = request.form.get('confirm_password', '')
 
         errores = []
-        password_requested = any([current_password, new_password, confirm_password])
 
         if telefono and not re.match(r'^[0-9+()\-\s]{7,20}$', telefono):
             errores.append('El teléfono solo puede tener números, espacios y los símbolos + ( ) -.')
 
         if direccion and len(direccion) < 5:
             errores.append('La dirección debe tener al menos 5 caracteres.')
-
-        if password_requested:
-            if not current_password:
-                errores.append('Debes ingresar tu contraseña actual para cambiarla.')
-            elif not check_password_hash(cliente[4], current_password):
-                errores.append('La contraseña actual no es correcta.')
-
-            if not new_password:
-                errores.append('Debes ingresar una nueva contraseña.')
-            else:
-                valida_password, mensaje_password = validar_contrasena(new_password)
-                if not valida_password:
-                    errores.append(mensaje_password)
-
-            if new_password != confirm_password:
-                errores.append('La confirmación de la nueva contraseña no coincide.')
-
-            if new_password and check_password_hash(cliente[4], new_password):
-                errores.append('La nueva contraseña debe ser diferente a la actual.')
 
         if errores:
             for error in errores:
@@ -113,14 +90,6 @@ def cliente_perfil():
                 commit=True
             )
 
-            if password_requested and new_password:
-                new_hashed_password = generate_password_hash(new_password)
-                run_query(
-                    "UPDATE usuario SET password = :p WHERE id_usuario = :id",
-                    {"p": new_hashed_password, "id": cliente[0]},
-                    commit=True
-                )
-
             flash('Perfil actualizado correctamente.', 'success')
             return redirect(url_for('cliente.cliente_perfil'))
         except Exception as e:
@@ -131,6 +100,84 @@ def cliente_perfil():
             return render_template('cliente_perfil.html', perfil=perfil)
 
     return render_template('cliente_perfil.html', perfil=perfil)
+
+
+@bp.route('/cliente_cambiar_contrasena', methods=['GET', 'POST'])
+@login_requerido
+def cliente_cambiar_contrasena():
+    """Cambiar contraseña del cliente autenticado."""
+    username = session.get('username')
+    if not username:
+        flash('Debes iniciar sesión para cambiar tu contraseña.', 'danger')
+        return redirect(url_for('auth.login'))
+
+    usuario = run_query(
+        """
+        SELECT u.id_usuario, u.nombre, u.username, u.email, u.password
+        FROM usuario u
+        WHERE LOWER(u.username) = :u AND u.rol = 'cliente'
+        """,
+        {"u": username.lower()},
+        fetchone=True
+    )
+
+    if not usuario:
+        flash('No se encontró el usuario.', 'danger')
+        return redirect(url_for('auth.login'))
+
+    perfil_seguridad = {
+        'id_usuario': usuario[0],
+        'nombre': usuario[1] or '',
+        'username': usuario[2] or '',
+        'email': usuario[3] or '',
+    }
+
+    if request.method == 'POST':
+        current_password = request.form.get('current_password', '').strip()
+        new_password = request.form.get('new_password', '')
+        confirm_password = request.form.get('confirm_password', '')
+
+        errores = []
+
+        if not current_password:
+            errores.append('Debes ingresar tu contraseña actual.')
+        elif not check_password_hash(usuario[4], current_password):
+            errores.append('La contraseña actual no es correcta.')
+
+        if not new_password:
+            errores.append('Debes ingresar una nueva contraseña.')
+        else:
+            valida_password, mensaje_password = validar_contrasena(new_password)
+            if not valida_password:
+                errores.append(mensaje_password)
+
+        if new_password != confirm_password:
+            errores.append('La confirmación de la nueva contraseña no coincide.')
+
+        if new_password and check_password_hash(usuario[4], new_password):
+            errores.append('La nueva contraseña debe ser diferente a la actual.')
+
+        if errores:
+            for error in errores:
+                flash(error, 'warning')
+            return render_template('cliente_cambiar_contrasena.html', perfil_seguridad=perfil_seguridad)
+
+        try:
+            new_hashed_password = generate_password_hash(new_password)
+            run_query(
+                "UPDATE usuario SET password = :p WHERE id_usuario = :id",
+                {"p": new_hashed_password, "id": usuario[0]},
+                commit=True
+            )
+
+            flash('Contraseña actualizada correctamente.', 'success')
+            return redirect(url_for('cliente.cliente_perfil'))
+        except Exception as e:
+            print(f"[ERROR] Cambiando contraseña cliente: {e}")
+            flash('No fue posible actualizar tu contraseña. Intenta nuevamente.', 'danger')
+            return render_template('cliente_cambiar_contrasena.html', perfil_seguridad=perfil_seguridad)
+
+    return render_template('cliente_cambiar_contrasena.html', perfil_seguridad=perfil_seguridad)
 
 
 # -----------------------------------------------

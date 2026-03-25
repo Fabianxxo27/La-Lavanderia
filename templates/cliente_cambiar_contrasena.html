@@ -1,0 +1,341 @@
+{% extends 'cliente_base.html' %}
+
+{% block title %}Cambiar Contraseña - La Lavandería{% endblock %}
+
+{% block content %}
+<style>
+  .security-shell {
+    display: grid;
+    grid-template-columns: 320px 1fr;
+    gap: 1.5rem;
+    margin-top: 1.5rem;
+  }
+
+  .security-card,
+  .security-form {
+    background: rgba(255, 255, 255, 0.96);
+    border: 1px solid rgba(26, 78, 123, 0.12);
+    border-radius: 18px;
+    box-shadow: 0 14px 34px rgba(26, 78, 123, 0.08);
+  }
+
+  .security-card {
+    padding: 1.6rem;
+    align-self: start;
+  }
+
+  .security-icon {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    background: linear-gradient(135deg, #d32f2f 0%, #f44336 100%);
+    color: #fff;
+    font-size: 1.8rem;
+    margin-bottom: 1rem;
+  }
+
+  .security-title {
+    color: #1a4e7b;
+    font-weight: 800;
+    font-size: 1.35rem;
+    margin-bottom: 0.25rem;
+  }
+
+  .security-subtitle {
+    color: #5e6b78;
+    font-size: 0.95rem;
+    margin-bottom: 1.25rem;
+    line-height: 1.5;
+  }
+
+  .security-info {
+    background: #f3f8ec;
+    border: 1px solid #d5e8b8;
+    color: #43611b;
+    border-radius: 12px;
+    padding: 0.9rem 1rem;
+    font-size: 0.92rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .security-info-item {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 0.6rem;
+  }
+
+  .security-info-item:last-child {
+    margin-bottom: 0;
+  }
+
+  .security-info-icon {
+    flex-shrink: 0;
+    color: #65a307;
+    font-weight: bold;
+  }
+
+  .security-form {
+    padding: 1.8rem;
+  }
+
+  .form-section-title {
+    color: #1a4e7b;
+    font-size: 1.15rem;
+    font-weight: 800;
+    margin-bottom: 0.35rem;
+  }
+
+  .form-section-text {
+    color: #6a7680;
+    margin-bottom: 1.25rem;
+    line-height: 1.5;
+  }
+
+  .password-field {
+    position: relative;
+    margin-bottom: 1rem;
+  }
+
+  .password-requirements {
+    background: #f5f7f9;
+    border: 1px solid #dde5eb;
+    border-radius: 12px;
+    padding: 0.9rem 1rem;
+    font-size: 0.85rem;
+    color: #6a7680;
+    margin-bottom: 1.5rem;
+    line-height: 1.6;
+  }
+
+  .requirement-item {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .requirement-item:last-child {
+    margin-bottom: 0;
+  }
+
+  .requirement-icon {
+    flex-shrink: 0;
+    width: 16px;
+    height: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: bold;
+  }
+
+  .requirement-icon.valid {
+    color: #27ae60;
+  }
+
+  .requirement-icon.invalid {
+    color: #c0392b;
+  }
+
+  .btn-save-password {
+    background: #d32f2f;
+    border-color: #d32f2f;
+    font-weight: 700;
+    padding: 0.7rem 2rem;
+  }
+
+  .btn-save-password:hover {
+    background: #b71c1c;
+    border-color: #b71c1c;
+  }
+
+  .btn-cancel-password {
+    background: transparent;
+    color: #7c8791;
+    border: 1px solid #dde5eb;
+    font-weight: 700;
+    padding: 0.7rem 2rem;
+  }
+
+  .btn-cancel-password:hover {
+    background: #f5f7f9;
+    color: #1a4e7b;
+    border-color: #1a4e7b;
+  }
+
+  .confirm-modal-header {
+    background: linear-gradient(135deg, #d32f2f 0%, #f44336 100%);
+    color: white;
+  }
+
+  @media (max-width: 900px) {
+    .security-shell {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @media (max-width: 640px) {
+    .security-card {
+      padding: 1.2rem;
+    }
+
+    .security-form {
+      padding: 1.2rem;
+    }
+
+    .btn-group-footer {
+      flex-direction: column !important;
+      gap: 0.75rem;
+    }
+
+    .btn-group-footer button {
+      width: 100%;
+    }
+  }
+</style>
+
+<div class="security-shell">
+  <aside class="security-card">
+    <div class="security-icon">
+      <i class="fas fa-shield-alt"></i>
+    </div>
+    <div class="security-title">Seguridad</div>
+    <div class="security-subtitle">Actualiza tu contraseña regularmente para mantener tu cuenta protegida.</div>
+
+    <div class="security-info">
+      <div class="security-info-item">
+        <span class="security-info-icon">✓</span>
+        <span>Mínimo 6 caracteres</span>
+      </div>
+      <div class="security-info-item">
+        <span class="security-info-icon">✓</span>
+        <span>Mayúsculas y números</span>
+      </div>
+      <div class="security-info-item">
+        <span class="security-info-icon">✓</span>
+        <span>Diferente a la anterior</span>
+      </div>
+    </div>
+  </aside>
+
+  <section class="security-form">
+    <h1 class="form-section-title">Cambiar contraseña</h1>
+    <p class="form-section-text">Para cambiar tu contraseña, ingresa tu contraseña actual y luego la nueva contraseña que deseas usar.</p>
+
+    <form method="POST" novalidate id="cambiarContrasenaForm">
+      <div class="password-field">
+        <label for="current_password" class="form-label fw-semibold">Contraseña actual</label>
+        <input type="password" class="form-control" id="current_password" name="current_password"
+               placeholder="Ingresa tu contraseña actual" required>
+        <small class="text-muted d-block mt-1">No verás esta contraseña mientras escribes</small>
+      </div>
+
+      <div class="password-requirements">
+        <strong class="d-block mb-2">La nueva contraseña debe cumplir:</strong>
+        <div class="requirement-item">
+          <span class="requirement-icon invalid" id="req-length">✗</span>
+          <span>Mínimo 6 caracteres</span>
+        </div>
+        <div class="requirement-item">
+          <span class="requirement-icon invalid" id="req-upper">✗</span>
+          <span>Contener al menos una mayúscula</span>
+        </div>
+        <div class="requirement-item">
+          <span class="requirement-icon invalid" id="req-digit">✗</span>
+          <span>Contener al menos un número</span>
+        </div>
+      </div>
+
+      <div class="password-field">
+        <label for="new_password" class="form-label fw-semibold">Nueva contraseña</label>
+        <input type="password" class="form-control" id="new_password" name="new_password"
+               placeholder="Ingresa tu nueva contraseña" required>
+      </div>
+
+      <div class="password-field">
+        <label for="confirm_password" class="form-label fw-semibold">Confirmar nueva contraseña</label>
+        <input type="password" class="form-control" id="confirm_password" name="confirm_password"
+               placeholder="Repite la nueva contraseña" required>
+      </div>
+
+      <div class="mt-4 d-flex justify-content-between btn-group-footer">
+        <a href="{{ url_for('cliente.cliente_perfil') }}" class="btn btn-cancel-password">Cancelar</a>
+        <button type="button" class="btn btn-save-password" data-bs-toggle="modal" data-bs-target="#confirmPasswordModal">
+          <i class="fas fa-key me-2"></i>Cambiar contraseña
+        </button>
+      </div>
+    </form>
+  </section>
+</div>
+
+<div class="modal fade" id="confirmPasswordModal" tabindex="-1" aria-labelledby="confirmPasswordModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg">
+      <div class="modal-header confirm-modal-header">
+        <h5 class="modal-title" id="confirmPasswordModalLabel">Confirmar cambio de contraseña</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+      <div class="modal-body">
+        <p>Esta acción no se puede deshacer. Ingresa tu nueva contraseña para confirmar el cambio.</p>
+        <small class="text-muted">Asegúrate de guardar tu nueva contraseña en un lugar seguro.</small>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-danger" id="confirmPasswordSubmit">
+          <i class="fas fa-check me-2"></i>Sí, cambiar contraseña
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    const form = document.getElementById('cambiarContrasenaForm');
+    const newPasswordInput = document.getElementById('new_password');
+    const confirmButton = document.getElementById('confirmPasswordSubmit');
+
+    // Validación en tiempo real
+    if (newPasswordInput) {
+      newPasswordInput.addEventListener('input', function () {
+        const password = this.value;
+        
+        // Validar longitud
+        const hasLength = password.length >= 6;
+        updateRequirement('req-length', hasLength);
+
+        // Validar mayúscula
+        const hasUpperCase = /[A-Z]/.test(password);
+        updateRequirement('req-upper', hasUpperCase);
+
+        // Validar número
+        const hasDigit = /[0-9]/.test(password);
+        updateRequirement('req-digit', hasDigit);
+      });
+    }
+
+    function updateRequirement(elementId, isValid) {
+      const element = document.getElementById(elementId);
+      if (element) {
+        if (isValid) {
+          element.classList.remove('invalid');
+          element.classList.add('valid');
+          element.textContent = '✓';
+        } else {
+          element.classList.remove('valid');
+          element.classList.add('invalid');
+          element.textContent = '✗';
+        }
+      }
+    }
+
+    // Manejo de la confirmación
+    if (confirmButton && form) {
+      confirmButton.addEventListener('click', function () {
+        form.submit();
+      });
+    }
+  });
+</script>
+{% endblock %}
