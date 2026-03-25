@@ -416,6 +416,24 @@ def restablecer_contrasena():
             flash('El enlace ya expiró o no es válido. Solicita uno nuevo.', 'danger')
             return redirect(url_for('auth.olvide_contrasena'))
 
+        usuario_actual = run_query(
+            "SELECT id_usuario, password FROM usuario WHERE LOWER(email) = :e",
+            {"e": email.lower()},
+            fetchone=True
+        )
+
+        if not usuario_actual:
+            flash('No fue posible encontrar la cuenta asociada a este enlace.', 'danger')
+            return redirect(url_for('auth.olvide_contrasena'))
+
+        try:
+            if check_password_hash(usuario_actual[1], password):
+                flash('La nueva contraseña debe ser diferente a la actual.', 'danger')
+                return render_template('restablecer_contrasena.html', token=token)
+        except (ValueError, TypeError):
+            flash('No fue posible validar la contraseña actual. Intenta nuevamente.', 'danger')
+            return redirect(url_for('auth.olvide_contrasena'))
+
         hashed = generate_password_hash(password)
         updated_user = run_query(
             "UPDATE usuario SET password = :p WHERE LOWER(email) = :e RETURNING id_usuario",
