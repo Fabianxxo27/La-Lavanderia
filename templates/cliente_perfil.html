@@ -1,0 +1,234 @@
+{% extends 'cliente_base.html' %}
+
+{% block title %}Mi Perfil - La Lavandería{% endblock %}
+
+{% block content %}
+<style>
+  .profile-shell {
+    display: grid;
+    grid-template-columns: 320px 1fr;
+    gap: 1.5rem;
+    margin-top: 1.5rem;
+  }
+
+  .profile-card,
+  .profile-form {
+    background: rgba(255, 255, 255, 0.96);
+    border: 1px solid rgba(26, 78, 123, 0.12);
+    border-radius: 18px;
+    box-shadow: 0 14px 34px rgba(26, 78, 123, 0.08);
+  }
+
+  .profile-card {
+    padding: 1.6rem;
+    align-self: start;
+  }
+
+  .profile-avatar {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    background: linear-gradient(135deg, #1a4e7b 0%, #2b6ea8 100%);
+    color: #fff;
+    font-size: 1.6rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+  }
+
+  .profile-name {
+    color: #1a4e7b;
+    font-weight: 800;
+    font-size: 1.35rem;
+    margin-bottom: 0.25rem;
+  }
+
+  .profile-subtitle {
+    color: #5e6b78;
+    font-size: 0.95rem;
+    margin-bottom: 1.25rem;
+  }
+
+  .profile-info-row {
+    padding: 0.85rem 0;
+    border-top: 1px solid #edf1f4;
+  }
+
+  .profile-info-label {
+    display: block;
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: #7c8791;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.25rem;
+  }
+
+  .profile-info-value {
+    color: #21313f;
+    font-weight: 600;
+    word-break: break-word;
+  }
+
+  .profile-form {
+    padding: 1.8rem;
+  }
+
+  .profile-section-title {
+    color: #1a4e7b;
+    font-size: 1.15rem;
+    font-weight: 800;
+    margin-bottom: 0.35rem;
+  }
+
+  .profile-section-text {
+    color: #6a7680;
+    margin-bottom: 1.25rem;
+  }
+
+  .form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
+  }
+
+  .field-block-full {
+    grid-column: 1 / -1;
+  }
+
+  .readonly-input {
+    background: #f5f7f9;
+    border-color: #dde5eb;
+  }
+
+  .security-box {
+    margin-top: 1.6rem;
+    padding-top: 1.4rem;
+    border-top: 1px solid #e8eef2;
+  }
+
+  .helper-box {
+    background: #f3f8ec;
+    border: 1px solid #d5e8b8;
+    color: #43611b;
+    border-radius: 12px;
+    padding: 0.9rem 1rem;
+    font-size: 0.92rem;
+    margin-bottom: 1rem;
+  }
+
+  .btn-save-profile {
+    background: #1a4e7b;
+    border-color: #1a4e7b;
+    font-weight: 700;
+    padding: 0.7rem 1.2rem;
+  }
+
+  .btn-save-profile:hover {
+    background: #123857;
+    border-color: #123857;
+  }
+
+  @media (max-width: 900px) {
+    .profile-shell {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @media (max-width: 640px) {
+    .form-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+
+<div class="profile-shell">
+  <aside class="profile-card">
+    <div class="profile-avatar">
+      {{ (perfil.nombre[:1] if perfil.nombre else perfil.username[:1])|upper }}
+    </div>
+    <div class="profile-name">{{ perfil.nombre }}</div>
+    <div class="profile-subtitle">Gestiona tu información personal y la seguridad de tu cuenta.</div>
+
+    <div class="profile-info-row">
+      <span class="profile-info-label">Usuario</span>
+      <span class="profile-info-value">{{ perfil.username }}</span>
+    </div>
+    <div class="profile-info-row">
+      <span class="profile-info-label">Correo</span>
+      <span class="profile-info-value">{{ perfil.email }}</span>
+    </div>
+    <div class="profile-info-row">
+      <span class="profile-info-label">Teléfono actual</span>
+      <span class="profile-info-value">{{ perfil.telefono or 'No registrado' }}</span>
+    </div>
+    <div class="profile-info-row">
+      <span class="profile-info-label">Dirección actual</span>
+      <span class="profile-info-value">{{ perfil.direccion or 'No registrada' }}</span>
+    </div>
+  </aside>
+
+  <section class="profile-form">
+    <h1 class="profile-section-title">Mi perfil</h1>
+    <p class="profile-section-text">Aquí puedes revisar tus datos y actualizar tu dirección, teléfono y contraseña.</p>
+
+    <form method="POST" novalidate>
+      <div class="form-grid">
+        <div>
+          <label class="form-label fw-semibold">Nombre completo</label>
+          <input type="text" class="form-control readonly-input" value="{{ perfil.nombre }}" readonly>
+        </div>
+        <div>
+          <label class="form-label fw-semibold">Usuario</label>
+          <input type="text" class="form-control readonly-input" value="{{ perfil.username }}" readonly>
+        </div>
+        <div class="field-block-full">
+          <label class="form-label fw-semibold">Correo electrónico</label>
+          <input type="email" class="form-control readonly-input" value="{{ perfil.email }}" readonly>
+        </div>
+        <div>
+          <label for="telefono" class="form-label fw-semibold">Número de teléfono</label>
+          <input type="text" class="form-control" id="telefono" name="telefono" maxlength="20"
+                 value="{{ perfil.telefono }}" placeholder="Ej: 3001234567">
+        </div>
+        <div>
+          <label for="direccion" class="form-label fw-semibold">Dirección actual</label>
+          <input type="text" class="form-control" id="direccion" name="direccion" maxlength="220"
+                 value="{{ perfil.direccion }}" placeholder="Ej: Calle 10 # 20 - 30">
+        </div>
+      </div>
+
+      <div class="security-box">
+        <h2 class="profile-section-title">Cambiar contraseña</h2>
+        <p class="profile-section-text">Si no quieres cambiarla, deja estos campos vacíos.</p>
+        <div class="helper-box">
+          La nueva contraseña debe ser diferente a la actual y cumplir las reglas mínimas de seguridad.
+        </div>
+
+        <div class="form-grid">
+          <div class="field-block-full">
+            <label for="current_password" class="form-label fw-semibold">Contraseña actual</label>
+            <input type="password" class="form-control" id="current_password" name="current_password"
+                   placeholder="Ingresa tu contraseña actual">
+          </div>
+          <div>
+            <label for="new_password" class="form-label fw-semibold">Nueva contraseña</label>
+            <input type="password" class="form-control" id="new_password" name="new_password"
+                   placeholder="Mínimo 6 caracteres">
+          </div>
+          <div>
+            <label for="confirm_password" class="form-label fw-semibold">Confirmar nueva contraseña</label>
+            <input type="password" class="form-control" id="confirm_password" name="confirm_password"
+                   placeholder="Repite la nueva contraseña">
+          </div>
+        </div>
+      </div>
+
+      <div class="mt-4 d-flex justify-content-end">
+        <button type="submit" class="btn btn-primary btn-save-profile">Guardar cambios</button>
+      </div>
+    </form>
+  </section>
+</div>
+{% endblock %}
