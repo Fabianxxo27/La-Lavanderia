@@ -2,13 +2,31 @@
 Blueprint de autenticación
 Maneja registro, login y logout de usuarios
 """
-from flask import Blueprint, render_template, request, redirect, url_for, flash, session
+from flask import Blueprint, render_template, request, redirect, url_for, flash, session, current_app
 from werkzeug.security import generate_password_hash, check_password_hash
+from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
 from models import run_query
 from services import limpiar_texto, validar_email, validar_contrasena, send_email_async
 from decorators import login_requerido
 
 bp = Blueprint('auth', __name__)
+
+
+def _crear_token_reset_fallback(email):
+    """Genera token firmado sin depender de BD."""
+    serializer = URLSafeTimedSerializer(current_app.config['SECRET_KEY'])
+    return serializer.dumps(email, salt='password-reset')
+
+
+def _validar_token_reset_fallback(token, max_age=1800):
+    """Valida token firmado generado con itsdangerous."""
+    serializer = URLSafeTimedSerializer(current_app.config['SECRET_KEY'])
+    try:
+        return serializer.loads(token, salt='password-reset', max_age=max_age)
+    except SignatureExpired:
+        return None
+    except BadSignature:
+        return None
 
 
 @bp.route('/')
@@ -230,8 +248,24 @@ def olvide_contrasena():
         )
 
         if usuario:
-            from services.verification_service import generar_token_reset
-            token = generar_token_reset(email)
+            token = None
+
+            # Flujo principal: token persistido en BD
+            try:
+                from services.verification_service import generar_token_reset
+                token = generar_token_reset(email)
+                if token:
+                    print(f"[RESET] Token BD generado para {email}", flush=True)
+                else:
+                    print(f"[RESET][WARN] Token BD no generado para {email}, usando fallback firmado", flush=True)
+            except Exception as token_error:
+                print(f"[RESET][WARN] Error token BD para {email}: {token_error}", flush=True)
+
+            # Fallback: token firmado (independiente de migraciones/tabla)
+            if not token:
+                token = _crear_token_reset_fallback(email)
+                print(f"[RESET] Token fallback generado para {email}", flush=True)
+
             if token:
                 nombre = usuario[1] if usuario[1] else 'Usuario'
                 link = url_for('auth.restablecer_contrasena', token=token, _external=True)
@@ -317,6 +351,7 @@ def olvide_contrasena():
                     asunto='Restablece tu contraseña — La Lavandería',
                     cuerpo_html=html
                 )
+                print(f"[RESET] Disparo correo recuperacion a {email}", flush=True)
 
         # Siempre el mismo mensaje (no revelar si el correo existe)
         flash(
@@ -350,8 +385,18 @@ def restablecer_contrasena():
             flash(mensaje, 'danger')
             return render_template('restablecer_contrasena.html', token=token)
 
-        from services.verification_service import validar_token_reset
-        email = validar_token_reset(token)
+        email = None
+
+        # Intentar primero validación de token en BD
+        try:
+            from services.verification_service import validar_token_reset
+            email = validar_token_reset(token)
+        except Exception as token_error:
+            print(f"[RESET][WARN] Error validando token BD: {token_error}", flush=True)
+
+        # Si no existe token BD válido, intentar token firmado
+        if not email:
+            email = _validar_token_reset_fallback(token)
 
         if not email:
             flash('El enlace ya expiró o no es válido. Solicita uno nuevo.', 'danger')
