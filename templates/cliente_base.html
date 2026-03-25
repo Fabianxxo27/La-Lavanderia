@@ -148,7 +148,7 @@
         display: none;
       }
 
-      .dropdown:hover .dropdown-menu {
+      .dropdown-menu.show {
         display: block;
       }
 
@@ -410,10 +410,10 @@
 
         {% if session.get('username') %}
           <div class="dropdown">
-            <button class="btn btn-light dropdown-toggle" type="button">
+            <button class="btn btn-light dropdown-toggle" type="button" id="clienteUserMenu" data-bs-toggle="dropdown" aria-expanded="false">
               <i class="fas fa-user"></i> {{ session.get('username') }}
             </button>
-            <ul class="dropdown-menu">
+            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="clienteUserMenu">
               <li><a class="dropdown-item" href="{{ url_for('cliente.cliente_inicio') }}">Dashboard</a></li>
               <li><a class="dropdown-item" href="{{ url_for('cliente.cliente_pedidos') }}">Mis pedidos</a></li>
               <li><a class="dropdown-item" href="{{ url_for('cliente.cliente_recibos') }}">Mis recibos</a></li>

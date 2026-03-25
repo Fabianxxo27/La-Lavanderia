@@ -60,26 +60,18 @@
         gap: 0.5rem;
       }
 
-      .quick-links {
+      .dropdown {
+        position: relative;
+      }
+
+      .dropdown-toggle {
         display: flex;
         align-items: center;
         gap: 0.4rem;
       }
 
-      .quick-link {
-        text-decoration: none;
-        color: #1a4e7b;
-        background: #ffffffcc;
-        border: 1px solid #1a4e7b33;
-        border-radius: 8px;
-        padding: 0.35rem 0.65rem;
-        font-size: 0.85rem;
-        font-weight: 600;
-      }
-
-      .quick-link:hover {
-        background: #1a4e7b;
-        color: #fff;
+      .dropdown-toggle::after {
+        display: none;
       }
 
       .btn-outline-primary {
@@ -117,13 +109,18 @@
       }
 
       .dropdown-menu {
+        min-width: 220px;
         background-color: #fff;
         border: 1px solid #84af1d;
+        border-radius: 10px;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+        padding: 0.5rem 0;
       }
 
       .dropdown-item {
         color: #1a4e7b;
         font-weight: 600;
+        padding: 0.7rem 1rem;
       }
 
       .dropdown-item:hover {
@@ -419,21 +416,19 @@
           <img src="https://cdn-icons-png.flaticon.com/512/271/271220.png" alt="Regresar" />
           Regresar
         </a>
-        {% if session.get('rol', '').strip().lower() == 'administrador' %}
-          <div class="quick-links" aria-label="Navegación rápida">
-            <a href="{{ url_for('admin.inicio') }}" class="quick-link">Inicio</a>
-            <a href="{{ url_for('admin.pedidos') }}" class="quick-link">Pedidos</a>
-            <a href="{{ url_for('admin.clientes') }}" class="quick-link">Clientes</a>
-            <a href="{{ url_for('admin.reportes') }}" class="quick-link">Reportes</a>
-          </div>
-        {% endif %}
         {% if session.get('username') %}
-          {# Mostrar nombre de usuario y dropdown con Cerrar sesión #}
           <div class="dropdown">
             <button class="btn btn-light dropdown-toggle" type="button" id="userMenu" data-bs-toggle="dropdown" aria-expanded="false">
               {{ session.get('username') }}
             </button>
             <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userMenu">
+              {% if session.get('rol', '').strip().lower() == 'administrador' %}
+                <li><a class="dropdown-item" href="{{ url_for('admin.inicio') }}">Inicio</a></li>
+                <li><a class="dropdown-item" href="{{ url_for('admin.pedidos') }}">Pedidos</a></li>
+                <li><a class="dropdown-item" href="{{ url_for('admin.clientes') }}">Clientes</a></li>
+                <li><a class="dropdown-item" href="{{ url_for('admin.reportes') }}">Reportes</a></li>
+                <li><hr class="dropdown-divider"></li>
+              {% endif %}
               <li><a class="dropdown-item" href="{{ url_for('auth.logout') }}">Cerrar sesión</a></li>
             </ul>
           </div>
