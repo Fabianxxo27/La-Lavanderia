@@ -351,7 +351,7 @@ def olvide_contrasena():
                           <td align="center"
                               style="background:#1a4e7b;padding:20px;color:#ffffff;
                                      font-size:12px;">
-                            &copy; La Lavandería — todos los derechos reservados
+                                                        2025-2026 La Lavanderia - Derechos reservados
                           </td>
                         </tr>
                       </table>

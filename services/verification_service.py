@@ -134,7 +134,7 @@ class VerificationEmail:
                     <p>Si no solicitaste esta verificación, puedes ignorar este email.</p>
                 </div>
                 <div class="footer">
-                    <p>&copy; 2025 La Lavandería. Todos los derechos reservados.</p>
+                    <p>2025-2026 La Lavanderia - Derechos reservados</p>
                     <p>Este es un correo automático, por favor no respondas.</p>
                 </div>
             </div>
@@ -178,7 +178,7 @@ class VerificationEmail:
                     <p>Si no solicitaste un reseteo de contraseña, ignora este email y tu contraseña permanecerá igual.</p>
                 </div>
                 <div class="footer">
-                    <p>&copy; 2025 La Lavandería. Todos los derechos reservados.</p>
+                    <p>2025-2026 La Lavanderia - Derechos reservados</p>
                     <p>Este es un correo automático, por favor no respondas.</p>
                 </div>
             </div>
