@@ -245,6 +245,10 @@
           <span class="requirement-icon invalid" id="req-digit">✗</span>
           <span>Contener al menos un número</span>
         </div>
+        <div class="requirement-item">
+          <span class="requirement-icon invalid" id="req-match">✗</span>
+          <span>Coincidir con la confirmación</span>
+        </div>
       </div>
 
       <div class="password-field">
@@ -294,25 +298,36 @@
   document.addEventListener('DOMContentLoaded', function () {
     const form = document.getElementById('cambiarContrasenaForm');
     const newPasswordInput = document.getElementById('new_password');
+    const confirmPasswordInput = document.getElementById('confirm_password');
     const confirmButton = document.getElementById('confirmPasswordSubmit');
 
-    // Validación en tiempo real
+    function validatePasswordChecks() {
+      const password = newPasswordInput ? newPasswordInput.value : '';
+      const confirmPassword = confirmPasswordInput ? confirmPasswordInput.value : '';
+
+      // Validar longitud
+      const hasLength = password.length >= 6;
+      updateRequirement('req-length', hasLength);
+
+      // Validar mayúscula
+      const hasUpperCase = /[A-Z]/.test(password);
+      updateRequirement('req-upper', hasUpperCase);
+
+      // Validar número
+      const hasDigit = /[0-9]/.test(password);
+      updateRequirement('req-digit', hasDigit);
+
+      // Validar coincidencia entre nueva y confirmación
+      const hasMatch = password.length > 0 && confirmPassword.length > 0 && password === confirmPassword;
+      updateRequirement('req-match', hasMatch);
+    }
+
     if (newPasswordInput) {
-      newPasswordInput.addEventListener('input', function () {
-        const password = this.value;
-        
-        // Validar longitud
-        const hasLength = password.length >= 6;
-        updateRequirement('req-length', hasLength);
+      newPasswordInput.addEventListener('input', validatePasswordChecks);
+    }
 
-        // Validar mayúscula
-        const hasUpperCase = /[A-Z]/.test(password);
-        updateRequirement('req-upper', hasUpperCase);
-
-        // Validar número
-        const hasDigit = /[0-9]/.test(password);
-        updateRequirement('req-digit', hasDigit);
-      });
+    if (confirmPasswordInput) {
+      confirmPasswordInput.addEventListener('input', validatePasswordChecks);
     }
 
     function updateRequirement(elementId, isValid) {
@@ -333,9 +348,12 @@
     // Manejo de la confirmación
     if (confirmButton && form) {
       confirmButton.addEventListener('click', function () {
+        validatePasswordChecks();
         form.submit();
       });
     }
+
+    validatePasswordChecks();
   });
 </script>
 {% endblock %}
