@@ -130,6 +130,17 @@
     border-color: #123857;
   }
 
+  .readonly-note {
+    margin-top: 0.35rem;
+    color: #7a8895;
+    font-size: 0.84rem;
+  }
+
+  .confirm-modal-header {
+    background: linear-gradient(135deg, #1a4e7b 0%, #2b6ea8 100%);
+    color: white;
+  }
+
   @media (max-width: 900px) {
     .profile-shell {
       grid-template-columns: 1fr;
@@ -173,7 +184,7 @@
     <h1 class="profile-section-title">Mi perfil</h1>
     <p class="profile-section-text">Aquí puedes revisar tus datos y actualizar tu dirección, teléfono y contraseña.</p>
 
-    <form method="POST" novalidate>
+    <form method="POST" novalidate id="perfilForm">
       <div class="form-grid">
         <div>
           <label class="form-label fw-semibold">Nombre completo</label>
@@ -182,10 +193,12 @@
         <div>
           <label class="form-label fw-semibold">Usuario</label>
           <input type="text" class="form-control readonly-input" value="{{ perfil.username }}" readonly>
+          <div class="readonly-note">Tu nombre de usuario es visible, pero no se puede modificar desde esta pantalla.</div>
         </div>
         <div class="field-block-full">
           <label class="form-label fw-semibold">Correo electrónico</label>
           <input type="email" class="form-control readonly-input" value="{{ perfil.email }}" readonly>
+          <div class="readonly-note">Tu correo electrónico se muestra solo como referencia y no es editable aquí.</div>
         </div>
         <div>
           <label for="telefono" class="form-label fw-semibold">Número de teléfono</label>
@@ -226,9 +239,40 @@
       </div>
 
       <div class="mt-4 d-flex justify-content-end">
-        <button type="submit" class="btn btn-primary btn-save-profile">Guardar cambios</button>
+        <button type="button" class="btn btn-primary btn-save-profile" data-bs-toggle="modal" data-bs-target="#confirmProfileModal">Guardar cambios</button>
       </div>
     </form>
   </section>
 </div>
+
+<div class="modal fade" id="confirmProfileModal" tabindex="-1" aria-labelledby="confirmProfileModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg">
+      <div class="modal-header confirm-modal-header">
+        <h5 class="modal-title" id="confirmProfileModalLabel">Confirmar cambios</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+      <div class="modal-body">
+        Vas a actualizar la información de tu perfil. Confirma para guardar los cambios.
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-primary btn-save-profile" id="confirmProfileSubmit">Sí, guardar cambios</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    const confirmButton = document.getElementById('confirmProfileSubmit');
+    const form = document.getElementById('perfilForm');
+
+    if (confirmButton && form) {
+      confirmButton.addEventListener('click', function () {
+        form.submit();
+      });
+    }
+  });
+</script>
 {% endblock %}

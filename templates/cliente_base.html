@@ -118,6 +118,29 @@
         color: white;
       }
 
+      .btn-profile {
+        background: #1a4e7b;
+        border: 2px solid #1a4e7b;
+        color: white;
+        font-weight: 700;
+        border-radius: 8px;
+        padding: 0.5rem 1rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.45rem;
+        box-shadow: 0 8px 18px rgba(26, 78, 123, 0.22);
+      }
+
+      .btn-profile:hover {
+        background: #123857;
+        border-color: #123857;
+        color: white;
+        transform: translateY(-1px);
+      }
+
       /* Dropdown */
       .dropdown {
         position: relative;
@@ -407,6 +430,12 @@
         <a href="{{ url_for('cliente.cliente_inicio') }}" class="btn btn-outline-primary" title="Regresar">
           <i class="fas fa-arrow-left"></i> Atrás
         </a>
+
+        {% if session.get('username') %}
+          <a href="{{ url_for('cliente.cliente_perfil') }}" class="btn-profile" title="Ir a mi perfil">
+            <i class="fas fa-id-card"></i> Mi perfil
+          </a>
+        {% endif %}
 
         {% if session.get('username') %}
           <div class="dropdown">
