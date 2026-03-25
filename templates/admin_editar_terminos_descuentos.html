@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+
+{% block title %}Editar Términos de Descuentos{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+  <div class="row justify-content-center">
+    <div class="col-lg-10">
+      <div class="card shadow-lg border-0">
+        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+          <h2 class="mb-0"><i class="bi bi-pencil-square"></i> Editar Términos y Condiciones</h2>
+          <a href="{{ url_for('admin.configurar_descuentos') }}" class="btn btn-light btn-sm">
+            <i class="bi bi-arrow-left"></i> Volver
+          </a>
+        </div>
+        <div class="card-body p-4">
+          <div class="alert alert-info">
+            <i class="bi bi-info-circle"></i>
+            Este contenido se mostrará en la página pública de términos del programa de descuentos.
+            Usa una línea por punto y separa secciones con líneas en blanco.
+          </div>
+
+          <form method="post" action="{{ url_for('admin.editar_terminos_descuentos') }}" novalidate>
+            <div class="mb-3">
+              <label for="contenido_terminos" class="form-label fw-bold">Contenido de términos y condiciones</label>
+              <textarea
+                id="contenido_terminos"
+                name="contenido_terminos"
+                class="form-control"
+                rows="20"
+                maxlength="12000"
+                required
+              >{{ contenido_terminos }}</textarea>
+              <div class="form-text">Máximo 12,000 caracteres.</div>
+            </div>
+
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+              <small class="text-muted">
+                Última actualización:
+                {{ fecha_actualizacion.strftime('%d/%m/%Y %H:%M') if fecha_actualizacion else 'No disponible' }}
+              </small>
+              <div class="d-flex gap-2">
+                <a href="{{ url_for('admin.terminos_descuentos') }}" class="btn btn-outline-primary" target="_blank" rel="noopener">
+                  <i class="bi bi-box-arrow-up-right"></i> Ver Vista Pública
+                </a>
+                <button type="submit" class="btn btn-primary">
+                  <i class="bi bi-save"></i> Guardar Cambios
+                </button>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -29,6 +29,39 @@ import json
 bp = Blueprint('admin', __name__)
 
 
+DEFAULT_TERMINOS_DESCUENTOS = """INFORMACION GENERAL
+La Lavanderia ofrece un programa de descuentos progresivos para premiar la fidelidad de sus clientes.
+Los descuentos se aplican automaticamente segun el nivel alcanzado por cada cliente.
+
+CICLO DE DESCUENTOS
+- Inicio del ciclo: El contador de pedidos comienza desde el primer pedido registrado.
+- Aplicacion automatica: El descuento se calcula y aplica automaticamente en cada nuevo pedido segun el nivel actual.
+- Sin vencimiento: Los pedidos acumulados no expiran y el nivel se mantiene.
+- Progresion: Al alcanzar un nuevo nivel, el descuento se aplica de inmediato.
+
+CONDICIONES DE APLICACION
+- El descuento se aplica sobre el total del pedido antes de impuestos.
+- Solo se cuentan pedidos completados y entregados para el nivel de descuento.
+- Los pedidos cancelados o rechazados no cuentan para el acumulado.
+- El descuento no es acumulable con otras promociones salvo indicacion contraria.
+- Los niveles son personales e intransferibles.
+
+EXCLUSIONES Y RESTRICCIONES
+- El programa puede ser modificado o suspendido en cualquier momento, con notificacion previa.
+- La Lavanderia se reserva el derecho de verificar la legitimidad de los pedidos acumulados.
+- En caso de fraude o abuso del sistema, se puede suspender la cuenta.
+- Los descuentos no aplican a servicios de urgencia o express con recargo adicional.
+
+CONSULTAS
+Para consultas sobre tu nivel de descuento o dudas del programa:
+- Correo: soporte@lalavanderia.com
+- Telefono: +57 300 123 4567
+
+ACEPTACION
+Al utilizar los servicios de La Lavanderia y participar en el programa de descuentos,
+aceptas estos terminos y condiciones."""
+
+
 # -----------------------------------------------
 # FUNCIONES AUXILIARES
 # -----------------------------------------------
@@ -42,6 +75,46 @@ def tabla_descuento_existe():
         return bool(result[0]) if result else False
     except Exception:
         return False
+
+
+def obtener_terminos_descuentos():
+    """Obtiene los terminos de descuentos desde BD y crea un valor por defecto si no existe."""
+    try:
+        run_query(
+            """
+            CREATE TABLE IF NOT EXISTS terminos_descuentos_config (
+                id_config INTEGER PRIMARY KEY CHECK (id_config = 1),
+                contenido TEXT NOT NULL,
+                fecha_actualizacion TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+            )
+            """,
+            commit=True
+        )
+
+        config = run_query(
+            """
+            SELECT contenido, fecha_actualizacion
+            FROM terminos_descuentos_config
+            WHERE id_config = 1
+            """,
+            fetchone=True
+        )
+
+        if not config:
+            run_query(
+                """
+                INSERT INTO terminos_descuentos_config (id_config, contenido)
+                VALUES (1, :contenido)
+                """,
+                {"contenido": DEFAULT_TERMINOS_DESCUENTOS},
+                commit=True
+            )
+            return DEFAULT_TERMINOS_DESCUENTOS, datetime.datetime.now()
+
+        return config[0], config[1]
+    except Exception as e:
+        print(f"[ERROR] obtener_terminos_descuentos: {e}")
+        return DEFAULT_TERMINOS_DESCUENTOS, datetime.datetime.now()
 
 
 def parse_sql_statements(sql_text):
@@ -1233,8 +1306,81 @@ def eliminar_cliente(id_cliente):
 @bp.route('/terminos-descuentos')
 def terminos_descuentos():
     """Página de términos y condiciones del programa de descuentos."""
-    fecha_actual = datetime.datetime.now()
-    return render_template('terminos_descuentos.html', fecha_actual=fecha_actual)
+    terminos_contenido, fecha_actualizacion = obtener_terminos_descuentos()
+
+    descuentos = []
+    if tabla_descuento_existe():
+        try:
+            descuentos = run_query(
+                """
+                SELECT nivel, porcentaje, pedidos_minimos, pedidos_maximos
+                FROM descuento_config
+                WHERE activo = true
+                ORDER BY pedidos_minimos ASC
+                """,
+                fetchall=True
+            )
+        except Exception as e:
+            print(f"[ERROR] Cargando descuentos para terminos: {e}")
+
+    return render_template(
+        'terminos_descuentos.html',
+        terminos_contenido=terminos_contenido,
+        fecha_actualizacion=fecha_actualizacion,
+        descuentos=descuentos
+    )
+
+
+@bp.route('/admin/terminos-descuentos/editar', methods=['GET', 'POST'])
+@login_requerido
+@admin_requerido
+def editar_terminos_descuentos():
+    """Permite al administrador editar terminos y condiciones del programa de descuentos."""
+    if not admin_only():
+        flash('Acceso denegado.', 'danger')
+        return redirect(url_for('auth.index'))
+
+    terminos_actuales, fecha_actualizacion = obtener_terminos_descuentos()
+
+    if request.method == 'POST':
+        contenido = limpiar_texto(request.form.get('contenido_terminos', ''), 12000)
+
+        if not contenido:
+            flash('Los términos y condiciones no pueden estar vacíos.', 'warning')
+            return render_template(
+                'admin_editar_terminos_descuentos.html',
+                contenido_terminos=terminos_actuales,
+                fecha_actualizacion=fecha_actualizacion
+            )
+
+        try:
+            run_query(
+                """
+                INSERT INTO terminos_descuentos_config (id_config, contenido, fecha_actualizacion)
+                VALUES (1, :contenido, CURRENT_TIMESTAMP)
+                ON CONFLICT (id_config)
+                DO UPDATE SET
+                    contenido = EXCLUDED.contenido,
+                    fecha_actualizacion = CURRENT_TIMESTAMP
+                """,
+                {"contenido": contenido},
+                commit=True
+            )
+            flash('Términos y condiciones actualizados correctamente.', 'success')
+            return redirect(url_for('admin.editar_terminos_descuentos'))
+        except Exception as e:
+            flash(f'No fue posible actualizar los términos: {e}', 'danger')
+            return render_template(
+                'admin_editar_terminos_descuentos.html',
+                contenido_terminos=contenido,
+                fecha_actualizacion=fecha_actualizacion
+            )
+
+    return render_template(
+        'admin_editar_terminos_descuentos.html',
+        contenido_terminos=terminos_actuales,
+        fecha_actualizacion=fecha_actualizacion
+    )
 
 
 # -----------------------------------------------
