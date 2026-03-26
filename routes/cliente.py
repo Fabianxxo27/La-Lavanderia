@@ -96,6 +96,11 @@ def cliente_perfil():
 
             # Enviar correo de confirmación si hubo cambios en teléfono o dirección
             if (cambio_telefono or cambio_direccion) and perfil['email']:
+                print(
+                    f"[MAIL] Preparando confirmacion de perfil para {perfil['email']} "
+                    f"telefono={cambio_telefono} direccion={cambio_direccion}",
+                    flush=True
+                )
                 cambios_html = ""
                 if cambio_telefono:
                     cambios_html += f'<p style="margin: 10px 0;"><strong>📱 Teléfono:</strong> {telefono or "<em>sin definir</em>"}</p>'
@@ -136,6 +141,13 @@ def cliente_perfil():
                     perfil['email'],
                     'Confirmación de actualización de perfil - La Lavandería',
                     html_confirmacion
+                )
+                print(f"[MAIL] Disparo de confirmacion de perfil OK para {perfil['email']}", flush=True)
+            else:
+                print(
+                    f"[MAIL] Confirmacion de perfil omitida email={bool(perfil['email'])} "
+                    f"telefono={cambio_telefono} direccion={cambio_direccion}",
+                    flush=True
                 )
 
             flash('Perfil actualizado correctamente.', 'success')
