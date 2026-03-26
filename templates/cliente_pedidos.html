@@ -23,9 +23,9 @@
             <div class="card text-center h-100 shadow-sm">
                 <div class="card-body">
                     <div class="mb-2">
-                        <i class="fas fa-boxes fa-2x text-primary"></i>
+                        <i class="fas fa-boxes fa-2x" style="color:#1a4e7b;"></i>
                     </div>
-                    <h3 class="mb-0 text-primary">{{ stats.total_pedidos }}</h3>
+                    <h3 class="mb-0" style="color:#1a4e7b;">{{ stats.total_pedidos }}</h3>
                     <p class="text-muted mb-0">Total Pedidos</p>
                 </div>
             </div>
@@ -34,9 +34,9 @@
             <div class="card text-center h-100 shadow-sm">
                 <div class="card-body">
                     <div class="mb-2">
-                        <i class="fas fa-clock fa-2x text-warning"></i>
+                        <i class="fas fa-clock fa-2x" style="color:#e8a000;"></i>
                     </div>
-                    <h3 class="mb-0 text-warning">{{ stats.pendientes }}</h3>
+                    <h3 class="mb-0" style="color:#e8a000;">{{ stats.pendientes }}</h3>
                     <p class="text-muted mb-0">Pendientes</p>
                 </div>
             </div>
@@ -45,9 +45,9 @@
             <div class="card text-center h-100 shadow-sm">
                 <div class="card-body">
                     <div class="mb-2">
-                        <i class="fas fa-spinner fa-2x text-info"></i>
+                        <i class="fas fa-spinner fa-2x" style="color:#1a4e7b;"></i>
                     </div>
-                    <h3 class="mb-0 text-info">{{ stats.en_proceso }}</h3>
+                    <h3 class="mb-0" style="color:#1a4e7b;">{{ stats.en_proceso }}</h3>
                     <p class="text-muted mb-0">En Proceso</p>
                 </div>
             </div>
@@ -56,9 +56,9 @@
             <div class="card text-center h-100 shadow-sm">
                 <div class="card-body">
                     <div class="mb-2">
-                        <i class="fas fa-check-circle fa-2x text-success"></i>
+                        <i class="fas fa-check-circle fa-2x" style="color:#a6cc48;"></i>
                     </div>
-                    <h3 class="mb-0 text-success">{{ stats.completados }}</h3>
+                    <h3 class="mb-0" style="color:#a6cc48;">{{ stats.completados }}</h3>
                     <p class="text-muted mb-0">Completados</p>
                 </div>
             </div>
@@ -80,7 +80,7 @@
         {% for p in pedidos %}
         <div class="col-lg-6 mb-4">
             <div class="card h-100 shadow-sm pedido-card">
-                <div class="card-header {% if p[3] == 'Completado' %}bg-success{% elif p[3] == 'En proceso' %}bg-info{% else %}bg-warning{% endif %} text-white">
+                <div class="card-header text-white" style="{% if p[3] == 'Completado' %}background:#a6cc48;{% elif p[3] == 'En proceso' %}background:#1a4e7b;{% else %}background:#e8a000;{% endif %}">
                     <div class="d-flex justify-content-between align-items-center">
                         <h5 class="mb-0">
                             <i class="fas fa-receipt"></i> Mi Pedido #{{ p[5] }}
@@ -110,15 +110,15 @@
                             <i class="fas fa-info-circle"></i> Estado
                         </small>
                         {% if p[3] == 'Completado' %}
-                            <span class="badge bg-success fs-6">
+                            <span class="badge fs-6" style="background:#a6cc48;">
                                 <i class="fas fa-check-circle"></i> Completado
                             </span>
                         {% elif p[3] == 'En proceso' %}
-                            <span class="badge bg-info fs-6">
+                            <span class="badge fs-6" style="background:#1a4e7b;">
                                 <i class="fas fa-spinner"></i> En Proceso
                             </span>
                         {% else %}
-                            <span class="badge bg-warning text-dark fs-6">
+                            <span class="badge fs-6" style="background:#e8a000;color:#fff;">
                                 <i class="fas fa-clock"></i> Pendiente
                             </span>
                         {% endif %}
@@ -127,17 +127,17 @@
                     <!-- Barra de progreso -->
                     {% if p[3] == 'Completado' %}
                     <div class="progress mb-3" style="height: 8px;">
-                        <div class="progress-bar bg-success" style="width: 100%"></div>
+                        <div class="progress-bar" style="width: 100%; background:#a6cc48;"></div>
                     </div>
-                    <small class="text-success"><i class="fas fa-check"></i> Pedido entregado</small>
+                    <small style="color:#a6cc48;"><i class="fas fa-check"></i> Pedido entregado</small>
                     {% elif p[3] == 'En proceso' %}
                     <div class="progress mb-3" style="height: 8px;">
-                        <div class="progress-bar bg-info progress-bar-striped progress-bar-animated" style="width: 60%"></div>
+                        <div class="progress-bar progress-bar-striped progress-bar-animated" style="width: 60%; background:#1a4e7b;"></div>
                     </div>
-                    <small class="text-info"><i class="fas fa-cog fa-spin"></i> Estamos lavando tus prendas...</small>
+                    <small style="color:#1a4e7b;"><i class="fas fa-cog fa-spin"></i> Estamos lavando tus prendas...</small>
                     {% else %}
                     <div class="progress mb-3" style="height: 8px;">
-                        <div class="progress-bar bg-warning" style="width: 20%"></div>
+                        <div class="progress-bar" style="width: 20%; background:#e8a000;"></div>
                     </div>
                     <small class="text-muted"><i class="fas fa-hourglass-half"></i> Esperando inicio de lavado</small>
                     {% endif %}
@@ -147,7 +147,7 @@
                         <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="collapse" data-bs-target="#prendas{{ p[0] }}">
                             <i class="fas fa-chevron-down"></i> Ver Prendas ({{ p[4] }})
                         </button>
-                        <a href="{{ url_for('utils.ver_prendas_pedido', id_pedido=p[0], ref=request.url) }}" class="btn btn-sm btn-outline-info">
+                        <a href="{{ url_for('utils.ver_prendas_pedido', id_pedido=p[0], ref=request.url) }}" class="btn btn-sm" style="border:2px solid #1a4e7b;color:#1a4e7b;">
                             <i class="fas fa-expand"></i> Detalles
                         </a>
                     </div>
