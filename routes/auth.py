@@ -46,19 +46,8 @@ def _validar_token_reset_fallback(token, max_age=1800):
 
 @bp.route('/')
 def index():
-    """Página principal con testimonios aprobados."""
-    try:
-        testimonios = run_query("""
-            SELECT id_testimonio, nombre_publico, calificacion, comentario
-            FROM testimonio
-            WHERE aprobado = TRUE
-            ORDER BY fecha_creacion DESC
-            LIMIT 6
-        """, fetchall=True)
-    except Exception:
-        testimonios = []
-
-    return render_template('index.html', testimonios=testimonios)
+    """Página principal"""
+    return render_template('index.html')
 
 
 @bp.route('/login', methods=['GET', 'POST'])
