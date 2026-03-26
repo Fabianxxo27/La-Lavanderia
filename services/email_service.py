@@ -45,8 +45,16 @@ def send_email_async(destinatario, asunto, cuerpo_html, attachments=None):
                 print("[WARN] Agrega la variable SENDGRID_API_KEY en Render", flush=True)
                 return
             
-            # Email del remitente (usa un email verificado en SendGrid)
-            from_email = os.getenv('SENDGRID_FROM_EMAIL', 'noreply@lalavanderia.com')
+            # Email del remitente: evita usar dominios no autenticados por DMARC.
+            # Si falta la variable en Render, usa el correo operativo del proyecto.
+            from_email = os.getenv('SENDGRID_FROM_EMAIL')
+            if not from_email:
+                from_email = 'lalavanderiabogota@gmail.com'
+                print(
+                    "[WARN] SENDGRID_FROM_EMAIL no configurado; usando fallback "
+                    "lalavanderiabogota@gmail.com",
+                    flush=True
+                )
             
             # Crear mensaje
             message = Mail(
