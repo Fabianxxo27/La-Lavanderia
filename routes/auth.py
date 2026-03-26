@@ -3,6 +3,7 @@ Blueprint de autenticación
 Maneja registro, login y logout de usuarios
 """
 import os
+import re
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session, current_app
 from werkzeug.security import generate_password_hash, check_password_hash
 from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
@@ -106,13 +107,17 @@ def registro():
     form_data = {
         'nombre': '',
         'username': '',
-        'email': ''
+        'email': '',
+        'telefono': '',
+        'direccion': ''
     }
     
     if request.method == "POST":
         nombre = limpiar_texto(request.form.get("nombre", ""), 200)
         username = limpiar_texto(request.form.get("username", "").strip().lower(), 100)
         email = limpiar_texto(request.form.get("email", "").strip().lower(), 200)
+        telefono = limpiar_texto(request.form.get("telefono", ""), 40)
+        direccion = limpiar_texto(request.form.get("direccion", ""), 220)
         password = request.form.get("password", "")
         password2 = request.form.get("password2", "")
         
@@ -120,10 +125,20 @@ def registro():
         form_data['nombre'] = nombre
         form_data['username'] = username
         form_data['email'] = email
+        form_data['telefono'] = telefono
+        form_data['direccion'] = direccion
 
         # Validaciones básicas
-        if not all([nombre, username, email, password]):
+        if not all([nombre, username, email, telefono, direccion, password]):
             flash("Todos los campos son obligatorios.", "warning")
+            return render_template("registro.html", form_data=form_data)
+
+        if not re.match(r'^[0-9+()\-\s]{7,20}$', telefono):
+            flash('El teléfono solo puede tener números, espacios y los símbolos + ( ) -.', 'warning')
+            return render_template("registro.html", form_data=form_data)
+
+        if len(direccion) < 5:
+            flash('La dirección debe tener al menos 5 caracteres.', 'warning')
             return render_template("registro.html", form_data=form_data)
         
         # Validar email
@@ -183,11 +198,13 @@ def registro():
             # Crear el registro en la tabla cliente
             if id_usuario:
                 run_query(
-                    "INSERT INTO cliente (id_cliente, nombre, email) VALUES (:ic, :n, :e)",
+                    "INSERT INTO cliente (id_cliente, nombre, email, telefono, direccion) VALUES (:ic, :n, :e, :t, :d)",
                     {
                         "ic": id_usuario,
                         "n": nombre,
-                        "e": email
+                        "e": email,
+                        "t": telefono,
+                        "d": direccion
                     },
                     commit=True
                 )
@@ -208,6 +225,8 @@ def registro():
                                 <h3 style="color: #1a4e7b; margin-top: 0;">📋 Tu cuenta:</h3>
                                 <p style="margin: 10px 0;"><strong>Usuario:</strong> {username}</p>
                                 <p style="margin: 10px 0;"><strong>Email:</strong> {email}</p>
+                                <p style="margin: 10px 0;"><strong>Teléfono:</strong> {telefono}</p>
+                                <p style="margin: 10px 0;"><strong>Dirección:</strong> {direccion}</p>
                             </div>
                             <div style="background: #e8f4f8; padding: 20px; margin: 20px 0; border-radius: 5px;">
                                 <h3 style="color: #1a4e7b; margin-top: 0;">🚀 ¿Qué puedes hacer ahora?</h3>

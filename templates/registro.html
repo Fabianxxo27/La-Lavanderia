@@ -186,6 +186,21 @@
                  value="{{ form_data.email if form_data else '' }}" required>
         </div>
         <div class="mb-3 text-start">
+          <label for="telefono" class="form-label">Celular</label>
+          <input type="text" class="form-control" id="telefono" name="telefono"
+                 placeholder="Ej. 3001234567"
+                 maxlength="20"
+                 value="{{ form_data.telefono if form_data else '' }}" required>
+          <small class="text-muted">Solo números, espacios y símbolos + ( ) -</small>
+        </div>
+        <div class="mb-3 text-start">
+          <label for="direccion" class="form-label">Dirección</label>
+          <input type="text" class="form-control" id="direccion" name="direccion"
+                 placeholder="Ej. Calle 123 #45-67"
+                 maxlength="220"
+                 value="{{ form_data.direccion if form_data else '' }}" required>
+        </div>
+        <div class="mb-3 text-start">
           <label for="password" class="form-label">Contraseña</label>
           <input type="password" class="form-control" id="password" name="password" 
                  placeholder="Crea una contraseña segura" required>
