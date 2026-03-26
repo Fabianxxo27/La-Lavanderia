@@ -1,0 +1,306 @@
+{% extends "cliente_base.html" %}
+{% block title %}Mis Opiniones - La Lavandería{% endblock %}
+
+{% block content %}
+<style>
+  .opiniones-header {
+    background: linear-gradient(135deg, #1a4e7b 0%, #2d5f8d 100%);
+    border-radius: 12px;
+    padding: 1.5rem;
+    color: white;
+    text-align: center;
+    margin-bottom: 2rem;
+    box-shadow: 0 4px 12px rgba(26, 78, 123, 0.2);
+  }
+
+  .opiniones-header h1 {
+    font-size: 1.6rem;
+    font-weight: 800;
+    margin-bottom: 0.3rem;
+  }
+
+  .opiniones-header p {
+    opacity: 0.9;
+    font-size: 0.9rem;
+    margin: 0;
+  }
+
+  /* Form Card */
+  .form-card {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+    margin-bottom: 2rem;
+    border: 2px solid #e8f0d4;
+  }
+
+  .form-card h2 {
+    color: #1a4e7b;
+    font-weight: 800;
+    font-size: 1.2rem;
+    margin-bottom: 1rem;
+    border-bottom: 2px solid #a6cc48;
+    padding-bottom: 0.5rem;
+  }
+
+  /* Star Rating */
+  .star-rating {
+    display: flex;
+    flex-direction: row-reverse;
+    justify-content: flex-end;
+    gap: 0.3rem;
+    margin-bottom: 1rem;
+  }
+
+  .star-rating input {
+    display: none;
+  }
+
+  .star-rating label {
+    font-size: 2rem;
+    color: #ddd;
+    cursor: pointer;
+    transition: color 0.2s ease;
+  }
+
+  .star-rating input:checked ~ label,
+  .star-rating label:hover,
+  .star-rating label:hover ~ label {
+    color: #e8a000;
+  }
+
+  .form-textarea {
+    width: 100%;
+    border: 2px solid #e8f0d4;
+    border-radius: 8px;
+    padding: 0.8rem;
+    font-size: 0.95rem;
+    resize: vertical;
+    min-height: 100px;
+    font-family: inherit;
+    transition: border-color 0.2s;
+  }
+
+  .form-textarea:focus {
+    border-color: #a6cc48;
+    outline: none;
+  }
+
+  .form-check-custom {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 1rem 0;
+    color: #555;
+    font-size: 0.9rem;
+  }
+
+  .form-check-custom input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: #a6cc48;
+  }
+
+  .btn-enviar {
+    background: linear-gradient(135deg, #a6cc48, #84af1d);
+    color: white;
+    border: none;
+    padding: 0.7rem 2rem;
+    border-radius: 8px;
+    font-weight: 700;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .btn-enviar:hover {
+    background: linear-gradient(135deg, #84af1d, #6b9316);
+    transform: translateY(-1px);
+  }
+
+  /* Opinions List */
+  .opinion-card {
+    background: white;
+    border-radius: 10px;
+    padding: 1.2rem;
+    margin-bottom: 1rem;
+    border: 1px solid #e8f0d4;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+  }
+
+  .opinion-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+  }
+
+  .opinion-stars {
+    color: #e8a000;
+    font-size: 1.1rem;
+  }
+
+  .opinion-date {
+    color: #999;
+    font-size: 0.8rem;
+  }
+
+  .opinion-text {
+    color: #444;
+    font-size: 0.95rem;
+    line-height: 1.5;
+    margin-bottom: 0.5rem;
+  }
+
+  .opinion-status {
+    display: inline-block;
+    padding: 0.2rem 0.6rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+
+  .status-aprobado {
+    background: #d1e7dd;
+    color: #0f5132;
+  }
+
+  .status-pendiente {
+    background: #fff3cd;
+    color: #856404;
+  }
+
+  .opinion-badge {
+    display: inline-block;
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    background: #e8f0d4;
+    color: #555;
+    margin-left: 0.3rem;
+  }
+
+  .admin-response {
+    background: #f0f8e8;
+    border-left: 3px solid #a6cc48;
+    padding: 0.8rem;
+    border-radius: 0 6px 6px 0;
+    margin-top: 0.8rem;
+  }
+
+  .admin-response-label {
+    color: #1a4e7b;
+    font-weight: 700;
+    font-size: 0.8rem;
+    margin-bottom: 0.3rem;
+  }
+
+  .admin-response p {
+    color: #444;
+    font-size: 0.9rem;
+    margin: 0;
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 2rem 1rem;
+    color: #999;
+  }
+
+  .empty-icon {
+    font-size: 2.5rem;
+    margin-bottom: 0.8rem;
+    opacity: 0.6;
+  }
+
+  .section-title {
+    color: #1a4e7b;
+    font-weight: 800;
+    font-size: 1.2rem;
+    margin-bottom: 1rem;
+    margin-top: 1.5rem;
+    padding-bottom: 0.6rem;
+    border-bottom: 2px solid #a6cc48;
+  }
+
+  @media (max-width: 768px) {
+    .opiniones-header h1 { font-size: 1.3rem; }
+    .star-rating label { font-size: 1.6rem; }
+  }
+</style>
+
+<!-- Header -->
+<div class="opiniones-header">
+  <h1>⭐ Mis Opiniones</h1>
+  <p>Comparte tu experiencia con La Lavandería</p>
+</div>
+
+<!-- Write Review Form -->
+<div class="form-card">
+  <h2>✍️ Escribe tu opinión</h2>
+  <form method="POST" action="{{ url_for('cliente.cliente_enviar_opinion') }}">
+    <label style="color: #1a4e7b; font-weight: 700; margin-bottom: 0.5rem; display: block;">Calificación</label>
+    <div class="star-rating">
+      <input type="radio" name="calificacion" id="star5" value="5"><label for="star5" title="Excelente">★</label>
+      <input type="radio" name="calificacion" id="star4" value="4"><label for="star4" title="Muy bueno">★</label>
+      <input type="radio" name="calificacion" id="star3" value="3"><label for="star3" title="Bueno">★</label>
+      <input type="radio" name="calificacion" id="star2" value="2"><label for="star2" title="Regular">★</label>
+      <input type="radio" name="calificacion" id="star1" value="1"><label for="star1" title="Malo">★</label>
+    </div>
+
+    <label for="comentario" style="color: #1a4e7b; font-weight: 700; margin-bottom: 0.5rem; display: block;">Tu experiencia</label>
+    <textarea name="comentario" id="comentario" class="form-textarea" placeholder="Cuéntanos sobre tu experiencia con nuestro servicio..." required minlength="10" maxlength="1000"></textarea>
+
+    <div class="form-check-custom">
+      <input type="checkbox" name="es_anonimo" id="es_anonimo">
+      <label for="es_anonimo">Publicar como anónimo</label>
+    </div>
+
+    <button type="submit" class="btn-enviar">Enviar opinión</button>
+  </form>
+</div>
+
+<!-- My Reviews List -->
+<h2 class="section-title">Mis opiniones anteriores</h2>
+
+{% if opiniones %}
+  {% for op in opiniones %}
+  <div class="opinion-card">
+    <div class="opinion-header">
+      <div>
+        <span class="opinion-stars">
+          {% for i in range(op[1]) %}★{% endfor %}{% for i in range(5 - op[1]) %}<span style="color: #ddd;">★</span>{% endfor %}
+        </span>
+        {% if op[3] %}
+          <span class="opinion-badge">Anónimo</span>
+        {% endif %}
+      </div>
+      <div style="display: flex; align-items: center; gap: 0.5rem;">
+        <span class="opinion-status {{ 'status-aprobado' if op[4] else 'status-pendiente' }}">
+          {{ 'Publicado' if op[4] else 'En revisión' }}
+        </span>
+        <span class="opinion-date">{{ op[5].strftime('%d/%m/%Y') if op[5] else '' }}</span>
+      </div>
+    </div>
+    <p class="opinion-text">{{ op[2] }}</p>
+
+    {% if op[6] %}
+    <div class="admin-response">
+      <div class="admin-response-label">💬 Respuesta de La Lavandería:</div>
+      <p>{{ op[6] }}</p>
+    </div>
+    {% endif %}
+  </div>
+  {% endfor %}
+{% else %}
+  <div class="opinion-card">
+    <div class="empty-state">
+      <div class="empty-icon">💬</div>
+      <p>Aún no has escrito ninguna opinión</p>
+    </div>
+  </div>
+{% endif %}
+
+{% endblock %}

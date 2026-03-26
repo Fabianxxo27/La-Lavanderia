@@ -440,24 +440,38 @@
   <section class="container testimonios" aria-label="Testimonios">
     <h2>Testimonios</h2>
     <div class="row g-4 mt-3">
-      <div class="col-md-4">
-        <article class="testimonial-card">
-          <p>"Excelente servicio, rápido y confiable. Mi ropa siempre queda impecable."</p>
-          <small>— Juan Pérez</small>
-        </article>
-      </div>
-      <div class="col-md-4">
-        <article class="testimonial-card">
-          <p>"Muy buena atención y recogida a domicilio. Recomiendo totalmente."</p>
-          <small>— Ana Gómez</small>
-        </article>
-      </div>
-      <div class="col-md-4">
-        <article class="testimonial-card">
-          <p>"La plataforma es fácil de usar y el seguimiento de pedidos es genial."</p>
-          <small>— Carlos López</small>
-        </article>
-      </div>
+      {% if testimonios %}
+        {% for t in testimonios %}
+        <div class="col-md-4">
+          <article class="testimonial-card">
+            <div style="color: #e8a000; font-size: 1.2rem; margin-bottom: 0.5rem;">
+              {% for i in range(t[2]) %}★{% endfor %}{% for i in range(5 - t[2]) %}<span style="color: #ddd;">★</span>{% endfor %}
+            </div>
+            <p>"{{ t[3] }}"</p>
+            <small>— {{ t[1] }}</small>
+          </article>
+        </div>
+        {% endfor %}
+      {% else %}
+        <div class="col-md-4">
+          <article class="testimonial-card">
+            <p>"Excelente servicio, rápido y confiable. Mi ropa siempre queda impecable."</p>
+            <small>— Juan Pérez</small>
+          </article>
+        </div>
+        <div class="col-md-4">
+          <article class="testimonial-card">
+            <p>"Muy buena atención y recogida a domicilio. Recomiendo totalmente."</p>
+            <small>— Ana Gómez</small>
+          </article>
+        </div>
+        <div class="col-md-4">
+          <article class="testimonial-card">
+            <p>"La plataforma es fácil de usar y el seguimiento de pedidos es genial."</p>
+            <small>— Carlos López</small>
+          </article>
+        </div>
+      {% endif %}
     </div>
   </section>
 
