@@ -102,13 +102,12 @@
                             <span class="text-muted">{{ "%.0f"|format(progreso) }}%</span>
                         </div>
                         <div class="progress" style="height: 25px;">
-                            <div class="progress-bar bg-success progress-bar-striped progress-bar-animated" 
+                            <div class="progress-bar progress-bar-striped progress-bar-animated" 
                                  role="progressbar" 
                                  aria-valuenow="{{ progreso }}" 
                                  aria-valuemin="0" 
                                  aria-valuemax="100"
-                                 {# Estilo dinámico para el ancho de la barra #}
-                                 style="width: {{ progreso }}%;">
+                                 style="width: {{ progreso }}%; background-color: #a6cc48;">
                                 {{ "%.0f"|format(progreso) }}%
                             </div>
                         </div>
@@ -153,10 +152,10 @@
                                         <tr class="{% if nivel == nivel_config.nivel %}table-active{% endif %}">
                                             <td><strong>{{ nivel_config.nivel }}</strong></td>
                                             <td>{{ nivel_config.min }} - {{ nivel_config.max if nivel_config.max else '∞' }} pedidos</td>
-                                            <td><span class="badge bg-success">{{ nivel_config.porcentaje }}%</span></td>
+                                            <td><span class="badge" style="background-color:#a6cc48;color:#fff;">{{ nivel_config.porcentaje }}%</span></td>
                                             <td>
                                                 {% if pedidos_count >= nivel_config.min and (nivel_config.max is none or pedidos_count <= nivel_config.max) %}
-                                                <span class="badge bg-primary">Nivel Actual</span>
+                                                <span class="badge" style="background-color:#1a4e7b;">Nivel Actual</span>
                                                 {% elif pedidos_count > (nivel_config.max or 999) %}
                                                 <i class="fas fa-check-circle text-success"></i> Completado
                                                 {% else %}
@@ -188,15 +187,15 @@
                     <div class="row">
                         {% for promo in promociones %}
                         <div class="col-md-6 col-lg-4 mb-3">
-                            <div class="card h-100 border-success promo-card">
+                            <div class="card h-100 promo-card" style="border: 2px solid #a6cc48;">
                                 <div class="card-body">
                                     <div class="d-flex align-items-start mb-2">
                                         <div class="me-3">
-                                            <i class="fas fa-tag fa-2x text-success"></i>
+                                            <i class="fas fa-tag fa-2x" style="color:#a6cc48;"></i>
                                         </div>
                                         <div class="flex-grow-1">
                                             <h6 class="mb-1">{{ promo[1] }}</h6>
-                                            <span class="badge bg-success fs-6">{{ promo[2] }}% OFF</span>
+                                            <span class="badge fs-6" style="background-color:#a6cc48;color:#fff;">{{ promo[2] }}% OFF</span>
                                         </div>
                                     </div>
                                     <hr>
