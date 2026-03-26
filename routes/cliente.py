@@ -71,6 +71,10 @@ def cliente_perfil():
         try:
             ensure_cliente_exists(cliente[0])
 
+            # Detectar qué campos cambiaron
+            cambio_telefono = telefono != perfil['telefono']
+            cambio_direccion = direccion != perfil['direccion']
+
             run_query(
                 """
                 INSERT INTO cliente (id_cliente, nombre, email, telefono, direccion)
@@ -89,6 +93,50 @@ def cliente_perfil():
                 },
                 commit=True
             )
+
+            # Enviar correo de confirmación si hubo cambios en teléfono o dirección
+            if (cambio_telefono or cambio_direccion) and perfil['email']:
+                cambios_html = ""
+                if cambio_telefono:
+                    cambios_html += f'<p style="margin: 10px 0;"><strong>📱 Teléfono:</strong> {telefono or "<em>sin definir</em>"}</p>'
+                if cambio_direccion:
+                    cambios_html += f'<p style="margin: 10px 0;"><strong>📍 Dirección:</strong> {direccion or "<em>sin definir</em>"}</p>'
+
+                html_confirmacion = f"""
+                <html>
+                    <body style="font-family: Arial, sans-serif; color: #333; max-width: 600px; margin: 0 auto;">
+                        <div style="background: linear-gradient(135deg, #a6cc48 0%, #8fb933 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+                            <h1 style="color: white; margin: 0;">Datos Actualizados</h1>
+                        </div>
+                        <div style="padding: 30px; background: #f9f9f9;">
+                            <h2 style="color: #1a4e7b;">Hola {perfil['nombre']},</h2>
+                            <p style="font-size: 16px; line-height: 1.6;">
+                                Te confirmamos que los siguientes datos de tu perfil han sido actualizados exitosamente:
+                            </p>
+                            <div style="background: white; border-left: 4px solid #a6cc48; padding: 20px; margin: 20px 0; border-radius: 5px;">
+                                <h3 style="color: #1a4e7b; margin-top: 0;">📋 Datos actualizados:</h3>
+                                {cambios_html}
+                            </div>
+                            <div style="background: #fff3cd; padding: 15px; margin: 20px 0; border-radius: 5px; border-left: 4px solid #ffc107;">
+                                <p style="margin: 0; font-size: 14px;">
+                                    ⚠️ Si tú no realizaste estos cambios, por favor cambia tu contraseña inmediatamente
+                                    e infórmanos.
+                                </p>
+                            </div>
+                        </div>
+                        <div style="background: #1a4e7b; padding: 20px; text-align: center; border-radius: 0 0 10px 10px;">
+                            <p style="color: #a6cc48; margin: 0; font-size: 14px;">
+                                La Lavandería - Tu servicio de confianza 🧺
+                            </p>
+                        </div>
+                    </body>
+                </html>
+                """
+                send_email_async(
+                    perfil['email'],
+                    'Confirmación de actualización de perfil - La Lavandería',
+                    html_confirmacion
+                )
 
             flash('Perfil actualizado correctamente.', 'success')
             return redirect(url_for('cliente.cliente_perfil'))
