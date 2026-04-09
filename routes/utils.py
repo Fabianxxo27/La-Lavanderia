@@ -133,7 +133,7 @@ def lector_barcode():
             # Obtener prendas del pedido
             try:
                 prendas = run_query("""
-                    SELECT tipo, descripcion, observaciones
+                    SELECT tipo, descripcion, observaciones, foto
                     FROM prenda
                     WHERE id_pedido = :id
                 """, {"id": pedido[0]}, fetchall=True)
@@ -171,6 +171,20 @@ def lector_barcode():
                     except:
                         fecha_entrega_str = str(pedido[3])
                 
+                prendas_list = []
+                for p in (prendas or []):
+                    foto_path = p[3] or ''
+                    if foto_path:
+                        foto_path = foto_path.lstrip('/')
+                        if foto_path.startswith('static/'):
+                            foto_path = foto_path[len('static/'):]
+                    prendas_list.append({
+                        'tipo': p[0],
+                        'descripcion': p[1] or '',
+                        'observaciones': p[2] or '',
+                        'foto': url_for('static', filename=foto_path) if foto_path else ''
+                    })
+
                 response_data = {
                     'success': True,
                     'codigo_barras': barcode_data,
@@ -187,7 +201,7 @@ def lector_barcode():
                         'direccion': pedido[7] or 'No registrada',
                         'email': pedido[8] or 'No registrado'
                     },
-                    'prendas': [{'tipo': p[0], 'descripcion': p[1] or '', 'observaciones': p[2] or ''} for p in (prendas or [])],
+                    'prendas': prendas_list,
                     'recibo': None
                 }
                 
@@ -333,10 +347,10 @@ def ver_prendas_pedido(id_pedido):
         ORDER BY id_prenda
     """, {"id": id_pedido}, fetchall=True)
     
-    # Calcular precio total y agrupar fotos por tipo
+    # Preparar lista de prendas individuales
     precio_dict = {}
     total_costo = 0
-    prendas_agrupadas = {}
+    prendas_lista = []
     for prenda in prendas:
         tipo = prenda[0]
         descripcion = prenda[1]
@@ -344,22 +358,16 @@ def ver_prendas_pedido(id_pedido):
         foto = prenda[3]
         precio = float(prenda[4])
         precio_dict[tipo] = precio
-        
-        if tipo not in prendas_agrupadas:
-            prendas_agrupadas[tipo] = {
-                'tipo': tipo,
-                'cantidad': 0,
-                'descripcion': descripcion,
-                'observaciones': observaciones,
-                'precio': precio,
-                'fotos': []
-            }
-        prendas_agrupadas[tipo]['cantidad'] += 1
-        if foto and foto not in prendas_agrupadas[tipo]['fotos']:
-            prendas_agrupadas[tipo]['fotos'].append(foto)
         total_costo += precio
-    
-    prendas_lista = list(prendas_agrupadas.values())
+
+        prendas_lista.append({
+            'tipo': tipo,
+            'cantidad': 1,
+            'descripcion': descripcion,
+            'observaciones': observaciones,
+            'precio': precio,
+            'fotos': [foto] if foto else []
+        })
     
     # Obtener la página de origen para el botón regresar
     referer = request.args.get('ref') or request.referrer or ''

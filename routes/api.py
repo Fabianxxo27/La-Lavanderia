@@ -68,29 +68,23 @@ def api_prendas_pedido(id_pedido):
             END as precio
         FROM prenda p
         WHERE p.id_pedido = :id
-        ORDER BY p.tipo
+        ORDER BY p.id_prenda
     """, {"id": id_pedido}, fetchall=True)
     
-    prendas_dict = {}
+    prendas = []
     for prenda in prendas_data:
         tipo = prenda[0]
         descripcion = prenda[1] or ''
         foto = prenda[2] or ''
         precio = float(prenda[3]) if prenda[3] else 5000
-        key = (tipo, descripcion)
-        if key not in prendas_dict:
-            prendas_dict[key] = {
-                'tipo': tipo,
-                'cantidad': 0,
-                'descripcion': descripcion,
-                'precio': precio,
-                'fotos': []
-            }
-        prendas_dict[key]['cantidad'] += 1
-        if foto and foto not in prendas_dict[key]['fotos']:
-            prendas_dict[key]['fotos'].append(foto)
+        prendas.append({
+            'tipo': tipo,
+            'cantidad': 1,
+            'descripcion': descripcion,
+            'precio': precio,
+            'fotos': [foto] if foto else []
+        })
     
-    prendas = list(prendas_dict.values())
     return jsonify({'prendas': prendas})
 
 
