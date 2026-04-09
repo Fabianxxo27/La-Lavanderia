@@ -258,6 +258,7 @@ function cargarPrendas(pedidoId) {
                                     <small class="text-success"><strong>${subtotal}</strong></small>
                                 </div>
                             </div>
+                            ${prenda.fotos && prenda.fotos.length > 0 ? `<div class="mt-3 d-flex flex-wrap gap-2">${prenda.fotos.map(foto => `<img src="/static/${foto}" style="width: 60px; height: 60px; object-fit: cover; border-radius: 8px; cursor: pointer;" onclick="window.open(this.src, '_blank')">`).join('')}</div>` : ''}
                         </div>
                     `;
                 });

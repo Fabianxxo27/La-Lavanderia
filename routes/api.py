@@ -42,12 +42,12 @@ def api_prendas_pedido(id_pedido):
         if usuario[0] != pedido[0]:
             return jsonify({'error': 'Acceso denegado'}), 403
     
-    # Obtener prendas con precios calculados según tipo
+    # Obtener prendas individuales para poder incluir las fotos
     prendas_data = run_query("""
         SELECT 
-            p.tipo, 
-            COUNT(*) as cantidad,
+            p.tipo,
             p.descripcion,
+            p.foto,
             CASE p.tipo
                 WHEN 'Camisa' THEN 5000
                 WHEN 'Pantalón' THEN 6000
@@ -68,19 +68,29 @@ def api_prendas_pedido(id_pedido):
             END as precio
         FROM prenda p
         WHERE p.id_pedido = :id
-        GROUP BY p.tipo, p.descripcion
         ORDER BY p.tipo
     """, {"id": id_pedido}, fetchall=True)
     
-    prendas = []
+    prendas_dict = {}
     for prenda in prendas_data:
-        prendas.append({
-            'tipo': prenda[0],
-            'cantidad': int(prenda[1]) if prenda[1] else 0,
-            'descripcion': prenda[2] or '',
-            'precio': float(prenda[3]) if prenda[3] else 5000
-        })
+        tipo = prenda[0]
+        descripcion = prenda[1] or ''
+        foto = prenda[2] or ''
+        precio = float(prenda[3]) if prenda[3] else 5000
+        key = (tipo, descripcion)
+        if key not in prendas_dict:
+            prendas_dict[key] = {
+                'tipo': tipo,
+                'cantidad': 0,
+                'descripcion': descripcion,
+                'precio': precio,
+                'fotos': []
+            }
+        prendas_dict[key]['cantidad'] += 1
+        if foto and foto not in prendas_dict[key]['fotos']:
+            prendas_dict[key]['fotos'].append(foto)
     
+    prendas = list(prendas_dict.values())
     return jsonify({'prendas': prendas})
 
 

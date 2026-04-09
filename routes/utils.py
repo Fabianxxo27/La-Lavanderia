@@ -11,6 +11,7 @@ from helpers import admin_only, obtener_esquema_descuento_cliente, ejecutar_sql_
 from io import BytesIO
 import pandas as pd
 import datetime
+import os
 import barcode
 from barcode.writer import ImageWriter
 from reportlab.lib.pagesizes import letter
@@ -302,13 +303,13 @@ def ver_prendas_pedido(id_pedido):
             flash("No tienes acceso a este pedido.", "danger")
             return redirect(url_for('cliente.cliente_pedidos'))
     
-    # Obtener prendas del pedido agrupadas por tipo
+    # Obtener prendas individuales para poder incluir fotos
     prendas = run_query("""
         SELECT 
-            MIN(id_prenda) as id_prenda,
             tipo,
-            COUNT(*) as cantidad,
-            MAX(descripcion) as descripcion,
+            descripcion,
+            observaciones,
+            foto,
             CASE tipo
                 WHEN 'Camisa' THEN 5000
                 WHEN 'Pantalón' THEN 6000
@@ -329,19 +330,36 @@ def ver_prendas_pedido(id_pedido):
             END as precio
         FROM prenda
         WHERE id_pedido = :id
-        GROUP BY tipo
-        ORDER BY tipo
+        ORDER BY id_prenda
     """, {"id": id_pedido}, fetchall=True)
     
-    # Calcular precio total
+    # Calcular precio total y agrupar fotos por tipo
     precio_dict = {}
     total_costo = 0
+    prendas_agrupadas = {}
     for prenda in prendas:
-        tipo = prenda[1]
-        cantidad = prenda[2]
-        precio = prenda[4]
-        precio_dict[tipo] = float(precio)
-        total_costo += float(precio) * cantidad
+        tipo = prenda[0]
+        descripcion = prenda[1]
+        observaciones = prenda[2]
+        foto = prenda[3]
+        precio = float(prenda[4])
+        precio_dict[tipo] = precio
+        
+        if tipo not in prendas_agrupadas:
+            prendas_agrupadas[tipo] = {
+                'tipo': tipo,
+                'cantidad': 0,
+                'descripcion': descripcion,
+                'observaciones': observaciones,
+                'precio': precio,
+                'fotos': []
+            }
+        prendas_agrupadas[tipo]['cantidad'] += 1
+        if foto and foto not in prendas_agrupadas[tipo]['fotos']:
+            prendas_agrupadas[tipo]['fotos'].append(foto)
+        total_costo += precio
+    
+    prendas_lista = list(prendas_agrupadas.values())
     
     # Obtener la página de origen para el botón regresar
     referer = request.args.get('ref') or request.referrer or ''
@@ -349,7 +367,7 @@ def ver_prendas_pedido(id_pedido):
     
     return render_template('pedido_prendas.html',
                          pedido=pedido,
-                         prendas=prendas,
+                         prendas=prendas_lista,
                          precio_dict=precio_dict,
                          total_costo=total_costo,
                          rol=rol,
@@ -670,9 +688,9 @@ def descargar_recibo_pdf(id_pedido):
         if not pedido:
             return "Pedido no encontrado", 404
         
-        # Obtener prendas
+        # Obtener prendas con fotos
         prendas = run_query("""
-            SELECT tipo, descripcion, 
+            SELECT tipo, descripcion, foto,
                 CASE tipo
                     WHEN 'Camisa' THEN 5000
                     WHEN 'Pantalón' THEN 6000
@@ -693,6 +711,7 @@ def descargar_recibo_pdf(id_pedido):
                 END as precio
             FROM prenda
             WHERE id_pedido = :id
+            ORDER BY id_prenda
         """, {"id": id_pedido}, fetchall=True)
         
         # Obtener recibo y cliente
@@ -701,7 +720,7 @@ def descargar_recibo_pdf(id_pedido):
         """, {"id": id_pedido}, fetchone=True)
         
         # Calcular descuento (usar guardado si existe, sino calcular)
-        subtotal = sum(p[2] for p in prendas)
+        subtotal = sum(p[3] for p in prendas)
         
         if tiene_columnas_descuento and len(pedido) >= 11:
             # Usar descuento guardado en el pedido
@@ -792,19 +811,30 @@ def descargar_recibo_pdf(id_pedido):
         story.append(Paragraph("Prendas:", styles['Heading2']))
         story.append(Spacer(1, 0.1*inch))
         
-        prendas_data = [['Tipo', 'Descripción', 'Precio']]
+        prendas_data = [['Tipo', 'Descripción', 'Foto', 'Precio']]
         total = 0
         for prenda in prendas:
-            prendas_data.append([prenda[0], prenda[1] or '-', f'${prenda[2]:,}'])
-            total += prenda[2]
+            foto_cell = 'Sin foto'
+            if prenda[2]:
+                foto_path = os.path.join('static', prenda[2])
+                if os.path.exists(foto_path):
+                    try:
+                        foto_cell = Image(foto_path, width=0.7*inch, height=0.7*inch)
+                    except Exception:
+                        foto_cell = 'Foto no disponible'
+                else:
+                    foto_cell = 'Foto no encontrada'
+            prendas_data.append([prenda[0], prenda[1] or '-', foto_cell, f'${prenda[3]:,}'])
+            total += prenda[3]
         
-        prendas_table = Table(prendas_data, colWidths=[2*inch, 2.5*inch, 1.5*inch])
+        prendas_table = Table(prendas_data, colWidths=[1.5*inch, 2*inch, 1.2*inch, 1.3*inch])
         prendas_table.setStyle(TableStyle([
             ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
             ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
             ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
             ('GRID', (0, 0), (-1, -1), 1, colors.black),
-            ('ALIGN', (2, 0), (2, -1), 'RIGHT'),
+            ('ALIGN', (3, 0), (3, -1), 'RIGHT'),
+            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
         ]))
         story.append(prendas_table)
         story.append(Spacer(1, 0.2*inch))
