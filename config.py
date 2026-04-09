@@ -34,7 +34,7 @@ class Config:
     
     if not DATABASE_URL:
         # Si no hay DATABASE_URL, usar credenciales locales
-        print("⚠️ DATABASE_URL no encontrado, usando credentials.py (desarrollo local)")
+        print(" DATABASE_URL no encontrado, usando credentials.py (desarrollo local)")
         pwd = urllib.parse.quote_plus(cd.password)
         DATABASE_URL = f"postgresql://{cd.user}:{pwd}@{cd.host}/{cd.db}"
     else:

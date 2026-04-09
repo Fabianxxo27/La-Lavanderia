@@ -92,7 +92,7 @@
                 </div>
                 
                 <div class="card-body">
-                    <form method="POST" action="{{ url_for('admin.agregar_pedido') }}" id="formPedido">
+                    <form method="POST" action="{{ url_for('admin.agregar_pedido') }}" id="formPedido" enctype="multipart/form-data">
                         
                         <!-- Cliente (solo admin) -->
                         {% if rol == 'administrador' %}
@@ -133,6 +133,7 @@
                                         <th>Tipo de Prenda</th>
                                         <th width="12%">Cantidad</th>
                                         <th>Descripción (Opcional)</th>
+                                        <th>Foto (Opcional)</th>
                                         <th class="text-center" width="12%">Subtotal</th>
                                         <th width="8%" class="text-center" style="color: #dc3545; font-weight: bold; font-size: 1.1rem;">
                                             <i class="fas fa-times"></i>
@@ -156,6 +157,10 @@
                                         </td>
                                         <td>
                                             <input type="text" class="form-control form-control-sm" name="descripcion[]" placeholder="Ej: Azul talla M">
+                                        </td>
+                                        <td>
+                                            <input type="file" class="form-control form-control-sm" name="foto[]" accept="image/*" onchange="previewFoto(this)">
+                                            <div class="foto-preview mt-1" style="max-width: 60px;"></div>
                                         </td>
                                         <td class="text-center">
                                             <span class="precio-fila badge bg-secondary">$0</span>
@@ -333,6 +338,8 @@ function agregarFila() {
     nuevaFila.querySelector('input[name="cantidad[]"]').onchange = function() { calcularTotal(); };
     nuevaFila.querySelector('input[name="cantidad[]"]').oninput = function() { calcularTotal(); };
     nuevaFila.querySelector('input[name="descripcion[]"]').value = '';
+    nuevaFila.querySelector('input[name="foto[]"]').value = '';
+    nuevaFila.querySelector('.foto-preview').innerHTML = '';
     nuevaFila.querySelector('.precio-fila').textContent = '$0';
     const botonEliminar = nuevaFila.querySelector('button[onclick*="eliminarFila"]');
     botonEliminar.onclick = function() { eliminarFila(this); };
@@ -463,6 +470,41 @@ function calcularFechaEntrega(totalPrendas) {
     }
     
     document.getElementById('fechaEntrega').innerHTML = mensajeEntrega;
+}
+
+function previewFoto(input) {
+    const preview = input.parentElement.querySelector('.foto-preview');
+    preview.innerHTML = '';
+    
+    if (input.files && input.files[0]) {
+        const file = input.files[0];
+        
+        // Validar tamaño (máximo 5MB)
+        if (file.size > 5 * 1024 * 1024) {
+            alert('La foto no puede ser mayor a 5MB');
+            input.value = '';
+            return;
+        }
+        
+        // Validar tipo
+        if (!file.type.startsWith('image/')) {
+            alert('Solo se permiten archivos de imagen');
+            input.value = '';
+            return;
+        }
+        
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const img = document.createElement('img');
+            img.src = e.target.result;
+            img.style.maxWidth = '60px';
+            img.style.maxHeight = '60px';
+            img.style.borderRadius = '4px';
+            img.style.border = '1px solid #ddd';
+            preview.appendChild(img);
+        };
+        reader.readAsDataURL(file);
+    }
 }
 
 // Inicializar

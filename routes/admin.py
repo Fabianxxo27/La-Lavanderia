@@ -4,6 +4,7 @@ Rutas del panel de administración
 """
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session, send_file, Response, jsonify
 from werkzeug.security import generate_password_hash
+from werkzeug.utils import secure_filename
 from sqlalchemy import text
 from models import run_query, ensure_cliente_exists, db
 from services import limpiar_texto, validar_email, send_email_async
@@ -554,7 +555,7 @@ def pedido_detalles(id_pedido):
         return redirect(url_for('admin.pedidos'))
     
     prendas = run_query(
-        "SELECT id_prenda, tipo, descripcion, observaciones FROM prenda WHERE id_pedido = :id",
+        "SELECT id_prenda, tipo, descripcion, observaciones, foto FROM prenda WHERE id_pedido = :id",
         {"id": id_pedido},
         fetchall=True
     )
@@ -602,13 +603,14 @@ def pedido_prendas(id_pedido):
             flash("No tienes acceso a este pedido.", "danger")
             return redirect(url_for('cliente.cliente_pedidos'))
     
-    # Obtener prendas del pedido agrupadas por tipo
+    # Obtener prendas del pedido (individuales para mostrar fotos)
     prendas = run_query("""
         SELECT 
-            MIN(id_prenda) as id_prenda,
+            id_prenda,
             tipo,
-            COUNT(*) as cantidad,
-            MAX(descripcion) as descripcion,
+            descripcion,
+            observaciones,
+            foto,
             CASE tipo
                 WHEN 'Camisa' THEN 5000
                 WHEN 'Pantalón' THEN 6000
@@ -629,19 +631,35 @@ def pedido_prendas(id_pedido):
             END as precio
         FROM prenda
         WHERE id_pedido = :id
-        GROUP BY tipo
-        ORDER BY tipo
+        ORDER BY id_prenda
     """, {"id": id_pedido}, fetchall=True)
     
     # Calcular precio total
     precio_dict = {}
     total_costo = 0
+    prendas_agrupadas = {}
+    
     for prenda in prendas:
         tipo = prenda[1]
-        cantidad = prenda[2]
-        precio = prenda[4]
+        precio = prenda[5]
         precio_dict[tipo] = float(precio)
-        total_costo += float(precio) * cantidad
+        
+        if tipo not in prendas_agrupadas:
+            prendas_agrupadas[tipo] = {
+                'tipo': tipo,
+                'cantidad': 0,
+                'descripcion': prenda[2],
+                'precio': precio,
+                'fotos': []
+            }
+        
+        prendas_agrupadas[tipo]['cantidad'] += 1
+        if prenda[4]:  # foto
+            prendas_agrupadas[tipo]['fotos'].append(prenda[4])
+        total_costo += float(precio)
+    
+    # Convertir a lista para la plantilla
+    prendas_lista = list(prendas_agrupadas.values())
     
     # Obtener la página de origen para el botón regresar
     referer = request.args.get('ref') or request.referrer or ''
@@ -649,7 +667,7 @@ def pedido_prendas(id_pedido):
     
     return render_template('pedido_prendas.html',
                          pedido=pedido,
-                         prendas=prendas,
+                         prendas=prendas_lista,
                          precio_dict=precio_dict,
                          total_costo=total_costo,
                          rol=rol,
@@ -688,9 +706,9 @@ def generar_recibo(id_pedido):
         if not pedido:
             return "Pedido no encontrado", 404
         
-        # Obtener prendas
+        # Obtener prendas con fotos
         prendas = run_query("""
-            SELECT tipo, descripcion, 
+            SELECT tipo, descripcion, foto,
                 CASE tipo
                     WHEN 'Camisa' THEN 5000
                     WHEN 'Pantalón' THEN 6000
@@ -711,6 +729,7 @@ def generar_recibo(id_pedido):
                 END as precio
             FROM prenda
             WHERE id_pedido = :id
+            ORDER BY id_prenda
         """, {"id": id_pedido}, fetchall=True)
         
         # Obtener recibo
@@ -719,7 +738,7 @@ def generar_recibo(id_pedido):
         """, {"id": id_pedido}, fetchone=True)
         
         # Calcular descuento
-        subtotal = sum(p[2] for p in prendas)
+        subtotal = sum(p[3] for p in prendas)
         
         if tiene_columnas_descuento and len(pedido) >= 11:
             descuento_porcentaje = pedido[9] or 0
@@ -794,19 +813,35 @@ def generar_recibo(id_pedido):
         story.append(Paragraph("Prendas:", styles['Heading2']))
         story.append(Spacer(1, 0.1*inch))
         
-        prendas_data = [['Tipo', 'Descripción', 'Precio']]
+        prendas_data = [['Tipo', 'Descripción', 'Foto', 'Precio']]
         total = 0
         for prenda in prendas:
-            prendas_data.append([prenda[0], prenda[1] or '-', f'${prenda[2]:,}'])
-            total += prenda[2]
+            # Agregar fila de prenda
+            foto_cell = ""
+            if prenda[2]:  # foto existe
+                try:
+                    foto_path = os.path.join('static', prenda[2])
+                    if os.path.exists(foto_path):
+                        img = Image(foto_path, width=0.8*inch, height=0.8*inch)
+                        foto_cell = img
+                    else:
+                        foto_cell = "Foto no encontrada"
+                except Exception as e:
+                    foto_cell = "Error al cargar foto"
+            else:
+                foto_cell = "Sin foto"
+            
+            prendas_data.append([prenda[0], prenda[1] or '-', foto_cell, f'${prenda[3]:,}'])
+            total += prenda[3]
         
-        prendas_table = Table(prendas_data, colWidths=[2*inch, 2.5*inch, 1.5*inch])
+        prendas_table = Table(prendas_data, colWidths=[1.5*inch, 2*inch, 1.2*inch, 1.3*inch])
         prendas_table.setStyle(TableStyle([
             ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
             ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
             ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
             ('GRID', (0, 0), (-1, -1), 1, colors.black),
-            ('ALIGN', (2, 0), (2, -1), 'RIGHT'),
+            ('ALIGN', (3, 0), (3, -1), 'RIGHT'),
+            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
         ]))
         story.append(prendas_table)
         story.append(Spacer(1, 0.2*inch))
@@ -1423,7 +1458,7 @@ def ejecutar_migraciones_admin():
         flash('Acceso denegado.', 'danger')
         return redirect(url_for('auth.index'))
 
-    archivos = ['add_direcciones_to_pedido.sql', 'create_descuento_config.sql', 'add_descuento_to_pedido.sql', 'create_cliente_esquema_descuento.sql', 'create_verification_codes.sql', 'alter_verification_codes_token.sql']
+    archivos = ['add_direcciones_to_pedido.sql', 'create_descuento_config.sql', 'add_descuento_to_pedido.sql', 'create_cliente_esquema_descuento.sql', 'create_verification_codes.sql', 'alter_verification_codes_token.sql', 'add_foto_to_prenda.sql']
     errores = []
 
     for archivo in archivos:
@@ -2668,15 +2703,20 @@ def agregar_pedido():
             tipos = request.form.getlist('tipo[]')
             cantidades = request.form.getlist('cantidad[]')
             descripciones = request.form.getlist('descripcion[]')
+            fotos = request.files.getlist('foto[]')
             
             # Debug: verificar que las listas tengan el mismo tamaño
-            print(f"DEBUG: tipos={len(tipos)}, cantidades={len(cantidades)}, descripciones={len(descripciones)}")
+            print(f"DEBUG: tipos={len(tipos)}, cantidades={len(cantidades)}, descripciones={len(descripciones)}, fotos={len(fotos)}")
             print(f"DEBUG: cantidades={cantidades}")
             print(f"DEBUG: descripciones={descripciones}")
 
             if not tipos or len(tipos) == 0:
                 flash('Debes agregar al menos una prenda.', 'warning')
                 return redirect(url_for('admin.agregar_pedido'))
+            
+            # 3.1 Crear directorio para fotos si no existe
+            fotos_dir = os.path.join('static', 'uploads', 'prendas')
+            os.makedirs(fotos_dir, exist_ok=True)
             
             # 4. Calcular fechas
             total_prendas = sum(int(c) for c in cantidades if c)
@@ -2750,7 +2790,7 @@ def agregar_pedido():
                 commit=True
             )
             
-            # 6. Procesar y calcular costo primero
+            # 6. Procesar prendas fila por fila (cada fila puede tener su foto)
             prendas_a_insertar = []
             total_costo = 0
             
@@ -2770,6 +2810,24 @@ def agregar_pedido():
                 
                 descripcion = descripciones[i] if i < len(descripciones) else ''
                 
+                # Procesar foto si existe
+                foto_path = None
+                if i < len(fotos) and fotos[i] and fotos[i].filename:
+                    foto_file = fotos[i]
+                    
+                    # Validar tipo de archivo
+                    if not foto_file.filename.lower().endswith(('.png', '.jpg', '.jpeg', '.gif')):
+                        continue
+                    
+                    # Generar nombre único para la foto
+                    filename = secure_filename(f"{id_pedido}_{i}_{foto_file.filename}")
+                    foto_path_rel = f"uploads/prendas/{filename}"
+                    foto_path_full = os.path.join('static', foto_path_rel)
+                    
+                    # Guardar archivo
+                    foto_file.save(foto_path_full)
+                    foto_path = foto_path_rel
+                
                 # Buscar precio
                 precio = 5000  # default
                 for prenda_def in prendas_default:
@@ -2781,7 +2839,8 @@ def agregar_pedido():
                     'tipo': tipo,
                     'cantidad': cantidad,
                     'descripcion': descripcion,
-                    'precio': precio
+                    'precio': precio,
+                    'foto': foto_path
                 })
                 
                 total_costo += precio * cantidad
@@ -2798,11 +2857,12 @@ def agregar_pedido():
                 tipo = prenda['tipo']
                 cantidad = prenda['cantidad']
                 descripcion = prenda['descripcion']
+                foto = prenda['foto']
                 
                 for unidad in range(cantidad):
                     run_query(
-                        "INSERT INTO prenda (tipo, descripcion, observaciones, id_pedido) VALUES (:tipo, :desc, :obs, :id_ped)",
-                        {"tipo": tipo, "desc": descripcion, "obs": '', "id_ped": id_pedido},
+                        "INSERT INTO prenda (tipo, descripcion, observaciones, foto, id_pedido) VALUES (:tipo, :desc, :obs, :foto, :id_ped)",
+                        {"tipo": tipo, "desc": descripcion, "obs": '', "foto": foto, "id_ped": id_pedido},
                         commit=True
                     )
                     prendas_insertadas += 1

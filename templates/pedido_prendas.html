@@ -93,6 +93,7 @@
                                     <th>Tipo de Prenda</th>
                                     <th>Descripción</th>
                                     <th class="text-center">Cantidad</th>
+                                    <th>Fotos</th>
                                     <th class="text-right">Precio Unitario</th>
                                     <th class="text-right">Subtotal</th>
                                 </tr>
@@ -103,30 +104,41 @@
                                 <tr>
                                     <td><strong>{{ loop.index }}</strong></td>
                                     <td>
-                                        <strong>{{ prenda[1] }}</strong>
+                                        <strong>{{ prenda.tipo }}</strong>
                                     </td>
                                     <td>
-                                        {% if prenda[3] %}
-                                            <small class="text-muted">{{ prenda[3] }}</small>
+                                        {% if prenda.descripcion %}
+                                            <small class="text-muted">{{ prenda.descripcion }}</small>
                                         {% else %}
                                             <small class="text-muted text-secondary">-</small>
                                         {% endif %}
                                     </td>
                                     <td class="text-center">
-                                        <span class="badge bg-primary">{{ prenda[2] }}x</span>
+                                        <span class="badge bg-primary">{{ prenda.cantidad }}x</span>
+                                    </td>
+                                    <td>
+                                        {% if prenda.fotos %}
+                                            <div class="d-flex flex-wrap gap-1">
+                                                {% for foto in prenda.fotos %}
+                                                    <img src="{{ url_for('static', filename=foto) }}" alt="Foto de {{ prenda.tipo }}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 4px; cursor: pointer;" onclick="window.open(this.src, '_blank')">
+                                                {% endfor %}
+                                            </div>
+                                        {% else %}
+                                            <small class="text-muted">Sin fotos</small>
+                                        {% endif %}
                                     </td>
                                     <td class="text-right">
-                                        {% if prenda[1] in precio_dict %}
-                                            ${{ "{:,.0f}".format(precio_dict[prenda[1]]) }}
+                                        {% if prenda.tipo in precio_dict %}
+                                            ${{ "{:,.0f}".format(precio_dict[prenda.tipo]) }}
                                         {% else %}
                                             <span class="text-muted">-</span>
                                         {% endif %}
                                     </td>
                                     <td class="text-right">
                                         <strong class="text-success">
-                                            ${{ "{:,.0f}".format(prenda[2] * precio_dict.get(prenda[1], 0)) }}
+                                            ${{ "{:,.0f}".format(prenda.cantidad * precio_dict.get(prenda.tipo, 0)) }}
                                         </strong>
-                                        {% set total = total + (prenda[2] * precio_dict.get(prenda[1], 0)) %}
+                                        {% set total = total + (prenda.cantidad * precio_dict.get(prenda.tipo, 0)) %}
                                     </td>
                                 </tr>
                                 {% endfor %}

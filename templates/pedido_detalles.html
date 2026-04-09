@@ -451,6 +451,7 @@
         <th>Tipo</th>
         <th>Descripción</th>
         <th>Observaciones</th>
+        <th>Foto</th>
       </tr>
     </thead>
     <tbody>
@@ -460,6 +461,13 @@
         <td><strong>{{ pr[1] }}</strong></td>
         <td>{{ pr[2] or '—' }}</td>
         <td>{{ pr[3] or '—' }}</td>
+        <td>
+          {% if pr[4] %}
+            <img src="{{ url_for('static', filename=pr[4]) }}" alt="Foto de {{ pr[1] }}" style="max-width: 80px; max-height: 80px; border-radius: 4px; cursor: pointer;" onclick="window.open(this.src, '_blank')">
+          {% else %}
+            <span style="color: #999;">Sin foto</span>
+          {% endif %}
+        </td>
       </tr>
       {% endfor %}
     </tbody>
