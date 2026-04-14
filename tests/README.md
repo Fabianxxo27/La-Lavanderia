@@ -4,7 +4,25 @@ Scripts para ejecutar pruebas de carga en tu aplicación en la nube (Render).
 
 ---
 
-## Instalación
+## Inicio Rápido
+
+### Opción A: Ejecutar con Script (Más Fácil)
+
+**Windows:**
+```bash
+tests\run_tests.bat
+```
+
+**Mac/Linux:**
+```bash
+bash tests/run_tests.sh
+```
+
+Selecciona una opción del menú y listo.
+
+---
+
+### Opción B: Instalar Dependencias Manualmente
 
 ```bash
 pip install locust requests
