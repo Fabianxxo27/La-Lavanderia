@@ -12,10 +12,15 @@ import time
 from datetime import datetime
 import statistics
 import os
+import warnings
 
 # Intenta importar requests, si no está instalado, avisa
 try:
     import requests
+    from urllib3.exceptions import InsecureRequestWarning
+    # Silencia warnings de certificados
+    warnings.simplefilter('ignore', InsecureRequestWarning)
+    requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 except ImportError:
     print("ERROR: 'requests' no está instalado")
     print("Ejecuta: pip install requests")

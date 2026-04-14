@@ -14,10 +14,15 @@ import time
 from datetime import datetime
 from concurrent.futures import ThreadPoolExecutor
 import os
+import warnings
 
 # Intenta importar requests
 try:
     import requests
+    from urllib3.exceptions import InsecureRequestWarning
+    # Silencia warnings de certificados
+    warnings.simplefilter('ignore', InsecureRequestWarning)
+    requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 except ImportError:
     print("ERROR: 'requests' no está instalado")
     print("Ejecuta: pip install requests")
