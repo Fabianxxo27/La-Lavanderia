@@ -28,9 +28,6 @@ reportlab==4.0.7
 # Servidor WSGI
 waitress==2.1.2
 
-# WhatsApp Bot (Twilio)
-twilio==9.0.0
-
 # Email
 sendgrid==6.10.0
 
