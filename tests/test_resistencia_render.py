@@ -9,11 +9,19 @@ USO:
 Edita DURACION_MINUTOS = 60 para cambiar duración.
 """
 
-import requests
-from concurrent.futures import ThreadPoolExecutor
+import sys
 import time
 from datetime import datetime
+from concurrent.futures import ThreadPoolExecutor
 import os
+
+# Intenta importar requests
+try:
+    import requests
+except ImportError:
+    print("ERROR: 'requests' no está instalado")
+    print("Ejecuta: pip install requests")
+    sys.exit(1)
 
 RENDER_URL = os.getenv("RENDER_URL", "https://la-lavanderia.onrender.com")
 DURACION_MINUTOS = 10  # Cambia a 60 para prueba de 1 hora

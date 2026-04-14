@@ -2,6 +2,9 @@
 Pruebas de carga contra la aplicación en Render.
 Se simula múltiples usuarios navegando la app en la nube.
 
+INSTALACIÓN:
+    pip install locust
+
 USO:
     locust -f tests/locustfile_render.py --users 20 --spawn-rate 2 --run-time 5m
     Abre: http://localhost:8089
@@ -10,10 +13,17 @@ O sin interfaz:
     locust -f tests/locustfile_render.py --headless --users 20 --spawn-rate 2 --run-time 5m
 """
 
-from locust import HttpUser, task, between
-import random
-from datetime import datetime
+import sys
 import os
+from datetime import datetime
+
+# Verifica que locust esté instalado
+try:
+    from locust import HttpUser, task, between
+except ImportError:
+    print("ERROR: 'locust' no está instalado")
+    print("Ejecuta: pip install locust")
+    sys.exit(1)
 
 # REEMPLAZA CON TU URL DE RENDER
 RENDER_URL = os.getenv("RENDER_URL", "https://la-lavanderia.onrender.com")

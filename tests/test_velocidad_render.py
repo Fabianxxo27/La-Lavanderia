@@ -7,11 +7,19 @@ USO:
     python tests/test_velocidad_render.py
 """
 
-import requests
+import sys
 import time
 from datetime import datetime
 import statistics
 import os
+
+# Intenta importar requests, si no está instalado, avisa
+try:
+    import requests
+except ImportError:
+    print("ERROR: 'requests' no está instalado")
+    print("Ejecuta: pip install requests")
+    sys.exit(1)
 
 RENDER_URL = os.getenv("RENDER_URL", "https://la-lavanderia.onrender.com")
 
@@ -125,13 +133,14 @@ def test_velocidad():
     if velocidades:
         print(f"Tiempo promedio de todas las rutas: {statistics.mean(velocidades)*1000:.0f}ms")
         
-        mas_rapida = min(resultados, key=lambda x: x['promedio'] or float('inf'))
-        mas_lenta = max(resultados, key=lambda x: x['promedio'] or 0)
-        
-        if mas_rapida["promedio"]:
+        try:
+            mas_rapida = min([r for r in resultados if r["promedio"]], key=lambda x: x['promedio'])
+            mas_lenta = max([r for r in resultados if r["promedio"]], key=lambda x: x['promedio'])
+            
             print(f"Ruta más rápida: {mas_rapida['nombre']} ({mas_rapida['promedio']*1000:.0f}ms)")
-        if mas_lenta["promedio"]:
             print(f"Ruta más lenta: {mas_lenta['nombre']} ({mas_lenta['promedio']*1000:.0f}ms)")
+        except (ValueError, IndexError):
+            print("No hay datos de velocidad para analizar")
         
         rutas_lentas = [r for r in resultados if r["promedio"] and r["promedio"] > 2]
         if rutas_lentas:
@@ -140,6 +149,14 @@ def test_velocidad():
                 print(f"  - {r['nombre']}: {r['promedio']*1000:.0f}ms")
         else:
             print(f"\n✓ Todas las rutas responden en menos de 2 segundos")
+    else:
+        print("⚠ ERROR: No se pudieron medir las rutas")
+        print(f"Verifica que:")
+        print(f"  1. RENDER_URL está correctamente configurada: {RENDER_URL}")
+        print(f"  2. La app en Render está disponible")
+        print(f"  3. Tienes conexión a Internet")
+        print(f"\nPara cambiar la URL, edita este archivo y reemplaza:")
+        print(f"  RENDER_URL = '{RENDER_URL}'")
 
 if __name__ == "__main__":
     test_velocidad()

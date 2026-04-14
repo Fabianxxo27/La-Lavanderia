@@ -19,12 +19,16 @@ if errorlevel 1 (
     exit /b 1
 )
 
-REM Verifica dependencias
-echo Verificando dependencias...
-pip list | find "locust" >nul
+REM Instala dependencias automaticamente
+echo Verificando e instalando dependencias...
+pip install locust requests --quiet
+
 if errorlevel 1 (
-    echo Instalando locust y requests...
-    pip install locust requests
+    echo ERROR: No se pudieron instalar las dependencias
+    echo Intenta manualmente:
+    echo   pip install locust requests
+    pause
+    exit /b 1
 )
 
 echo.
