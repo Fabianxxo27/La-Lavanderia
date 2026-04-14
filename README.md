@@ -529,22 +529,6 @@ Este proyecto está bajo licencia MIT. Ver `LICENSE` para detalles.
 
 ---
 
-## Para estudiantes de Proyecto de Grado
-
-Este proyecto es un ejemplo completo de una **aplicación web full-stack**:
-
-- **Backend:** Flask + Python
-- **Base de datos:** PostgreSQL
-- **Frontend:** HTML + CSS + Bootstrap
-- **Autenticación:** Flask Sessions
-- **Email:** SendGrid API
-- **Reportes:** ReportLab + Pandas
-- **Despliegue:** Render.com
-
-Todos los conceptos fundamentales de desarrollo web están aquí. ¡Úsalo como referencia!
-
----
-
 **Última actualización:** Abril 2026  
 **Mantener por:** Fabián Medina  
 **GitHub:** https://github.com/Fabianxxo27/La-Lavanderia
