@@ -220,61 +220,7 @@ Se valida la nueva contraseña según requisitos. Se genera el nuevo hash. Se ac
 
 ---
 
-## 10. Comparación con Estándares Industriales
-
-| Medida de Seguridad | La Lavandería | Recomendación OWASP | Cumplimiento |
-|---------------------|---------------|---------------------|--------------|
-| **Algoritmo hashing** | PBKDF2-SHA256 | PBKDF2, bcrypt, scrypt, Argon2 | ✅ Cumple |
-| **Iteraciones hash** | 160,000 | 100,000+ | ✅ Cumple |
-| **Salt único** | Sí, automático | Obligatorio | ✅ Cumple |
-| **Longitud salt** | 64 bits (mínimo generado por Werkzeug) | 128 bits | ⚠️ Borderline |
-| **HTTPS** | Sí, Render | Obligatorio | ✅ Cumple |
-| **Cookies HTTPONLY** | Sí | Obligatorio | ✅ Cumple |
-| **CSRF protection** | Sí, SAMESITE=Lax | Obligatorio | ✅ Cumple |
-| **Validación entrada** | Sí, limpieza + regex | Obligatorio | ✅ Cumple |
-| **Parametrized queries** | Sí, SQLAlchemy | Obligatorio | ✅ Cumple |
-| **Token expiración** | Sí (30 min reset, 15 min email) | 15-60 min | ✅ Cumple |
-| **Sesión expiración** | 2 horas | Configurable | ✅ Cumple |
-| **Contraseñas mínimas** | Clientes 6, Admins 8 | OWASP 8+ | ⚠️ Clientes bajos |
-| **Verificación email actual** | No | Recomendado | ❌ No |
-| **2FA** | No | Recomendado para admin | ❌ No |
-| **Rate limiting login** | No | Recomendado | ❌ No |
-| **Headers HTTP security** | 3 headers | 5+ recomendado | ⚠️ Incompleto |
-| **Logging de seguridad** | Básicos | Recomendado | ⚠️ Incompleto |
-
----
-
-## 11. Recomendaciones de Mejora
-
-### 11.1 Corto plazo (Fácil, < 1 hora)
-
-**Aumentar requisito de contraseña a mínimo 8 caracteres para clientes**. Actualmente es 6, lo que es relativamente bajo. Cambiar la línea en `services/validation_service.py` de 6 a 8 aumentaría significativamente la seguridad. Esto afectaría solo a nuevas contraseñas; las existentes permanecerían igual.
-
-**Implementar rate limiting en login**. Agregar la librería `flask_limiter` y decorar la función login con `@limiter.limit("5 per minute")`. Esto previene ataques de fuerza bruta al permitir solo 5 intentos por minuto. El usuario legítimo raramente necesita más de 5 intentos, pero un bot de ataque podría intentar miles.
-
-**Agregar más headers HTTP de seguridad**. Implementar `Strict-Transport-Security` para forzar HTTPS, y `Content-Security-Policy` para prevenir ciertos tipos de ataques XSS. Esto requiere quizás 10 líneas de código.
-
-### 11.2 Mediano plazo (Moderado, 4-8 horas)
-
-**Migrar a bcrypt**. Aunque PBKDF2 es seguro, bcrypt es específicamente diseñado para contraseñas y es más resistente a ataques con GPU/ASIC. Cambiar `method='pbkdf2:sha256'` a `method='bcrypt'` en Werkzeug requiere instalar `bcrypt` y puede causar inicios de sesión más lentos (bcrypt es intencionalmente lento).
-
-**Implementar logging de intentos fallidos**. Registrar quién intentó login fallido, con qué usuario, desde qué IP, y en qué momento. Alertar si hay más de 3 intentos fallidos desde la misma IP en 5 minutos. Esto ayudaría a detectar ataques en tiempo real.
-
-**Implementar 2FA para administradores**. Requerir autenticación de dos factores para cuentas administrativas usando TOTP (Time-based One-Time Password), SMS, o autenticador de email. Esto protegería las cuentas con mayores privilegios significativamente.
-
-### 11.3 Largo plazo (Significativo, 16+ horas)
-
-**Autenticación de dos factores completa**. Extender 2FA a todos los usuarios, no solo admins. Integrar con autenticadores como Google Authenticator o Authy.
-
-**Historial de cambios de contraseña**. Mantener registro de cambios previos y prevenir reutilización de contraseñas recientes. Esto previene que usuarios cambien a una contraseña que acababan de cambiar la semana anterior.
-
-**Single Sign-On (SSO)**. Integrar OAuth2 con Google, Microsoft, o GitHub para permitir que usuarios inicien sesión con sus cuentas existentes. Esto reduce la fatiga de contraseña y las malas prácticas de reutilización.
-
-**Monitoreo y análisis de seguridad**. Implementar alertas para comportamientos sospechosos: múltiples fallos de login, múltiples cambios de contraseña, acceso desde ubicaciones geográficas inusuales, etc.
-
----
-
-## 12. Conclusión
+## 10. Conclusión
 
 **La Lavandería implementa un nivel de seguridad sólido, robusto y basado en estándares industriales**, especialmente considerando que es un proyecto académico de grado. La aplicación protege las contraseñas mediante hashing criptográfico PBKDF2-SHA256 estándar con 160,000 iteraciones y salt único generado automáticamente. Las sesiones están protegidas contra CSRF mediante cookies SAMESITE y contra XSS mediante HTTPONLY.
 
@@ -289,12 +235,3 @@ La validación de entrada previene SQL injection mediante consultas parametrizad
 - ✅ Decoradores consistentes para control de acceso basado en rol
 - ✅ HTTPS obligatorio en producción en Render
 - ✅ Headers HTTP de seguridad
-
-**Áreas de mejora:**
-- ⚠️ Rate limiting en login sería fácil de agregar
-- ⚠️ 2FA para administradores sería ideal para producción
-- ⚠️ Más headers de seguridad (CSP, HSTS, HPKP)
-- ⚠️ Logging más detallado de eventos de seguridad
-- ⚠️ Requisito de 8 caracteres mínimos para clientes (actualmente 6)
-
-Para un **proyecto de grado académico**, esta implementación es **excelente, bien fundamentada, y lista para defensa**. Se pueden presentar todas las medidas de seguridad implementadas como evidencia de arquitectura robusta, decisiones de diseño conscientes de seguridad, y conocimiento profundo de amenazas y mitigaciones. Para uso en producción real con datos sensibles, aplicar las recomendaciones de mejora proporcionaría seguridad adicional, pero la base implementada es sólida y profesional.
